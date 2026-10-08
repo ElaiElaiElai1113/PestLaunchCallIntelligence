@@ -3,7 +3,13 @@ import type { Analysis, CallRecord, Evidence, Segment } from "./types";
 export function assessmentContext(call: CallRecord) {
   return {
     transcriptComplete:
-      call.mode === "sample" || call.transcriptCompleteness === "verified",
+      (call.transcriptCompleteness ??
+        (call.mode === "sample" ? "verified" : "unverified")) === "verified" &&
+      !(call.transcriptReviewReasons ?? []).some(
+        (reason) =>
+          reason === "Transcription quality needs review." ||
+          reason === "Recording coverage needs review.",
+      ),
   };
 }
 

@@ -118,6 +118,11 @@ async function transcriptionStep(
       throw new Error("SANITIZED_MEDIA_FAILED");
     call.sanitizedPath = derivative;
     call.segments = transcript.segments;
+    if (!call.originalSegments) {
+      call.originalSegments = structuredClone(transcript.segments);
+      call.originalSegmentsProvenance = "asr";
+    }
+    call.sourceRevision ??= 0;
     call.durationMs = transcript.durationMs;
     call.status = "analyzing";
     call.errorCode = transcript.complete ? null : "TRANSCRIPT_UNCERTAIN";

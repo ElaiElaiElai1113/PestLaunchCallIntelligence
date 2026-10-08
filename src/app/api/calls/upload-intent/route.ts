@@ -48,6 +48,13 @@ export async function POST(request: Request) {
       sourcePath: path,
       sanitizedPath: null,
       checksum: input.checksum,
+      sourcePreparation: {
+        checksum: input.checksum,
+        attestedBy: identity.userId,
+        at: new Date().toISOString(),
+        kind:
+          input.sourceKind === "synthetic" ? "synthetic" : "privately_redacted",
+      },
       errorCode: "UPLOAD_PENDING",
       segments: [],
       analysis: null,

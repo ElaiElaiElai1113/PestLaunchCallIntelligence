@@ -77,6 +77,24 @@ export const reviewSchema = z.strictObject({
   checkpointId: z.string().max(80),
   status: z.enum(["passed", "missed", "unknown", "not_applicable"]),
   reason: z.string().trim().min(10).max(800),
+  evidence: evidenceSchema.optional(),
+});
+export const sourceReviewSchema = z.strictObject({
+  version: z.number().int().positive(),
+  roles: z
+    .array(
+      z.strictObject({
+        segmentId: z.string().min(1).max(100),
+        speaker: z.enum(["employee", "customer", "unknown"]),
+      }),
+    )
+    .max(5000),
+  completenessVerified: z.boolean(),
+  qualityVerified: z.boolean(),
+  reason: z.string().trim().min(10).max(800),
+});
+export const reanalysisSchema = z.strictObject({
+  version: z.number().int().positive(),
 });
 export const uploadSchema = z.strictObject({
   label: z.string().trim().min(1).max(160),

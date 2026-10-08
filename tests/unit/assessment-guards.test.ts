@@ -21,6 +21,13 @@ const customer: Segment = {
   text: "Yes please",
   speaker: "customer",
 };
+it("unverified quality cannot certify reliable complete source", () => {
+  const c = sampleCall("service", "fictional-call");
+  c.mode = "live";
+  c.transcriptCompleteness = "verified";
+  c.transcriptReviewReasons = ["Transcription quality needs review."];
+  expect(assessmentContext(c).transcriptComplete).toBe(false);
+});
 it.each(["unknown", "customer"] as const)(
   "withholds employee passes and coaching for %s-only speech",
   (speaker) => {

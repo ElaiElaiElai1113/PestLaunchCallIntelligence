@@ -64,6 +64,33 @@ export type ProcessingAttempt = {
   runId: string | null;
 };
 export type CallRecord = {
+  sourceRevision?: number;
+  analysisSourceRevision?: number;
+  originalSegments?: Segment[];
+  originalSegmentsProvenance?: "asr" | "legacy_snapshot" | "fictional_fixture";
+  latestModelAnalysis?: Analysis | null;
+  sourcePreparation?: {
+    checksum: string;
+    attestedBy: string;
+    at: string;
+    kind: "synthetic" | "privately_redacted";
+  };
+  sourceReviews?: {
+    id: string;
+    sourceRevision: number;
+    previousVersion: number;
+    sourceChecksum: string | null;
+    userId: string;
+    at: string;
+    reason: string;
+    changes: {
+      segmentId: string;
+      previous: Segment["speaker"];
+      next: Segment["speaker"];
+    }[];
+    completenessVerified: boolean;
+    qualityVerified: boolean;
+  }[];
   processingAttempt?: ProcessingAttempt;
   id: string;
   workspaceId: string;
@@ -102,6 +129,8 @@ export type CallRecord = {
     userId: string;
     at: string;
     previousVersion: number;
+    sourceRevision?: number;
+    evidence?: Evidence;
   }[];
 };
 export type Identity = {
