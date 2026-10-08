@@ -1,5 +1,7 @@
 # Client requirements and evidence matrix
 
+Current local review status: the three follow-up repairs at application `3594559a70c681109e2395356ad52cb1963d0966` are independently accepted with no additional actionable findings in those changes. Real-provider and deployed acceptance remain pending.
+
 Application reference: `3594559a70c681109e2395356ad52cb1963d0966` plus the final verification/evidence entry in `docs/evidence/progress.md`. “Actual local” means a fresh isolated development sample app with real HTTP APIs, not hosted Auth/Storage or a new recording processed by AI. “Injected” means explicitly fictional intercepted provider/operation ports. Historical hosted checks predate this revision. Prepared-media review controls are tested with an intercepted local synthetic silence WAV; this proves UI interaction, not hosted media access, transcription or AI accuracy.
 
 | ID | Capability | Implemented | Actual local app tested | Injected/embedded tested | Real provider | Deployed | Exact evidence / pending action |

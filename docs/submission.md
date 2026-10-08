@@ -2,6 +2,8 @@
 
 Local keyless demonstration: sign in to the sample workspace; add an inspection sample; inspect the separate commitments; open Scorecard; review pricing with a reason; inspect original/effective history; follow evidence to the transcript; open Coaching; return to Calls and filter; inspect data controls. All examples are fictional and text-only.
 
+The three local follow-up repairs at application `3594559a70c681109e2395356ad52cb1963d0966` are independently accepted: prepared playback inside transcript review, busy-dialog cancellation and strict sample analysis shapes. This closes those local findings; it does not certify the deployed recording demonstration or submission deliverables.
+
 Not yet a client submission: no deployed app, real-provider call, imported customer recordings, private remote source repository, recorded Loom or agreed test deadline has been verified.
 
 The dedicated Supabase project already exists in Projects; do not select/create another backend. Before hosted work, replace the exposed server key, reconcile prior migration history and deliberately apply the third local exact-path migration. Then verify invited owner/reviewer access, private buckets/RLS, deployed origin, an authorized commercial Vercel project and Groq model/quota/ZDR/no-training settings. Use the exact pending checklist in `docs/evidence/client-v1-demo-checklist.md`.
