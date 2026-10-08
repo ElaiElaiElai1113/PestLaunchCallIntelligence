@@ -4,6 +4,52 @@ import { RUBRICS } from "@/lib/scoring/rubrics";
 import { scoringSchema } from "@/lib/groq/staged-contract";
 import { buildScoringRequest } from "@/lib/groq/analysis-request";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
+it("keeps unknown-source coaching null and excludes unknown turns from partial employee attribution", () => {
+  const call = sampleCall("one-time", "fictional-unknown-roles");
+  const wire = stagedFromAnalysis(call.originalAnalysis!).scoring;
+  wire.coaching = { strength: null, improvement1: null, improvement2: null };
+  Object.values(wire.checkpoints).forEach((item) => (item.status = "unknown"));
+  const unknown = call.segments.map((s) => ({
+    ...s,
+    speaker: "unknown" as const,
+  }));
+  expect(scoringSchema(unknown, "sales").safeParse(wire).success).toBe(true);
+  wire.coaching.strength = stagedFromAnalysis(
+    call.originalAnalysis!,
+  ).scoring.coaching.strength;
+  expect(scoringSchema(unknown, "sales").safeParse(wire).success).toBe(false);
+  wire.coaching.strength = null;
+  const employee = call.segments.find((s) => s.speaker === "employee")!.id;
+  const partial = unknown.map((s) =>
+    s.id === employee ? { ...s, speaker: "employee" as const } : s,
+  );
+  Object.values(wire.checkpoints).forEach(
+    (item) => (item.evidence.segmentIds = [employee]),
+  );
+  expect(scoringSchema(partial, "sales").safeParse(wire).success).toBe(true);
+  wire.checkpoints.consensus.evidence.segmentIds = [
+    unknown.find((s) => s.id !== employee)!.id,
+  ];
+  expect(scoringSchema(partial, "sales").safeParse(wire).success).toBe(false);
+});
+it.each(["customer", "mixed"])(
+  "rejects %s-only/mixed references for attributed employee checkpoints",
+  (kind) => {
+    const call = sampleCall("one-time", "fictional-citation");
+    const wire = stagedFromAnalysis(call.originalAnalysis!).scoring;
+    const employee = call.segments.find((s) => s.speaker === "employee")!.id;
+    const customer = call.segments.find((s) => s.speaker === "customer")!.id;
+    wire.checkpoints.consensus.evidence.segmentIds =
+      kind === "customer" ? [customer] : [employee, customer];
+    expect(scoringSchema(call.segments, "sales").safeParse(wire).success).toBe(
+      false,
+    );
+    wire.checkpoints.consensus.evidence.segmentIds = [employee];
+    expect(scoringSchema(call.segments, "sales").safeParse(wire).success).toBe(
+      true,
+    );
+  },
+);
 it("limits coaching structurally to one strength and two improvements", () => {
   const source = sampleCall("one-time", "fictional-coaching-limit");
   const request = buildScoringRequest(

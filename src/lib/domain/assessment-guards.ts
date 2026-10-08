@@ -38,12 +38,28 @@ export function guardAssessment(
   };
   let attributionUnresolved = false;
   let coachingPolicyUnresolved = false;
+  for (const outcome of Object.values(effective.outcomes)) {
+    if (outcome.value === null) continue;
+    const { segmentIds, quote } = outcome.evidence;
+    const supported =
+      segmentIds.length > 0 &&
+      quote.trim().length > 0 &&
+      segmentIds.every((id) => lookup.has(id)) &&
+      normalize(
+        segmentIds.map((id) => lookup.get(id)!.text).join(" "),
+      ).includes(normalize(quote));
+    if (!supported) {
+      outcome.value = null;
+      effective.reviewReasons.push("Outcome evidence needs review.");
+    }
+  }
   for (const item of effective.assessments) {
     const unsupportedPass =
       item.status === "passed" && !employeeEvidence(item.evidence);
     const unsupportedMiss =
       item.status === "missed" &&
       (!context.transcriptComplete ||
+        segments.some((x) => x.speaker === "unknown") ||
         !segments.some((x) => x.speaker === "employee"));
     if (unsupportedPass || unsupportedMiss) {
       item.status = "unknown";

@@ -23,10 +23,16 @@ export function scoringSchema(segments: Segment[], purpose: Purpose) {
   // same status enum. Require source context for every attributed checkpoint,
   // including an unknown/missing step, instead of a conditional object union.
   // Unattributed sources retain nullable-free coaching and may use empty refs.
-  const validatedItem = segments.some((s) => s.speaker === "employee")
+  const employeeIds = segments
+    .filter((s) => s.speaker === "employee")
+    .map((s) => s.id);
+  const validatedItem = employeeIds.length
     ? item.extend({
         evidence: item.shape.evidence.extend({
-          segmentIds: item.shape.evidence.shape.segmentIds.min(1),
+          segmentIds: z
+            .array(z.enum(employeeIds as [string, ...string[]]))
+            .min(1)
+            .max(6),
         }),
       })
     : item;

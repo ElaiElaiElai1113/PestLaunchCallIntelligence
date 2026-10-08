@@ -21,6 +21,39 @@ const customer: Segment = {
   text: "Yes please",
   speaker: "customer",
 };
+it.each([true, false])(
+  "keeps unsupported %s outcomes unknown without rewriting the original",
+  (value) => {
+    const original = analysis();
+    original.outcomes.inspectionBooked = {
+      value,
+      evidence: { segmentIds: [], quote: "" },
+    };
+    original.outcomes.paymentCollected = {
+      value: false,
+      evidence: { segmentIds: ["s1"], quote: "No payment has been taken." },
+    };
+    const spoken = { ...employee, text: "No payment has been taken." };
+    const snapshot = structuredClone(original);
+    const effective = guardAssessment(original, [spoken, customer], {
+      transcriptComplete: true,
+    });
+    expect(effective.outcomes.inspectionBooked.value).toBeNull();
+    expect(effective.outcomes.paymentCollected.value).toBe(false);
+    expect(effective.reviewReasons).toContain("Outcome evidence needs review.");
+    expect(original).toEqual(snapshot);
+  },
+);
+it("does not infer missed employee steps through an unattributed part of the source", () => {
+  const original = analysis();
+  original.assessments[0].status = "missed";
+  const unknown = { ...customer, speaker: "unknown" as const };
+  const result = guardAssessment(original, [employee, unknown], {
+    transcriptComplete: true,
+  });
+  expect(result.assessments[0].status).toBe("unknown");
+  expect(original.assessments[0].status).toBe("missed");
+});
 it.each([
   "A 30-day guarantee covers this treatment.",
   "You receive a discount on your next service.",
