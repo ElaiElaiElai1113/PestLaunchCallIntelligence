@@ -217,15 +217,20 @@ try {
           .value,
     }));
   metadata.purpose = result.effective.purpose;
+  const missingAcceptedFollowup =
+    fixture.analysis!.followups.some((item) => item.state === "accepted") &&
+    !result.effective.followups.some((item) => item.state === "accepted");
+  metadata.missingAcceptedFollowup = missingAcceptedFollowup;
   metadata.score = score;
   metadata.semanticDifferences = differences;
   metadata.outcomeDifferences = outcomeDifferences;
   metadata.semanticPass =
     caseName === "saved-asr"
-      ? result.effective.purpose === "sales"
+      ? result.effective.purpose === "sales" && !missingAcceptedFollowup
       : !differences.length &&
         !outcomeDifferences.length &&
-        result.effective.purpose === fixture.analysis!.purpose;
+        result.effective.purpose === fixture.analysis!.purpose &&
+        !missingAcceptedFollowup;
   await writeArtifact(run.folder, "accepted.json", result);
   run.entry.accepted = true;
   run.entry.semanticPass = metadata.semanticPass === true;

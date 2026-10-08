@@ -145,7 +145,9 @@ export function CallDetail({ id }: { id: string }) {
   const current = analysisCurrent(call);
   const pending = pendingProcessing(call);
   const retryControl =
-    session.identity.role === "owner" && retryAvailable(call) ? (
+    session.identity.role === "owner" &&
+    retryAvailable(call) &&
+    call.errorCode !== "ANALYSIS_BUDGET_EXCEEDED" ? (
       <button
         className="button primary"
         disabled={
@@ -308,6 +310,11 @@ export function CallDetail({ id }: { id: string }) {
           {error}
         </p>
       )}
+      {call.errorCode === "ANALYSIS_BUDGET_EXCEEDED" && (
+        <p className="error-text" role="alert">
+          {errorText(new Error("ANALYSIS_BUDGET_EXCEEDED"))}
+        </p>
+      )}
       {call.segments.length > 0 && (
         <section className="source-toolbar panel">
           <div>
@@ -352,7 +359,11 @@ export function CallDetail({ id }: { id: string }) {
             <>
               <button
                 className="button primary"
-                disabled={!session.aiConfigured || call.mode === "sample"}
+                disabled={
+                  !session.aiConfigured ||
+                  call.mode === "sample" ||
+                  call.errorCode === "ANALYSIS_BUDGET_EXCEEDED"
+                }
                 onClick={async () => {
                   try {
                     await api(`/api/calls/${id}/reanalyze`, {
