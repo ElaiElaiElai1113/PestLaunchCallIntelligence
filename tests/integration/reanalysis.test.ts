@@ -3,6 +3,8 @@ import { sampleCall } from "@/lib/samples/fixtures";
 import type { CallRecord, Identity } from "@/lib/domain/types";
 import { guardAssessment } from "@/lib/domain/assessment-guards";
 import { applySourceReview } from "@/lib/domain/source-review";
+import { recoveryCall } from "../helpers/recovery-call";
+import { analysisRecovery } from "@/lib/groq/analysis-recovery";
 const state = vi.hoisted(() => ({
   call: null as CallRecord | null,
   identity: {
@@ -48,6 +50,7 @@ vi.mock("@/lib/groq/provider", () => ({
 }));
 import { processCall } from "@/workflows/process-call";
 import { POST } from "@/app/api/calls/[callId]/reanalyze/route";
+import { POST as reviewSource } from "@/app/api/calls/[callId]/source-review/route";
 const context = { params: Promise.resolve({ callId: "fictional-call" }) };
 beforeEach(() => {
   vi.resetAllMocks();
@@ -111,6 +114,93 @@ const request = (version: number) =>
     headers: { Origin: "http://localhost", "Content-Type": "application/json" },
     body: JSON.stringify({ version }),
   });
+async function saveSource(unknown = false) {
+  const call = state.call!;
+  return reviewSource(
+    new Request("http://localhost/api/calls/fictional-call/source-review", {
+      method: "POST",
+      headers: {
+        Origin: "http://localhost",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version: call.version,
+        roles: call.segments.map((s) => ({
+          segmentId: s.id,
+          speaker: unknown ? "unknown" : s.speaker,
+        })),
+        completenessVerified: true,
+        qualityVerified: true,
+        reason:
+          "Fictional reviewed source correction without provider request.",
+      }),
+    }),
+    context,
+  );
+}
+it("actual source-review transition leaves first analysis startable but never auto-dispatches", async () => {
+  state.call = recoveryCall();
+  state.start.mockResolvedValue({ runId: "not-executed" });
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  expect((await saveSource()).status).toBe(200);
+  expect(state.call!.analysis).toBeNull();
+  expect(state.start).not.toHaveBeenCalled();
+  expect(state.call!.status).toBe("needs_review");
+  expect((await POST(request(state.call!.version), context)).status).toBe(200);
+  expect(state.start).toHaveBeenCalledTimes(1);
+  expect(state.model).not.toHaveBeenCalled();
+  expect(state.call!.analysis).toBeNull();
+  expect(state.call!.score).toBeNull();
+});
+it("same over-budget source cannot dispatch or mutate while a revised admissible source can", async () => {
+  state.call = recoveryCall();
+  state.call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
+  for (let n = 100; n < 300; n++) {
+    state.call.segments[0].text = "Fictional context. ".repeat(n);
+    const changed = structuredClone(state.call);
+    changed.segments.forEach((s) => (s.speaker = "unknown"));
+    if (
+      analysisRecovery(state.call, false).budget === "exceeded" &&
+      analysisRecovery(changed, false).budget === "admitted"
+    )
+      break;
+  }
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  state.start.mockResolvedValue({ runId: "not-executed" });
+  state.put.mockClear();
+  const oldSource = structuredClone(state.call);
+  const refused = await POST(request(state.call.version), context);
+  expect(refused.status).toBe(400);
+  expect(await refused.json()).toEqual({ error: "ANALYSIS_BUDGET_EXCEEDED" });
+  expect(state.start).not.toHaveBeenCalled();
+  expect(state.put).not.toHaveBeenCalled();
+  expect(state.call).toEqual(oldSource);
+  expect((await saveSource(true)).status).toBe(200);
+  expect(state.call!.errorCode).toBe("ANALYSIS_BUDGET_EXCEEDED");
+  expect(state.call!.sourceReviews!.at(-1)?.previousErrorCode).toBe(
+    "ANALYSIS_BUDGET_EXCEEDED",
+  );
+  expect((await POST(request(state.call!.version), context)).status).toBe(200);
+  expect(state.model).not.toHaveBeenCalled();
+  expect(state.call!.analysis).toBeNull();
+});
+it.each(["reviewer", "privacy", "preparation", "active"])(
+  "first-analysis recovery preserves %s restriction",
+  async (kind) => {
+    state.call = recoveryCall();
+    vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+    state.start.mockResolvedValue({ runId: "not-executed" });
+    if (kind === "reviewer") state.identity.role = "reviewer";
+    if (kind === "privacy") state.call.status = "privacy_review";
+    if (kind === "preparation") state.call.sanitizedPath = null;
+    if (kind === "active") state.call.status = "analyzing";
+    expect((await POST(request(state.call.version), context)).status).toBe(
+      kind === "reviewer" ? 403 : kind === "active" ? 409 : 400,
+    );
+    expect(state.start).not.toHaveBeenCalled();
+    expect(state.put).not.toHaveBeenCalled();
+  },
+);
 async function verified() {
   await processCall("fictional-call", "first-attempt");
   const roles = sampleCall("service", "roles").segments.map((x) => ({

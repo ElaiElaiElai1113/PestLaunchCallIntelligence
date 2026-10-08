@@ -10,6 +10,7 @@ for (const history of [false, true]) {
     call.sourceKind = "synthetic";
     call.status = "failed";
     call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
+    call.segments[0].text = "Fictional over-limit context. ".repeat(1000);
     if (history) {
       call.sourceRevision = 1;
       call.analysisSourceRevision = 0;
@@ -28,11 +29,9 @@ for (const history of [false, true]) {
     });
     await page.goto(`/calls/${call.id}?tab=transcript`);
     await expect(
-      page
-        .getByRole("alert")
-        .filter({
-          hasText: "This transcript exceeds the current analysis limit.",
-        }),
+      page.getByRole("alert").filter({
+        hasText: "This transcript exceeds the current analysis limit.",
+      }),
     ).toBeVisible();
     await expect(
       page.getByText(call.segments[0].text, { exact: true }).first(),

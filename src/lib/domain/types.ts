@@ -87,6 +87,7 @@ export type CallRecord = {
     sourceRevision: number;
     previousVersion: number;
     sourceChecksum: string | null;
+    previousErrorCode?: string | null;
     userId: string;
     at: string;
     reason: string;

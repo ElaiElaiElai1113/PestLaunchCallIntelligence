@@ -11,6 +11,7 @@ import { respond } from "@/lib/server/http";
 import { reanalysisSchema } from "@/lib/domain/schemas";
 import { analysisCurrent, sourceReviewBlock } from "@/lib/domain/source-review";
 import { dispatchRetry } from "@/lib/jobs/retry-dispatch";
+import { analysisRecovery } from "@/lib/groq/analysis-recovery";
 export async function POST(
   request: Request,
   context: { params: Promise<{ callId: string }> },
@@ -33,6 +34,15 @@ export async function POST(
       throw new AppError(blocked, blocked === "PROCESSING_ACTIVE" ? 409 : 400);
     if (analysisCurrent(call))
       throw new AppError("REANALYSIS_UNAVAILABLE", 400);
+    const recovery = analysisRecovery(
+      call,
+      process.env.REAL_CALL_PROCESSING_ENABLED === "true",
+    );
+    if (!recovery.eligible)
+      throw new AppError(
+        recovery.blockedReason ?? "REANALYSIS_UNAVAILABLE",
+        400,
+      );
     try {
       await dispatchRetry(repo, call, async (id, attemptId) => {
         await start(processCall, [id, attemptId]);

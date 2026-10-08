@@ -47,3 +47,20 @@ it("refuses a complete oversized input rather than truncating its ending", () =>
   ).toThrow("ANALYSIS_BUDGET_EXCEEDED");
   expect(source).toEqual(before);
 });
+it("browser-safe byte admission is identical to UTF-8 Buffer accounting", () => {
+  const segments = sampleCall("service", "fictional").segments;
+  segments[0].text = "Fictional café — ñ 🐜";
+  const built = buildAnalysisRequest(segments, { transcriptComplete: true });
+  expect(built.budget.bytes).toBe(
+    Buffer.byteLength(
+      JSON.stringify({
+        messages: built.request.messages,
+        schema:
+          built.request.response_format!.type === "json_schema"
+            ? built.request.response_format!.json_schema.schema
+            : {},
+      }),
+      "utf8",
+    ),
+  );
+});

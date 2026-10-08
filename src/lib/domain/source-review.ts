@@ -116,6 +116,7 @@ export function applySourceReview(
     ...actor,
     sourceRevision: next.sourceRevision,
     previousVersion: call.version,
+    previousErrorCode: call.errorCode,
     sourceChecksum: call.checksum,
     reason: input.reason,
     changes,

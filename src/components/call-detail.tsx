@@ -26,6 +26,7 @@ import { RUBRICS, OBJECTION_IDS } from "@/lib/scoring/rubrics";
 import { OUTCOME_LABELS } from "@/lib/samples/fixtures";
 import { analysisCurrent, activeProcessing } from "@/lib/domain/source-review";
 import { TranscriptSourceReview } from "./transcript-source-review";
+import { analysisRecovery } from "@/lib/groq/analysis-recovery";
 import { matchesCallFilters } from "@/lib/domain/call-filters";
 import {
   pendingProcessing,
@@ -144,10 +145,22 @@ export function CallDetail({ id }: { id: string }) {
     score = call.score;
   const current = analysisCurrent(call);
   const pending = pendingProcessing(call);
+  const recovery = analysisRecovery(call, session.processingEnabled);
+  const waitingForAnalysis =
+    !current &&
+    call.segments.length > 0 &&
+    !activeProcessing(call) &&
+    call.status !== "privacy_review" &&
+    ![
+      "UPLOAD_PENDING",
+      "PRIVACY_APPROVAL_REQUIRED",
+      "PRIVACY_REVIEW_REQUIRED",
+    ].includes(call.errorCode ?? "");
   const retryControl =
     session.identity.role === "owner" &&
     retryAvailable(call) &&
-    call.errorCode !== "ANALYSIS_BUDGET_EXCEEDED" ? (
+    (call.errorCode !== "ANALYSIS_BUDGET_EXCEEDED" ||
+      recovery.budget === "admitted") ? (
       <button
         className="button primary"
         disabled={
@@ -312,7 +325,9 @@ export function CallDetail({ id }: { id: string }) {
       )}
       {call.errorCode === "ANALYSIS_BUDGET_EXCEEDED" && (
         <p className="error-text" role="alert">
-          {errorText(new Error("ANALYSIS_BUDGET_EXCEEDED"))}
+          {recovery.budget === "admitted"
+            ? "Previous analysis exceeded its limit. The current reviewed transcript fits the request limit; an owner can start analysis. No new result has been produced."
+            : errorText(new Error("ANALYSIS_BUDGET_EXCEEDED"))}
         </p>
       )}
       {call.segments.length > 0 && (
@@ -345,15 +360,23 @@ export function CallDetail({ id }: { id: string }) {
           </button>
         </section>
       )}
-      {a && !current && !activeProcessing(call) && (
+      {waitingForAnalysis && (
         <section className="panel source-status">
           <h2>
-            Previous analysis — source revision{" "}
-            {call.analysisSourceRevision ?? 0}
+            {a ? (
+              <>
+                Previous analysis — source revision{" "}
+                {call.analysisSourceRevision ?? 0}
+              </>
+            ) : (
+              "Transcript awaiting analysis"
+            )}
           </h2>
           <p>
             Current transcript source revision: {call.sourceRevision ?? 0}.
-            Previous results remain as history; no current grade is published.
+            {a
+              ? " Previous results remain as history; no current grade is published."
+              : " No current analysis or grade is available. Saving transcript review does not start analysis."}
           </p>
           {session.identity.role === "owner" ? (
             <>
@@ -362,7 +385,7 @@ export function CallDetail({ id }: { id: string }) {
                 disabled={
                   !session.aiConfigured ||
                   call.mode === "sample" ||
-                  call.errorCode === "ANALYSIS_BUDGET_EXCEEDED"
+                  !recovery.eligible
                 }
                 onClick={async () => {
                   try {
@@ -379,7 +402,7 @@ export function CallDetail({ id }: { id: string }) {
                   }
                 }}
               >
-                Re-analyze
+                {a ? "Re-analyze" : "Analyze transcript"}
               </button>
               {!session.aiConfigured && (
                 <p>
@@ -387,9 +410,17 @@ export function CallDetail({ id }: { id: string }) {
                   has been produced.
                 </p>
               )}
+              {recovery.blockedReason &&
+                recovery.blockedReason !== "ANALYSIS_BUDGET_EXCEEDED" && (
+                  <p>{errorText(new Error(recovery.blockedReason))}</p>
+                )}
             </>
           ) : (
-            <p>A workspace owner must start re-analysis.</p>
+            <p>
+              {a
+                ? "A workspace owner must start re-analysis."
+                : "A workspace owner must start analysis."}
+            </p>
           )}
         </section>
       )}
@@ -418,6 +449,7 @@ export function CallDetail({ id }: { id: string }) {
               size={25}
               className={
                 pending ||
+                !activeProcessing(call) ||
                 call.status === "failed" ||
                 call.status === "privacy_review" ||
                 call.errorCode === "AI_NOT_CONFIGURED" ||
@@ -428,30 +460,34 @@ export function CallDetail({ id }: { id: string }) {
             />
           </span>
           <h2>
-            {pending
-              ? "Waiting to start"
-              : call.errorCode === "AI_NOT_CONFIGURED"
-                ? "Recording stored. AI is not configured."
-                : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
-                  ? "Recording held for privacy approval."
-                  : call.status === "failed"
-                    ? "This recording needs another try"
-                    : call.status === "privacy_review"
-                      ? "A private check is needed"
-                      : "Your recording is being processed"}
+            {waitingForAnalysis
+              ? "Waiting for owner analysis"
+              : pending
+                ? "Waiting to start"
+                : call.errorCode === "AI_NOT_CONFIGURED"
+                  ? "Recording stored. AI is not configured."
+                  : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
+                    ? "Recording held for privacy approval."
+                    : call.status === "failed"
+                      ? "This recording needs another try"
+                      : call.status === "privacy_review"
+                        ? "A private check is needed"
+                        : "Your recording is being processed"}
           </h2>
           <p>
-            {pending
-              ? "Processing has not confirmed a start yet. You can retry starting it."
-              : call.errorCode === "AI_NOT_CONFIGURED"
-                ? "The recording is stored privately. Add the server AI key later, then resume analysis. No transcript or result has been fabricated."
-                : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
-                  ? "The recording stays private and will not be sent to AI until privacy approval is enabled."
-                  : call.status === "privacy_review"
-                    ? "Re-upload a privately verified, redacted recording before analysis can continue. No transcript is published."
-                    : call.errorCode === "UPLOAD_PENDING"
-                      ? "The recording upload has not been finalized. Re-select the file to resume."
-                      : "You can leave this screen. The result will stay in your call log."}
+            {waitingForAnalysis
+              ? "The transcript is preserved. No analysis is currently running; an owner must start it when source and request checks allow."
+              : pending
+                ? "Processing has not confirmed a start yet. You can retry starting it."
+                : call.errorCode === "AI_NOT_CONFIGURED"
+                  ? "The recording is stored privately. Add the server AI key later, then resume analysis. No transcript or result has been fabricated."
+                  : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
+                    ? "The recording stays private and will not be sent to AI until privacy approval is enabled."
+                    : call.status === "privacy_review"
+                      ? "Re-upload a privately verified, redacted recording before analysis can continue. No transcript is published."
+                      : call.errorCode === "UPLOAD_PENDING"
+                        ? "The recording upload has not been finalized. Re-select the file to resume."
+                        : "You can leave this screen. The result will stay in your call log."}
           </p>
           <div className="processing-stages">
             {["queued", "transcribing", "analyzing", "ready"].map((stage) => (

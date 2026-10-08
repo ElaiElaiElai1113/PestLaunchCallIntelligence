@@ -9,6 +9,14 @@ function fixture() {
   const call = sampleCall("service", "20000000-0000-4000-8000-000000000011");
   call.mode = "live";
   call.sourceKind = "synthetic";
+  call.checksum = "a".repeat(64);
+  call.sanitizedPath = `${call.workspaceId}/${call.id}.wav`;
+  call.sourcePreparation = {
+    checksum: call.checksum,
+    attestedBy: "fictional-owner",
+    at: "2026-10-09T00:00:00Z",
+    kind: "synthetic",
+  };
   call.sourceRevision = 0;
   call.analysisSourceRevision = 0;
   call.segments.forEach((s) => (s.speaker = "unknown"));
@@ -48,6 +56,8 @@ test("mocked owner source review handles conflict, stale grade, re-analysis fail
       return { json: { calls: [call] } };
     if (path === `/api/calls/${call.id}` && method === "GET")
       return { json: { call } };
+    if (path === `/api/calls/${call.id}/media`)
+      return { status: 404, json: { error: "MEDIA_UNAVAILABLE" } };
     if (path === `/api/calls/${call.id}/source-review` && method === "POST") {
       reviews++;
       if (reviews === 1) {
@@ -155,6 +165,8 @@ test("mocked reviewer can verify source but cannot launch owner re-analysis", as
       return { json: { calls: [call] } };
     if (path === `/api/calls/${call.id}` && method === "GET")
       return { json: { call } };
+    if (path === `/api/calls/${call.id}/media`)
+      return { status: 404, json: { error: "MEDIA_UNAVAILABLE" } };
     if (path === `/api/calls/${call.id}/source-review` && method === "POST") {
       call = applySourceReview(call, sourceReviewSchema.parse(input), {
         id: "reviewer-review",

@@ -49,10 +49,9 @@ export function buildAnalysisRequest(
       json_schema: { name: CONTRACT, strict: true, schema },
     },
   };
-  const bytes = Buffer.byteLength(
+  const bytes = new TextEncoder().encode(
     JSON.stringify({ messages: request.messages, schema }),
-    "utf8",
-  );
+  ).byteLength;
   const estimatedInputTokens = Math.ceil(bytes / 3) + 256;
   const budget = {
     bytes,
