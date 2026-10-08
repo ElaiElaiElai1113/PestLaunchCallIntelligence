@@ -1,5 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { beforeAll, afterAll, it, expect } from "vitest";
 let db: PGlite;
 const owner = "00000000-0000-0000-0000-000000000001",
@@ -10,14 +10,12 @@ const owner = "00000000-0000-0000-0000-000000000001",
 beforeAll(async () => {
   db = new PGlite();
   await db.exec(
-    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit integer,allowed_mime_types text[]);create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;create function storage.foldername(text) returns text[] language sql immutable as $$select string_to_array($1,'/')$$;grant usage on schema storage to authenticated;grant insert,select on storage.objects to authenticated;`,
+    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit integer,allowed_mime_types text[]);create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;create function storage.foldername(text) returns text[] language sql immutable as $$select (string_to_array($1,'/'))[1:array_length(string_to_array($1,'/'),1)-1]$$;create function storage.filename(text) returns text language sql immutable as $$select (string_to_array($1,'/'))[array_length(string_to_array($1,'/'),1)]$$;grant usage on schema storage to authenticated;grant insert,select on storage.objects to authenticated;`,
   );
-  await db.exec(
-    await readFile(
-      "supabase/migrations/20261008075016_call_intelligence.sql",
-      "utf8",
-    ),
-  );
+  for (const filename of (await readdir("supabase/migrations"))
+    .filter((name) => name.endsWith(".sql"))
+    .sort())
+    await db.exec(await readFile(`supabase/migrations/${filename}`, "utf8"));
   await db.query("insert into auth.users values ($1),($2),($3)", [
     owner,
     reviewer,
@@ -93,6 +91,21 @@ it("reviewers cannot upload source audio", async () => {
     ),
   ).resolves.toBeDefined();
 });
+it("source uploads reject forged call, workspace and nested paths", async () => {
+  for (const path of [
+    `${workspace}/20000000-0000-0000-0000-000000000099.wav`,
+    `10000000-0000-0000-0000-000000000099/${callId}.wav`,
+    `${workspace}/nested/${callId}.wav`,
+  ])
+    await expect(
+      asUser(owner, () =>
+        db.query(
+          "insert into storage.objects(bucket_id,name) values('call-source',$1)",
+          [path],
+        ),
+      ),
+    ).rejects.toThrow();
+});
 it("source audio has no read policy even for members", async () => {
   await db.query(
     "insert into storage.objects(bucket_id,name) values('call-source',$1)",
@@ -145,6 +158,14 @@ it("the save function rejects stale writes and deletion resurrection", async () 
       )
     ).rows[0].saved,
   ).toBe(false);
+  await expect(
+    asUser(owner, () =>
+      db.query(
+        "insert into storage.objects(bucket_id,name) values('call-source',$1)",
+        [`${workspace}/${callId}.wav`],
+      ),
+    ),
+  ).rejects.toThrow();
 });
 it("anonymous data reads and client RPC writes are denied", async () => {
   await db.exec("begin;set local role anon");
