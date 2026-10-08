@@ -8,16 +8,22 @@ import { computeScore } from "../src/lib/scoring/engine";
 import { reserveProbe, writeArtifact, tokenResetMs } from "./groq-probe-ledger";
 import {
   acquireRenewalCase,
+  admitDemoCase,
   assertFictionalAcceptance,
   fingerprint,
   verifyClientBinding,
 } from "./groq-renewal-controls";
 import { resolveSampleRoot } from "../src/lib/server/sample-paths";
 
-// Separate authorization and ledger; never reopen either historical round.
+// The human's overnight demo request authorizes a separate bounded Free phase.
+// No option can reset or change the historical renewal's ledger/cap.
+const demoPhase = process.argv.includes("--demo-validation-20261009");
+const cap = demoPhase ? 6 : 12;
 const root = resolveSampleRoot(
   process.cwd(),
-  ".private/qa/groq-renewal-20261009",
+  demoPhase
+    ? ".private/qa/groq-demo-validation-20261009"
+    : ".private/qa/groq-renewal-20261009",
 );
 const arg = (name: string) => process.argv[process.argv.indexOf(name) + 1];
 assert.ok(
@@ -34,11 +40,17 @@ assert.ok(
     "client-001-analysis",
   ].includes(caseName),
 );
+assert.ok(
+  !demoPhase || ["one-time", "service", "retention"].includes(caseName),
+  "Demo phase is fictional only",
+);
 const caseLease = await acquireRenewalCase(
   root,
   caseName.endsWith("asr") ? 1 : 2,
+  cap,
 );
 try {
+  if (demoPhase) await admitDemoCase(root, caseName);
   const clientCase = caseName.startsWith("client-");
   let admittedClientSource;
   if (clientCase) {
@@ -152,7 +164,7 @@ try {
           setTimeout(resolve, Math.min(30000, ledger.notBefore - Date.now())),
         );
       }
-      const reserved = await reserveProbe(root, caseName, 12);
+      const reserved = await reserveProbe(root, caseName, cap);
       requests++;
       const stage = url.pathname.includes("audio")
         ? "transcription"
@@ -262,6 +274,12 @@ try {
       );
     }
   } catch (error) {
+    if (demoPhase && requests > 0) {
+      const ledgerPath = root + "/ledger.json";
+      const ledger = JSON.parse(await readFile(ledgerPath, "utf8"));
+      ledger.stopped ??= "analysis_rejected";
+      await writeFile(ledgerPath, JSON.stringify(ledger, null, 2));
+    }
     // SDK/Zod error bodies may contain customer text; only known safe categories.
     const safe =
       error instanceof Error &&

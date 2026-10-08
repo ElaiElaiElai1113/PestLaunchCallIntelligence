@@ -1,5 +1,7 @@
 # Source register and review status
 
+9 October delivery refresh: the native build assignment and Office manual were reacquired through Drive; the Sales manual is an Office-format file and was read through Drive fetch after native-document access correctly refused it. The assignment still requires seven core capabilities, a usable deployed app, source/GitHub, short Loom and README. The source manuals remain scorecard authority; script example discounts/warranties are not universal business terms for every recording. No client deadline/start message was confirmed by this refresh.
+
 Private PestLaunch paid build test. Initial review completed all five Drive folders and 25 files. Twenty recordings were transcribed locally for context review, approximately 2 hours 12 minutes total. Machine transcripts had uncertain passages; no numerical grades were assigned. Full temporary audio/transcripts/browser download were deleted after review. Anonymized context notes remain private/test-only and must be deleted after the full test.
 
 ## Original materials

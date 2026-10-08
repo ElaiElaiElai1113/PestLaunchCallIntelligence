@@ -2,6 +2,14 @@
 
 Private call review, evidence-backed scorecards and coaching. Standalone sibling project; the existing Portfolio app is untouched.
 
+## Current delivery status — 9 October 2026
+
+The human authorized completing the demo and Vercel hosting, with review in **PestLaunch planning and review**. The Drive assignment and both manuals were refreshed. The reviewed application uses extraction followed by purpose-specific scoring, exact source references, fixed coaching slots and protected extraction reuse after transient scoring failures. Local verification reached 278 tests in 32 files plus lint, typecheck and privacy build; this is not hosted acceptance.
+
+The historical renewal is stopped at eleven requests and remains preserved. A separate fictional-only validation phase is capped at six Free requests; it must not reset that history or certify customer calls. One incomplete CALL-001 extraction occurred in the historical round; no full customer analysis or deployed new-upload result is accepted.
+
+Authenticated Vercel discovery confirms **Setterlun Ventures: active Pro** and **personal team: Hobby**. Authorization to use Setterlun Ventures for this separate client project is pending. The dedicated Supabase dashboard confirms healthy Sydney Free; both connector links currently deny access. Replace the exposed server key before hosted operations. The [private source repository](https://github.com/ElaiElaiElai1113/PestLaunchCallIntelligence) is created and visibility verified; no client collaborator has been added. No deployed URL or recorded Loom is verified. Follow [the deployment runbook](docs/deployment-runbook.md) and [the Loom script](docs/demo-script.md). Older sections below preserve implementation/setup history; current progress controls readiness claims.
+
 ## Run the keyless version
 
 Use Node 22.13+ or 24. From this repository:

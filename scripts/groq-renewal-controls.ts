@@ -99,6 +99,7 @@ export function assertFictionalAcceptance(
 export async function acquireRenewalCase(
   root: string,
   plannedRequests: number,
+  cap: 6 | 12 = 12,
 ) {
   if (
     !Number.isInteger(plannedRequests) ||
@@ -118,11 +119,41 @@ export async function acquireRenewalCase(
       if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
     }
     if (ledger.stopped) throw new Error("PROBE_STOPPED");
-    if (ledger.requests.length + plannedRequests > 12)
+    if (ledger.requests.length + plannedRequests > cap)
       throw new Error("PROBE_SEQUENCE_CAP");
     return { release: () => unlink(path) };
   } catch (e) {
     await unlink(path);
     throw e;
+  }
+}
+
+// Called under the whole-case lock, before credential access or reservations.
+export async function admitDemoCase(root: string, caseName: string) {
+  const allowed = ["one-time", "service", "retention"];
+  if (!allowed.includes(caseName)) throw new Error("FICTIONAL_CASE_REQUIRED");
+  let requests: { case: string }[] = [];
+  try {
+    requests = JSON.parse(
+      await readFile(root + "/ledger.json", "utf8"),
+    ).requests;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+  const previous = [...new Set(requests.map((r) => r.case))];
+  if (previous.includes(caseName))
+    throw new Error("PROBE_CASE_ALREADY_ATTEMPTED");
+  for (const name of previous) {
+    if (!allowed.includes(name)) throw new Error("FICTIONAL_CASE_REQUIRED");
+    const bytes = await readFile(root + "/" + name + "-result.json", "utf8");
+    const result = JSON.parse(bytes);
+    const sourceHash = fingerprint(JSON.stringify(result.source));
+    const receipt = JSON.parse(
+      await readFile(root + "/" + name + "-acceptance.json", "utf8"),
+    );
+    assertFictionalAcceptance(receipt, sourceHash, {
+      sourceHash,
+      resultHash: fingerprint(bytes),
+    });
   }
 }

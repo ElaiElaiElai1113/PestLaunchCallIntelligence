@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import {
   acquireRenewalCase,
+  admitDemoCase,
   assertFictionalAcceptance,
   fingerprint,
   verifyClientBinding,
@@ -141,4 +142,59 @@ it("holds a case lock across stage gaps and refuses an entire sequence without h
   );
   const last = await acquireRenewalCase(root, 1);
   await last.release();
+});
+it("enforces a six-request phase cap before acquiring a provider sequence", async () => {
+  const root = ".private/qa/demo-cap-" + randomUUID();
+  await mkdir(root, { recursive: true });
+  await writeFile(
+    root + "/ledger.json",
+    JSON.stringify({ requests: Array(5).fill({}) }),
+  );
+  await expect(acquireRenewalCase(root, 2, 6)).rejects.toThrow(
+    "PROBE_SEQUENCE_CAP",
+  );
+  const last = await acquireRenewalCase(root, 1, 6);
+  await last.release();
+});
+it("requires each prior fictional result's hash-bound six-area audit before another case", async () => {
+  const root = ".private/qa/demo-audit-" + randomUUID();
+  await mkdir(root, { recursive: true });
+  await expect(admitDemoCase(root, "one-time")).resolves.toBeUndefined();
+  await writeFile(
+    root + "/ledger.json",
+    JSON.stringify({ requests: [{ case: "one-time" }] }),
+  );
+  await expect(admitDemoCase(root, "service")).rejects.toThrow();
+  const resultBytes = JSON.stringify({ source, result: { fictional: true } });
+  await writeFile(root + "/one-time-result.json", resultBytes);
+  await writeFile(
+    root + "/one-time-acceptance.json",
+    JSON.stringify({
+      version: "fictional-semantic-acceptance-v1",
+      status: "accepted",
+      coverage: [
+        "purpose",
+        "outcomes",
+        "followups",
+        "facts",
+        "checkpoints",
+        "coaching",
+      ],
+      inputHash: fingerprint(JSON.stringify(source)),
+      sourceHash: fingerprint(JSON.stringify(source)),
+      resultHash: fingerprint(resultBytes),
+      schemaAccepted: true,
+      safetyAccepted: true,
+      reviewedAt: "2026-10-09T00:00:00Z",
+      artifact: "one-time-audit.json",
+    }),
+  );
+  await expect(admitDemoCase(root, "service")).resolves.toBeUndefined();
+  await expect(admitDemoCase(root, "one-time")).rejects.toThrow(
+    "PROBE_CASE_ALREADY_ATTEMPTED",
+  );
+  await writeFile(root + "/one-time-result.json", resultBytes + " ");
+  await expect(admitDemoCase(root, "service")).rejects.toThrow(
+    "FICTIONAL_ACCEPTANCE_REQUIRED",
+  );
 });
