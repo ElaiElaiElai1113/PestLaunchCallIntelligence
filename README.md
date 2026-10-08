@@ -48,6 +48,8 @@ Current ceilings are 25 MB/60 minutes. Excessive transcript input is refused rat
 
 ASR quality cannot certify completeness. Uploaded transcripts start unverified; original ASR/model output stays separate from guarded effective results. Source review is an audited human attestation with fixed words/timestamps, not automated certification. It increments the source revision and makes previous analysis history-only with no current grade. Owners can re-analyze that prepared revision when AI is configured; an empty key produces no result or dispatch. First raw snapshots remain immutable, latest raw model is separate, and old manual decisions remain history rather than being replayed. Model uncertainty can still withhold grade after verification. Checkpoint corrections require actual employee evidence and reliable complete source for passes/misses. Denominators remain 17/12/12. A sanitized-bucket copy does not itself redact audio.
 
+Transcript review includes protected prepared-recording controls and per-segment seek without losing annotation drafts. Unavailable or expired playback requires an explicit refresh through the protected media route; no raw recording fallback is exposed. Source/checkpoint review and deletion dialogs block Escape while a request is in flight; review failures retain visible drafts for retry. Text-only samples have no player.
+
 ## Verify
 
 ```powershell

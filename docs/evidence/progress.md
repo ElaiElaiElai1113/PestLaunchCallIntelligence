@@ -167,3 +167,29 @@ Actual and mocked UI checks cover 320/390/768/1024/1440 widths, four detail tabs
 
 Self-review → repair → review covered source privacy/preparation, role/ownership/version fences, immutable originals, preserved uncertainty/fixed denominators, production sample disablement, deletion/tombstones, filter consistency and build traces. No persistent issue exceeded three repair rounds. A deployed client demonstration is **not ready**: new spoken fictional recording through actual Groq on the deployed app, current account ZDR/free quota/model checks, server-key replacement, migration reconciliation/application, hosted Auth/Storage/workflow/races/recovery/deletion/backup retention, commercial hosting, reviewer access and private source/Loom delivery remain pending. Real customer testing and end-of-test deletion are separately gated and not executed.
 
+### Independent review follow-up — prepared playback, busy dialogs and strict samples
+
+Application revision `3594559a70c681109e2395356ad52cb1963d0966`, including strict coaching fix `09b2d96`; starting clean documentation HEAD `6ecd93315f544b8d90dc2d2ce082e6381ced87a7`. Implemented the review chat's three bounded local findings. Returning this pass for independent read-only review under the human's standing instruction. Acceptance remains pending.
+
+- **Prepared playback:** source review now contains one private prepared-media player with play/pause and per-segment timestamp seek. Opening it pauses/removes the background player; closing restores a paused background player. Draft roles/reason survive playback, seek and refresh failures. Only the existing protected `/media` route obtains short-lived playback; no raw-source/public/localStorage/workflow-content fallback was added. Missing/expired media is shown as unavailable with a deliberate refresh action. Text-only samples have no player or media request. Request-generation fencing prevents late refresh responses updating a closed/refreshed dialog. Existing server source/preparation/role gates are unchanged.
+- **Busy Escape:** source, checkpoint and deletion cancel handlers prevent native cancellation and close through React only when idle. Close controls and review inputs are disabled during submission. Delayed source503 and delayed source success both keep the modal visible through Escape; failure preserves the visible reason for successful retry, success closes coherently. Checkpoint503 likewise retains the draft. Deletion failure finishes the pending dialog, exposes the safe error and can reopen. Idle source/checkpoint Escape still closes, with source/checkpoint focus restoration preserved.
+- **Strict samples:** four new schema assertions failed before repair. Coaching now explicitly builds the public fields without the helper-only `index`. All four original/effective analyses pass `analysisSchema`, alongside prior semantic evidence/guard/score assertions. No score, denominator, source metadata or fictional label changed.
+
+New browser regressions initially reproduced absent in-dialog audio, absent unavailable-playback feedback, both busy source Escape cases and busy deletion cancellation. The first checkpoint test failed on an incorrect accessible-name locator; it was corrected and is not claimed as a product reproduction. The initial post-fix seek test exposed missing byte-range support in the intercepted WAV response; adding correct range headers/206 responses made the meaningful play/pause/28-second seek check pass without changing the product handler. The synthetic silence container is local UI test media only and was never processed by ASR/AI. No content-bearing screenshots were committed.
+
+| Final verification | Result | Boundary |
+| --- | --- | --- |
+| `npm test` | 176 pass, 23 files | Fictional domain/store, injected provider/ports and embedded SQL; includes strict sample contract checks |
+| `npm run lint` | Pass, zero warnings/errors | An intermediate effect-cleanup ref warning was resolved before final verification |
+| `npm run typecheck` | Pass | Repeated once after restoring only QA-generated next-env imports |
+| `npm run build` | Pass, 20 steps/one workflow; privacy guard 24 traces/zero private-env references | Compilation/metadata only; no deployment or hosted workflow run |
+| `npm run test:http` | 11 actual isolated sample API checks pass | Fresh loopback3002 datastore, forced empty keys |
+| `npm run test:e2e` | 5 actual Chromium journeys pass, 22.9 seconds | Real sample APIs; text-only source review, mobile/focus/conflicts/review/deletion |
+| `npm run test:e2e:mocked` | 14 pass, 13.6 seconds | Separate3001; six new control regressions; all API states and local WAV intercepted, external requests rejected |
+| `git diff --check` | Pass | Owned source/docs whitespace |
+| QA listener check | Zero listeners on3001/3002 after runs | Owned server lifecycle finished |
+
+Focused prepared playback check passes at320/390/768/1024/1440 widths with draft preservation and idle Escape/focus return. Existing actual browser axe/layout checks still pass. Native200%zoom, physical devices/full accessibility, real prepared-recording playback and provider accuracy remain pending.
+
+Self-review covered sole-player lifecycle, protected-route-only access, late media responses, no draft reset on playback, synchronous native cancel prevention and disabled close/input controls, unchanged strict model/rubric semantics and preservation of existing source/publication privacy guards. No persistent issue exceeded three repair rounds. One editing owner; no subagents, credential inspection/.env.local edits, customer/private-media requests, actual provider calls, hosted operations/migrations/users/key rotation, deployment/purchases/GitHub/push or client/recruiter messages. All external acceptance gates from Task8 remain pending; a deployed client demonstration is not yet certified.
+
