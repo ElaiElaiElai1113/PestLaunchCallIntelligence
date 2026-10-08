@@ -51,10 +51,10 @@ Rubric authority:
 - Modify src/lib/server/repository.ts.
 - Preserve both existing migration files unchanged.
 
-- [ ] Extend the embedded call fixture to include mode=live, sourcePath equal to the exact admitted WAV path, status=queued and errorCode=UPLOAD_PENDING.
-- [ ] Add failing owner-upload cases for the same call ID with .mp3 and .extra.wav filenames. Also reject the exact path when errorCode is AI_NOT_CONFIGURED. Preserve valid pending-owner allowance, reviewer/cross-workspace/nested-path denial and tombstone denial.
-- [ ] Run npm test -- tests/integration/rls.test.ts and record the new failures before changing the policy.
-- [ ] Discover the installed CLI command through its help, then create an additive migration:
+- [x] Extend the embedded call fixture to include mode=live, sourcePath equal to the exact admitted WAV path, status=queued and errorCode=UPLOAD_PENDING.
+- [x] Add failing owner-upload cases for the same call ID with .mp3 and .extra.wav filenames. Also reject the exact path when errorCode is AI_NOT_CONFIGURED. Preserve valid pending-owner allowance, reviewer/cross-workspace/nested-path denial and tombstone denial.
+- [x] Run npm test -- tests/integration/rls.test.ts and record the new failures before changing the policy.
+- [x] Discover the installed CLI command through its help, then create an additive migration:
 
 ~~~powershell
 .\node_modules\.bin\supabase.cmd migration new --help --profile supabase
@@ -87,7 +87,7 @@ with check (
 );
 ~~~
 
-- [ ] Add this cleanup helper. The port intentionally isolates Storage from tests:
+- [x] Add this cleanup helper. The port intentionally isolates Storage from tests:
 
 ~~~ts
 import type { CallRecord } from '../domain/types';
@@ -133,10 +133,10 @@ export async function deleteCallMedia(port: StoragePort, call: CallRecord) {
 
 The folder failure is deliberate: an unexpected legacy nested copy must not produce a successful deletion receipt. Diagnose it privately; do not broaden deletion to unrelated calls or workspaces.
 
-- [ ] Replace the two registered-path-only removal blocks in Repository.delete with a port backed by client.storage.from(bucket).list(prefix, {offset, limit, sortBy:{column:'name',order:'asc'}}) and remove(paths). Throw DELETE_STORAGE_FAILED for any SDK error. Call deleteCallMedia after tombstoning and before delete_call. On any inventory/remove/verification error, preserve the tombstone and call row for retry; do not issue the deletion receipt.
-- [ ] Add cleanup tests that construct a fictional call with sampleCall('service', 'fictional-call'). Use a mutable in-memory port containing its registered WAV, .mp3, .extra.wav and an unrelated call's WAV. Assert that all owned copies disappear from both buckets and the unrelated call remains. Include a match on page two, a remove failure, an object surviving removal and a matching folder. Each must either prove complete owned cleanup or retain a retryable failure.
-- [ ] Run npm test -- tests/integration/rls.test.ts tests/unit/storage-cleanup.test.ts. Expected: all prior access cases and new path/cleanup cases pass.
-- [ ] Review the SQL diff for privilege widening. Record that embedded SQL and mocked Storage cannot certify hosted in-flight-upload races or backup deletion.
+- [x] Replace the two registered-path-only removal blocks in Repository.delete with a port backed by client.storage.from(bucket).list(prefix, {offset, limit, sortBy:{column:'name',order:'asc'}}) and remove(paths). Throw DELETE_STORAGE_FAILED for any SDK error. Call deleteCallMedia after tombstoning and before delete_call. On any inventory/remove/verification error, preserve the tombstone and call row for retry; do not issue the deletion receipt.
+- [x] Add cleanup tests that construct a fictional call with sampleCall('service', 'fictional-call'). Use a mutable in-memory port containing its registered WAV, .mp3, .extra.wav and an unrelated call's WAV. Assert that all owned copies disappear from both buckets and the unrelated call remains. Include a match on page two, a remove failure, an object surviving removal and a matching folder. Each must either prove complete owned cleanup or retain a retryable failure.
+- [x] Run npm test -- tests/integration/rls.test.ts tests/unit/storage-cleanup.test.ts. Expected: all prior access cases and new path/cleanup cases pass.
+- [x] Review the SQL diff for privilege widening. Record that embedded SQL and mocked Storage cannot certify hosted in-flight-upload races or backup deletion.
 
 ## Task 2 — Correct manual meaning and grouping
 
@@ -145,7 +145,7 @@ The folder failure is deliberate: an unexpected legacy nested copy must not prod
 - Add tests/unit/rubric-authority.test.ts.
 - Update docs/scoring-policy.md.
 
-- [ ] Write failing assertions for the final_information label/guidance and distinct Sales referral guidance:
+- [x] Write failing assertions for the final_information label/guidance and distinct Sales referral guidance:
 
 ~~~ts
 import { expect, it } from 'vitest';
@@ -165,8 +165,8 @@ it('offers future-service information instead of collecting details', () => {
 });
 ~~~
 
-- [ ] Run npm test -- tests/unit/rubric-authority.test.ts and record the failure.
-- [ ] Replace the shared final_information definition with:
+- [x] Run npm test -- tests/unit/rubric-authority.test.ts and record the failure.
+- [x] Replace the shared final_information definition with:
 
 ~~~ts
 final_information: [
@@ -184,9 +184,9 @@ guidance: purpose === 'sales' && id === 'final_information'
   : common[id][2],
 ~~~
 
-- [ ] Correct the manual's quadrant grouping: expectation_understand belongs to Validate; expectation_solve belongs to Understand; Retention transition and research belong to Validate; validate_expectation belongs to Understand. Keep the same checkpoint IDs, order and totals. Add assertions covering these mappings.
-- [ ] Preserve manual-specific exceptions and do not turn example prices, discounts or contract terms into universal business rules.
-- [ ] Run npm test -- tests/unit/rubric-authority.test.ts tests/unit/domain.test.ts. Expected: source meaning/grouping and all numeric thresholds/policy-denominator cases pass.
+- [x] Correct the manual's quadrant grouping: expectation_understand belongs to Validate; expectation_solve belongs to Understand; Retention transition and research belong to Validate; validate_expectation belongs to Understand. Keep the same checkpoint IDs, order and totals. Add assertions covering these mappings.
+- [x] Preserve manual-specific exceptions and do not turn example prices, discounts or contract terms into universal business rules.
+- [x] Run npm test -- tests/unit/rubric-authority.test.ts tests/unit/domain.test.ts. Expected: source meaning/grouping and all numeric thresholds/policy-denominator cases pass.
 
 ## Task 3 — Publish guarded assessments and persist transcript uncertainty
 
@@ -200,7 +200,7 @@ guidance: purpose === 'sales' && id === 'final_information'
 **Contract decision**
 ASR confidence is a quality indicator, not proof of complete capture. In this bounded slice, normal uploaded ASR output remains unverified until a future trusted source-review mechanism establishes completeness. Do not invent a gap tolerance that certifies completeness. Existing clearly fictional, curated sample fixtures may retain their known-complete state. This is a partial-assessment product state, not a transcription failure.
 
-- [ ] Add optional persisted fields to CallRecord, preserving compatibility with old JSON payloads:
+- [x] Add optional persisted fields to CallRecord, preserving compatibility with old JSON payloads:
 
 ~~~ts
 transcriptCompleteness?: 'verified' | 'unverified';
@@ -209,7 +209,7 @@ transcriptReviewReasons?: string[];
 
 Absence on a live record means unverified. These fields are server-owned; add no public request field or endpoint that lets the browser/model certify them.
 
-- [ ] Write and run the failing regressions listed below before adding the helper. Use this target implementation after the failures are recorded:
+- [x] Write and run the failing regressions listed below before adding the helper. Use this target implementation after the failures are recorded:
 
 ~~~ts
 import type { Analysis, Evidence, Segment } from './types';
@@ -270,7 +270,7 @@ export function guardAssessment(
 
 This guard is a necessary attribution/completeness boundary, not proof that a quote semantically satisfies a checkpoint. Actual rubric accuracy still needs later provider/audio review. Speaker labels supplied by transcription stay unknown; never ask the analysis model to promote its inferred labels into trusted attribution.
 
-- [ ] Add meaningful failing tests using the existing analysis() helper:
+- [x] Add meaningful failing tests using the existing analysis() helper:
   - All passed checkpoints quoted from unknown-only or customer-only segments become unresolved; fixed denominator and null grade remain.
   - Adding an unrelated employee segment ID cannot authorize a quote spoken only by the customer. The quoted supporting behavior itself must be attributable.
   - Employee-specific coaching using those segments is omitted.
@@ -279,8 +279,8 @@ This guard is a necessary attribution/completeness boundary, not proof that a qu
   - original remains byte-for-byte unchanged after guarding.
   - A live legacy record without completeness metadata defaults to unverified.
   - Remaining review reasons with otherwise passed checkpoints withhold the official grade without changing points or the original denominator.
-- [ ] Run npm test -- tests/unit/assessment-guards.test.ts before implementing the helper, then after it. Expected: the unsupported-publication regressions first fail and then pass.
-- [ ] Change GroqProvider.analyze to return Promise<{original: Analysis; effective: Analysis}> and accept context: {transcriptComplete:boolean} with a default of false. Preserve schema, exact quote/segment validation, exact rubric membership and coaching checkpoint-ID rejection on the original response. Return:
+- [x] Run npm test -- tests/unit/assessment-guards.test.ts before implementing the helper, then after it. Expected: the unsupported-publication regressions first fail and then pass.
+- [x] Change GroqProvider.analyze to return Promise<{original: Analysis; effective: Analysis}> and accept context: {transcriptComplete:boolean} with a default of false. Preserve schema, exact quote/segment validation, exact rubric membership and coaching checkpoint-ID rejection on the original response. Return:
 
 ~~~ts
 return {
@@ -291,15 +291,15 @@ return {
 
 Update the existing provider tests to inspect effective results and preserve original output. No provider-owned grade or total is accepted.
 
-- [ ] Extend the transcribe return value with reviewReasons:string[]. Preserve timestamps/duration and impossible-timestamp rejection, but return complete:false for ordinary ASR. Always include 'Transcription completeness needs review.'; missing quality fields or low-confidence segments additionally include 'Transcription quality needs review.'. A large/unexplained coverage gap can add 'Recording coverage needs review.' but cannot label the file definitively truncated or silently discard text.
-- [ ] Add provider contract tests for the reproduced 60-second/1-second response, missing confidence fields, low confidence and plausible trailing silence. Each yields unverified completeness without a provider request outside injected fetch.
-- [ ] In transcriptionStep persist transcriptCompleteness='unverified' and transcriptReviewReasons before analysis. Do not depend on errorCode for this durable information.
-- [ ] In analysisStep pass transcriptComplete:call.transcriptCompleteness==='verified' into analyze. Save returned original in originalAnalysis, effective in analysis, and compute the score only from effective. Preserve reasons across retry. Both workflow and review status must be needs_review whenever score.grade===null or relevant review reasons remain.
-- [ ] In computeScore extend the official-grade withholding condition to unresolved || !analysis.complete || analysis.reviewReasons.length. Keep point arithmetic, denominator and thresholds unchanged; resolving one checkpoint cannot publish an official grade while independent review reasons remain.
-- [ ] In the checkpoint review route, validate the proposed live assessment through guardAssessment with server-owned completeness context; reject a requested passed status if the guarded checkpoint is not passed. A reason alone cannot establish attribution. Do not overwrite originalAnalysis or remove independent completeness/attribution reasons. This slice does not implement a new source-attribution reviewer; record that remaining capability.
-- [ ] Add a mocked processCall regression using vi.mock for systemRepository, adminClient and GroqProvider, with an already-persisted transcript so no credential branch or audio request is executed. Verify that a failed analysis retry cannot erase unverified completeness, original and effective assessments remain different, and no official grade appears.
-- [ ] If guarded coaching is empty, display 'Employee-specific coaching needs speaker review.' rather than an empty pane or fabricated feedback. Curated sample coaching remains explicitly fictional.
-- [ ] Run npm test -- tests/unit/assessment-guards.test.ts tests/integration/provider.test.ts and the new mocked workflow test. Expected: unsupported output never becomes an official employee grade; structural-invalid evidence remains rejected.
+- [x] Extend the transcribe return value with reviewReasons:string[]. Preserve timestamps/duration and impossible-timestamp rejection, but return complete:false for ordinary ASR. Always include 'Transcription completeness needs review.'; missing quality fields or low-confidence segments additionally include 'Transcription quality needs review.'. A large/unexplained coverage gap can add 'Recording coverage needs review.' but cannot label the file definitively truncated or silently discard text.
+- [x] Add provider contract tests for the reproduced 60-second/1-second response, missing confidence fields, low confidence and plausible trailing silence. Each yields unverified completeness without a provider request outside injected fetch.
+- [x] In transcriptionStep persist transcriptCompleteness='unverified' and transcriptReviewReasons before analysis. Do not depend on errorCode for this durable information.
+- [x] In analysisStep pass transcriptComplete:call.transcriptCompleteness==='verified' into analyze. Save returned original in originalAnalysis, effective in analysis, and compute the score only from effective. Preserve reasons across retry. Both workflow and review status must be needs_review whenever score.grade===null or relevant review reasons remain.
+- [x] In computeScore extend the official-grade withholding condition to unresolved || !analysis.complete || analysis.reviewReasons.length. Keep point arithmetic, denominator and thresholds unchanged; resolving one checkpoint cannot publish an official grade while independent review reasons remain.
+- [x] In the checkpoint review route, validate the proposed live assessment through guardAssessment with server-owned completeness context; reject a requested passed status if the guarded checkpoint is not passed. A reason alone cannot establish attribution. Do not overwrite originalAnalysis or remove independent completeness/attribution reasons. This slice does not implement a new source-attribution reviewer; record that remaining capability.
+- [x] Add a mocked processCall regression using vi.mock for systemRepository, adminClient and GroqProvider, with an already-persisted transcript so no credential branch or audio request is executed. Verify that a failed analysis retry cannot erase unverified completeness, original and effective assessments remain different, and no official grade appears.
+- [x] If guarded coaching is empty, display 'Employee-specific coaching needs speaker review.' rather than an empty pane or fabricated feedback. Curated sample coaching remains explicitly fictional.
+- [x] Run npm test -- tests/unit/assessment-guards.test.ts tests/integration/provider.test.ts and the new mocked workflow test. Expected: unsupported output never becomes an official employee grade; structural-invalid evidence remains rejected.
 
 ## Task 4 — Recover failed retry dispatch with version guards
 
@@ -308,7 +308,7 @@ Update the existing provider tests to inspect effective results and preserve ori
 - Modify src/app/api/calls/[callId]/retry/route.ts.
 - Add PROCESSING_START_FAILED to the safe UI error map in src/components/workspace-shell.tsx.
 
-- [ ] Write and run the failing operation regressions listed below first. Use this target helper after recording those failures:
+- [x] Write and run the failing operation regressions listed below first. Use this target helper after recording those failures:
 
 ~~~ts
 import type { CallRecord } from '../domain/types';
@@ -352,16 +352,16 @@ export async function dispatchRetry(
 }
 ~~~
 
-- [ ] Write failing tests with an in-memory RetryRepository:
+- [x] Write failing tests with an in-memory RetryRepository:
   - Dispatch throws: saved status returns to failed with PROCESSING_START_FAILED and a later attempt is eligible.
   - Transcript completeness/reasons and existing artifacts survive failure and retry.
   - A concurrent version advance is not overwritten by recovery.
   - Deletion during dispatch is not recreated.
   - Initial version conflict does not dispatch at all.
-- [ ] Run npm test -- tests/unit/retry-dispatch.test.ts before and after the helper.
-- [ ] Replace the route's persist/start block with dispatchRetry. Adapt start(processCall,[id]) to the Promise<void> port by awaiting it. Map CONFLICT to 409 and PROCESSING_START_FAILED to a safe 503 AppError. Keep owner/privacy/key checks and duplicate/version restrictions.
-- [ ] Display 'Processing could not start. Try again.' for PROCESSING_START_FAILED. Do not print the raw workflow exception.
-- [ ] Run the focused tests. Do not claim durable hosted recovery from this mocked dispatch test; persist/run reconciliation beyond this failure path remains a hosted acceptance gate.
+- [x] Run npm test -- tests/unit/retry-dispatch.test.ts before and after the helper.
+- [x] Replace the route's persist/start block with dispatchRetry. Adapt start(processCall,[id]) to the Promise<void> port by awaiting it. Map CONFLICT to 409 and PROCESSING_START_FAILED to a safe 503 AppError. Keep owner/privacy/key checks and duplicate/version restrictions.
+- [x] Display 'Processing could not start. Try again.' for PROCESSING_START_FAILED. Do not print the raw workflow exception.
+- [x] Run the focused tests. Do not claim durable hosted recovery from this mocked dispatch test; persist/run reconciliation beyond this failure path remains a hosted acceptance gate.
 
 ## Task 5 — Derive follow-up labels from agreement evidence
 
@@ -369,7 +369,7 @@ export async function dispatchRetry(
 - Create src/lib/domain/outcomes.ts and tests/unit/outcomes.test.ts.
 - Modify src/components/call-list.tsx, retaining its existing outcome export for callers.
 
-- [ ] Extract a pure helper so tests do not import React/Next client components:
+- [x] Extract a pure helper so tests do not import React/Next client components:
 
 ~~~ts
 import type { CallRecord, Evidence } from './types';
@@ -399,16 +399,16 @@ export function outcomeLabel(call: CallRecord) {
 }
 ~~~
 
-- [ ] Test a re-service-only fictional call, promised/unknown/reported-completed follow-ups, accepted follow-up without evidence, fabricated segment/quote and a supported accepted follow-up. Only the last may produce Follow-up agreed. Retain independent inspection/treatment/cancellation labels.
-- [ ] Keep the exported component wrapper as return outcomeLabel(call), avoiding a navigation/filter redesign.
-- [ ] Run npm test -- tests/unit/outcomes.test.ts. Expected: intent and promise never become an accepted commitment.
-- [ ] Add one focused fictional browser assertion for the corrected label when feasible without contacting the configured backend. Mock every /api/ request, reject unexpected API requests, and clearly classify this as mocked frontend evidence. Do not reuse the old hosted accounts or run actual sample CRUD against configured Supabase.
+- [x] Test a re-service-only fictional call, promised/unknown/reported-completed follow-ups, accepted follow-up without evidence, fabricated segment/quote and a supported accepted follow-up. Only the last may produce Follow-up agreed. Retain independent inspection/treatment/cancellation labels.
+- [x] Keep the exported component wrapper as return outcomeLabel(call), avoiding a navigation/filter redesign.
+- [x] Run npm test -- tests/unit/outcomes.test.ts. Expected: intent and promise never become an accepted commitment.
+- [x] Add one focused fictional browser assertion for the corrected label when feasible without contacting the configured backend. Mock every /api/ request, reject unexpected API requests, and clearly classify this as mocked frontend evidence. Do not reuse the old hosted accounts or run actual sample CRUD against configured Supabase.
 
 ## Task 6 — Same-revision verification, evidence and handoff
 
-- [ ] Review owned changes against all six findings and the source manuals.
-- [ ] Verify that original/effective history, fixed 17/12/12 denominators, missing metadata, no-store/auth boundaries and honest Awaiting AI remain intact.
-- [ ] Run the focused tests while implementing, then this final suite once the owned changes settle:
+- [x] Review owned changes against all six findings and the source manuals.
+- [x] Verify that original/effective history, fixed 17/12/12 denominators, missing metadata, no-store/auth boundaries and honest Awaiting AI remain intact.
+- [x] Run the focused tests while implementing, then this final suite once the owned changes settle:
 
 ~~~powershell
 npm test
@@ -420,25 +420,25 @@ git diff --check
 
 Expected: no failures, lint/typecheck/build exit zero and clean whitespace. Record actual test counts rather than retaining 42 as a target.
 
-- [ ] Existing HTTP/E2E suites perform actual sample CRUD and cannot be blindly pointed at the configured hosted backend. Run them only in a verified isolated fictional sample environment that does not change .env.local, reuse another running app, expose credentials or touch hosted services. If such isolation is not available within this slice, report that specific browser/HTTP acceptance gap; do not claim those suites were freshly run. The new mocked frontend check has a narrower scope.
-- [ ] Update docs/evidence/progress.md with each finding, exact owned source revision, red/green reproductions, commands/results, simulated versus actual boundaries and the unapplied additive migration.
-- [ ] Update README.md, docs/architecture.md and docs/scoring-policy.md for the guarded publication and persistent completeness behavior. Clarify that the sanitized-bucket copy is not automatic redaction and trusted source review remains pending.
-- [ ] Review -> fix -> review the same owned revision, at most three repair rounds for a persistent issue. After the cap, report its concrete cause and finish other independent tasks; do not attempt an unbounded rewrite.
-- [ ] Commit only owned remediation files, this plan and evidence. Never add .private, .env.local, customer content, keys, generated build output or test recordings. Preserve unrelated work.
-- [ ] Return a concise final report with implementation commit, exact tests, residual issues and deployment/provider/hosted prerequisites. Do not message another chat automatically.
+- [x] Existing HTTP/E2E suites perform actual sample CRUD and cannot be blindly pointed at the configured hosted backend. Run them only in a verified isolated fictional sample environment that does not change .env.local, reuse another running app, expose credentials or touch hosted services. If such isolation is not available within this slice, report that specific browser/HTTP acceptance gap; do not claim those suites were freshly run. The new mocked frontend check has a narrower scope.
+- [x] Update docs/evidence/progress.md with each finding, exact owned source revision, red/green reproductions, commands/results, simulated versus actual boundaries and the unapplied additive migration.
+- [x] Update README.md, docs/architecture.md and docs/scoring-policy.md for the guarded publication and persistent completeness behavior. Clarify that the sanitized-bucket copy is not automatic redaction and trusted source review remains pending.
+- [x] Review -> fix -> review the same owned revision, at most three repair rounds for a persistent issue. After the cap, report its concrete cause and finish other independent tasks; do not attempt an unbounded rewrite.
+- [x] Commit only owned remediation files, this plan and evidence. Never add .private, .env.local, customer content, keys, generated build output or test recordings. Preserve unrelated work.
+- [x] Return a concise final report with implementation commit, exact tests, residual issues and deployment/provider/hosted prerequisites. Do not message another chat automatically.
 
 ## Acceptance checklist
 
-- [ ] Owner upload is bound to exactly the registered pending source path; alternatives, finalized calls, reviewers, outsiders, nested paths and tombstones are denied in embedded SQL.
-- [ ] Cleanup removes owned registered/alternative source and derivative copies, preserves unrelated copies, paginates and refuses success when cleanup is unverifiable.
-- [ ] Final information and quadrant placement match the manuals without changing checkpoint counts/thresholds.
-- [ ] Unknown/customer-only employee evidence does not publish passed employee checkpoints, official grades, policy points or employee-specific coaching.
-- [ ] Model complete=true cannot override unverified persisted transcription completeness, including analysis retries and legacy live records.
-- [ ] Raw model output stays distinguishable from effective guarded/reviewed output.
-- [ ] Workflow dispatch failure leaves a retryable state without overwriting a newer version or resurrecting deletion.
-- [ ] Re-service intent/promise alone never appears as Follow-up agreed.
-- [ ] Uploads with no AI key remain Awaiting AI without invented transcript, analysis, score or dispatched provider job.
-- [ ] Final verification/evidence correspond to the committed application revision.
+- [x] Owner upload is bound to exactly the registered pending source path; alternatives, finalized calls, reviewers, outsiders, nested paths and tombstones are denied in embedded SQL.
+- [x] Cleanup removes owned registered/alternative source and derivative copies, preserves unrelated copies, paginates and refuses success when cleanup is unverifiable.
+- [x] Final information and quadrant placement match the manuals without changing checkpoint counts/thresholds.
+- [x] Unknown/customer-only employee evidence does not publish passed employee checkpoints, official grades, policy points or employee-specific coaching.
+- [x] Model complete=true cannot override unverified persisted transcription completeness, including analysis retries and legacy live records.
+- [x] Raw model output stays distinguishable from effective guarded/reviewed output.
+- [x] Workflow dispatch failure leaves a retryable state without overwriting a newer version or resurrecting deletion.
+- [x] Re-service intent/promise alone never appears as Follow-up agreed.
+- [x] Uploads with no AI key remain Awaiting AI without invented transcript, analysis, score or dispatched provider job.
+- [x] Final verification/evidence correspond to the committed application revision.
 
 ## External gates after this slice
 
