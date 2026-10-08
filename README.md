@@ -8,10 +8,12 @@ Use Node 22.13+ or 24. From this repository:
 
 ```powershell
 npm ci
-npm run dev
+npm run demo
 ```
 
-With Supabase environment values absent, open http://127.0.0.1:3000 and choose **Open sample workspace**. No credentials are needed for this development-only mode. Add a fictional call, inspect outcome/scorecard/coaching/transcript, save reviews, search/filter calls and delete test data. Fictional data persists in ignored `.private/app/`. Samples are explicitly labeled and text-only. Uploaded recordings never receive these sample results. This checkout now has the dedicated Supabase environment configured, so normal invited sign-in is active instead. Temporary fictional acceptance accounts were removed after QA; provision authorized owner/reviewer memberships before ongoing use.
+Open the printed `http://127.0.0.1:3003` URL and choose **Open sample workspace**. This launcher uses a fresh UUID directory under ignored `.private/demo/`, separate build output/session key, empty Supabase/Groq overrides and real processing disabled. It never edits `.env.local` or reuses another server. Add a clearly fictional text example, inspect outcomes/scorecard/coaching/transcript, save reasoned reviews, search/filter calls and delete disposable data. Ctrl+C stops only the launcher's process tree. No recorded audio exists for these examples; they are not AI output or replacement results for an uploaded file.
+
+Ordinary `npm run dev` retains `.private/app/` only when Supabase is absent. This checkout's dedicated backend environment is configured, so ordinary development uses invited sign-in. **Replace the exposed server key before any further hosted use**, then provision authorized owner/reviewer memberships; temporary hosted QA users were removed. Use the isolated demo while those prerequisites remain pending.
 
 The AI key has intentionally **not** been entered. No real recording was imported or sent to a provider, and no paid resources were purchased.
 
@@ -42,9 +44,9 @@ Copy `.env.example` to ignored `.env.local`. Set the dedicated public URL, publi
 
 Add `GROQ_API_KEY` server-side only. Defaults: `whisper-large-v3` and `openai/gpt-oss-120b`. Verify model availability, quotas, Zero Data Retention and no-training settings. First test a newly recorded fictional call through the actual provider. After verified privacy preparation, explicitly enable `REAL_CALL_PROCESSING_ENABLED=true`. CALL-013 must be fully redacted and privately reviewed before upload.
 
-Current ceilings are 25 MB/60 minutes. Excessive transcript input is refused rather than truncated. Recordings require manual private redaction first. Comprehensive automatic PII/audio redaction, verified diarization, chunking, resumable transfers, hosted recovery/deletion race checks and all-20-call accuracy evaluation remain release work. Whisper speaker roles are unknown, so uncertain employee checkpoints stay partial until reviewed. Sample audio playback is unavailable because the fixtures contain no recorded audio.
+Current ceilings are 25 MB/60 minutes. Excessive transcript input is refused rather than truncated. Recordings require manual private preparation/redaction first. Comprehensive automatic PII/audio redaction, automatic diarization, chunking, resumable transfers, hosted recovery/deletion race checks and all-20-call accuracy evaluation remain release work. Whisper speaker roles start unknown; an authorized reviewer can annotate clear roles and attest completeness/quality against prepared media. Unknown/mixed roles stay unknown. Legacy real recordings without checksum-bound preparation remain held. Sample review concerns fictional text only; playback is unavailable because no recording exists.
 
-ASR quality cannot certify completeness. Uploaded transcripts persist unverified completeness/review reasons; original model output is kept separate from the guarded effective assessment. Unknown/customer-only employee evidence cannot publish passes, no-objection awards or employee coaching. Independent review reasons withhold official grades without changing 17/12/12 denominators. A reasoned checkpoint correction cannot certify attribution or source completeness. Trusted source review is still pending. The sanitized-bucket copy does not itself redact audio.
+ASR quality cannot certify completeness. Uploaded transcripts start unverified; original ASR/model output stays separate from guarded effective results. Source review is an audited human attestation with fixed words/timestamps, not automated certification. It increments the source revision and makes previous analysis history-only with no current grade. Owners can re-analyze that prepared revision when AI is configured; an empty key produces no result or dispatch. First raw snapshots remain immutable, latest raw model is separate, and old manual decisions remain history rather than being replayed. Model uncertainty can still withhold grade after verification. Checkpoint corrections require actual employee evidence and reliable complete source for passes/misses. Denominators remain 17/12/12. A sanitized-bucket copy does not itself redact audio.
 
 ## Verify
 
@@ -55,17 +57,20 @@ npm test
 npm run test:integration
 npm run build
 
-# With npm run dev running separately:
+# Each suite owns a fresh isolated loopback server/datastore:
 npm run test:http
 npx playwright install chromium --only-shell --no-remove
 npm run test:e2e
+npm run test:e2e:mocked
 ```
 
 Exact results: `docs/evidence/progress.md`. Reports and content-bearing screenshots remain ignored. Production dependency audit was clean during implementation; ESLint's development dependencies retain an unpatched braces advisory. Do not supply untrusted glob patterns to that toolchain; recheck before release.
 
-For the isolated mocked frontend regression, run `npx playwright test --config playwright.mocked.config.ts`. It starts its own preview on port 3001 with empty Supabase/Groq overrides and separate ignored build output. Every browser `/api/` request is mocked; unexpected API/external requests fail the test. It verifies the corrected follow-up label and empty coaching message at five widths. It does not exercise real Auth/Storage, sample CRUD or durable workflows. Do not run the older HTTP/E2E sample-mutation suites against the configured backend or reuse a different running app.
+`test:http` and default `test:e2e` now own a fresh actual sample app on port 3002, with independent UUID datastores/session keys/build output and empty backend/provider overrides. They exercise real local APIs and persisted changes; they do not call hosted Auth/Storage/Groq. Run them sequentially. Direct HTTP-suite execution without its validated harness URL fails closed. Sample-root overrides are server-only and restricted to ignored QA/demo descendants; ordinary data and customer context are not reset.
 
-`npm run test:e2e:mocked` runs all mocked journeys, including owner pending-deletion retries/unavailable counts and processing-start error/reload recovery. Default `test:e2e` discovery excludes `*.mocked.spec.ts`; its three sample-CRUD journeys still need their own isolated datastore before execution. Pending processing is shown as Waiting to start, with an owner retry action when provider/privacy configuration permits it. Durable pending attempt metadata survives dispatch-recovery outages, and one workflow claims ownership before either provider stage. Duplicate pending starts may enqueue idle duplicate runs; this does not claim provider effects are exactly once across a single owner's step retries. Hosted recovery and stale-running reconciliation remain unverified.
+`test:e2e:mocked` is separate on port 3001, intercepts every browser API and rejects unexpected/external requests. It covers live review/role/conflict/re-analysis/failure states without provider calls; default discovery excludes mocked specs. Pending processing is Waiting to start, and a delayed claim restores queued/analyzing status. Durable attempts survive dispatch-recovery outages; one claimed run owns provider effects. Idle duplicate runs and same-owner step retries still require hosted acceptance; no exactly-once or stale-running-recovery claim is made.
+
+Read `docs/demo-script.md`, `docs/client-requirements-matrix.md`, `docs/privacy.md` and `docs/evidence/client-v1-demo-checklist.md`. A client sequence and separate local walkthrough are prepared. The recording-processing/deployed-source/Loom submission is not complete until Task 8 acceptance passes.
 
 ## Deployment and handoff
 
