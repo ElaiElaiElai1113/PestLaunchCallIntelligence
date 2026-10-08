@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { GroqProvider } from "@/lib/groq/provider";
 import { sampleCall } from "@/lib/samples/fixtures";
-import { wireFromAnalysis } from "../helpers/provider-wire";
+import { stagedFromAnalysis } from "../helpers/provider-wire";
 
 const call = () => sampleCall("one-time", "fictional-staged");
 it("rechecks permission before a second provider transmission", async () => {
@@ -30,16 +30,7 @@ it("rechecks permission before a second provider transmission", async () => {
   expect(requests).toBe(1);
 });
 function responses() {
-  const wire = wireFromAnalysis(call().originalAnalysis!);
-  const { assessments, ...extraction } = wire;
-  delete (extraction as Record<string, unknown>).noObjections;
-  const scoring = {
-    noObjections: wire.noObjections,
-    checkpoints: Object.fromEntries(
-      assessments.map(({ id, ...item }) => [id, item]),
-    ),
-  };
-  return { extraction, scoring };
+  return stagedFromAnalysis(call().originalAnalysis!);
 }
 it("extracts details before scoring every purpose-specific checkpoint", async () => {
   const source = call(),

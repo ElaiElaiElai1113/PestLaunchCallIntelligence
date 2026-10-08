@@ -45,17 +45,34 @@ export function wireFromAnalysis(analysis: Analysis): WireAnalysis {
 export function stagedFromAnalysis(analysis: Analysis) {
   const { assessments, noObjections, ...extraction } =
     wireFromAnalysis(analysis);
+  const coach = (kind: "strength" | "improvement", index: number) => {
+    const found = analysis.coaching.filter((c) => c.kind === kind)[index];
+    return found
+      ? {
+          checkpointId: found.checkpointId,
+          title: found.title,
+          detail: found.detail,
+          suggestedResponse: found.suggestedResponse,
+        }
+      : null;
+  };
   return {
     extraction,
     scoring: {
       noObjections,
+      coaching: {
+        strength: coach("strength", 0),
+        improvement1: coach("improvement", 0),
+        improvement2: coach("improvement", 1),
+      },
       checkpoints: Object.fromEntries(
-        assessments.map(({ id, ...item }) => [
+        assessments.map(({ id, status, reason, evidence }) => [
           id,
           {
-            ...item,
-            evidence: item.evidence.segmentIds.length
-              ? item.evidence
+            status,
+            reason,
+            evidence: evidence.segmentIds.length
+              ? evidence
               : {
                   segmentIds: [
                     ...(assessments.find((a) => a.id === "thank")?.evidence

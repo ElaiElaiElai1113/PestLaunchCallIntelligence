@@ -104,7 +104,11 @@ export class GroqProvider {
     if (typeof content !== "string") throw new Error("INCOMPLETE_ANALYSIS");
     const extracted = validateExtraction(JSON.parse(content), segments);
     let scoringContent: string | null = null;
-    let scoring: unknown = { noObjections: false, checkpoints: {} };
+    let scoring: unknown = {
+      noObjections: false,
+      checkpoints: {},
+      coaching: { strength: null, improvement1: null, improvement2: null },
+    };
     if (extracted.purpose !== "unknown") {
       const next = buildScoringRequest(segments, context, extracted.purpose);
       await this.config.beforeScoring?.();

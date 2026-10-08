@@ -4,6 +4,22 @@ import { RUBRICS } from "@/lib/scoring/rubrics";
 import { scoringSchema } from "@/lib/groq/staged-contract";
 import { buildScoringRequest } from "@/lib/groq/analysis-request";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
+it("limits coaching structurally to one strength and two improvements", () => {
+  const source = sampleCall("one-time", "fictional-coaching-limit");
+  const request = buildScoringRequest(
+    source.segments,
+    { transcriptComplete: true },
+    "sales",
+  ).request;
+  const schema =
+    request.response_format!.type === "json_schema"
+      ? request.response_format!.json_schema.schema
+      : {};
+  expect(
+    (schema as { properties?: { coaching?: { required?: string[] } } })
+      .properties?.coaching?.required,
+  ).toEqual(["strength", "improvement1", "improvement2"]);
+});
 it("avoids Groq object unions with overlapping checkpoint status discriminators", () => {
   const source = sampleCall("one-time", "fictional-discriminator");
   const request = buildScoringRequest(
@@ -62,9 +78,8 @@ it("includes an explicit array type beside bounded array references for Groq", (
 it("schema rejects coaching without a real parent reference before resolution", () => {
   const call = sampleCall("one-time", "fictional-empty-coaching");
   const scoring = stagedFromAnalysis(call.originalAnalysis!).scoring;
-  const target = Object.values(scoring.checkpoints).find(
-    (c) => c.coaching !== null,
-  )!;
+  const coach = scoring.coaching.strength ?? scoring.coaching.improvement1!;
+  const target = scoring.checkpoints[coach.checkpointId];
   target.evidence.segmentIds = [];
   expect(scoringSchema(call.segments, "sales").safeParse(scoring).success).toBe(
     false,
@@ -87,7 +102,6 @@ it.each(["one-time", "service", "retention"])(
       status: "unknown",
       reason: "Unverified",
       evidence: { segmentIds: [] },
-      coaching: null,
     };
     expect(schema.safeParse(scoring).success).toBe(false);
   },
