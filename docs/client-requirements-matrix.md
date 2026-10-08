@@ -30,3 +30,7 @@ Application reference: `48d96a873809a84001140cb4778c6b4ea564adb5` plus the final
 | R12 | End-of-test deletion | Owner retained/pending counts, complete owned-copy cleanup and safe receipts | Disposable sample delete/count refresh/inaccessibility | Inventory/alternates/failures/tombstones and workspace isolation | Provider/log retention pending | Backups/retention pending | No customer end-of-test deletion performed; verify all copies/policies after the full authorized test ends |
 
 R01 and R10 are not closed by samples, contracts, screenshots, configured keys or a successful build. Source verification is an audited human attestation, not semantic accuracy certification, automatic speaker detection or redaction. The external checklist is prepared in `docs/evidence/client-v1-demo-checklist.md`.
+# Current renewal note — 9 October
+
+The latest AI/control changes need independent review beyond the prior accepted local application revision. Wire/public acceptance was achieved for a fictional two-stage Sales result; semantic acceptance remains pending. An incomplete CALL-001 local-ASR extraction diagnostic does not close R01–R06 or deployed acceptance. Its official grade/result was never published. See the current evidence ledger for the stopped 11-request round and input/phase/locking corrections.
+
