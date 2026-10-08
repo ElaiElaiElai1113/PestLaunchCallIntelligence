@@ -1,5 +1,9 @@
 # PestLaunch Call Intelligence Implementation Plan
 
+## Current phase amendment — 8 October 2026
+
+The user asked to implement/test the frontend and backend with the AI key empty. README and `docs/evidence/progress.md` describe the implemented local fictional workspace and production adapter code. The original checklist below remains the full release target; real-provider, cloud, privacy and submission work is not closed by this phase. Native Codex registration/chat creation remains pending; no separate Sol chat was launched. The UI uses custom native controls and Next polling instead of shadcn/TanStack; see architecture for rationale.
+
 > For agentic workers: use `superpowers:executing-plans` and implement sequentially in this standalone checkout. Do not use subagents unless the human explicitly requests them. Track each checkbox and fresh evidence.
 
 **Goal:** A private deployed V1 that processes a new recording into a timestamped transcript, correct call outcome, inspectable scorecard and specific coaching.

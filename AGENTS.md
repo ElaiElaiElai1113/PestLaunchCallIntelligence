@@ -2,6 +2,8 @@
 
 ## Scope and execution
 
+- Latest user direction: implement the frontend, backend and AI adapter now, leaving `GROQ_API_KEY` empty. Validate with explicitly fictional data and provider contract tests. Real AI, real-call processing and deployment acceptance remain pending; never simulate results for an uploaded real recording.
+
 - This is a standalone repository at `C:/Users/Admin/Desktop/Projects/Portfolio/PestLaunchCallIntelligence`. Do not edit the sibling Portfolio app or any other existing client project.
 - The user authorized full implementation in a separate Codex chat using GPT-6.1 Sol with medium thinking. Execute sequentially with one editing owner. Do not spawn subagents or message other chats unless the human explicitly requests it.
 - Read `IMPLEMENTATION_PROMPT.md`, `docs/specs/product-design.md`, `docs/plans/implementation-plan.md`, and `docs/context/source-register.md` before implementation.

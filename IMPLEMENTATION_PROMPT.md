@@ -1,5 +1,9 @@
 # Full implementation — PestLaunch Call Intelligence
 
+## Current phase: keyless implementation
+
+The user explicitly asked to implement the frontend, backend and AI integration while leaving `GROQ_API_KEY` empty. This phase uses fictional sample data, a persistent development-only sample repository, actual local PostgreSQL policy tests and mocked HTTP provider contract tests. Do not buy credentials, make real AI requests, import client recordings or pretend fixtures are AI output. The production Supabase adapter and Vercel workflow are present; actual cloud Auth/Storage/workflow and real-provider acceptance remain pending. See README and the evidence ledger before continuing. A separate GPT-6.1 Sol Medium chat was requested, but native project registration remained unavailable; do not claim it was launched.
+
 Implement this product end to end in `C:/Users/Admin/Desktop/Projects/Portfolio/PestLaunchCallIntelligence`. Use **GPT-6.1 Sol with medium thinking** for this implementation chat. Work sequentially as the sole editing owner. The user explicitly authorized implementation and access to connected accounts for this project. Begin useful work immediately; complete the requested V1 rather than returning another plan or a visual-only demo.
 
 ## Read the project handoff

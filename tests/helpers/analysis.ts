@@ -1,0 +1,55 @@
+import type { Analysis } from "@/lib/domain/types";
+const salesIds = [
+  "validate",
+  "confidence",
+  "expectation_understand",
+  "investigate",
+  "summary",
+  "expectation_solve",
+  "solution",
+  "consensus",
+  "close",
+  "pricing",
+  "objection_agree",
+  "objection_restate",
+  "objection_resolve",
+  "objection_reclose",
+  "conclusion",
+  "final_information",
+  "thank",
+];
+const generalIds = [
+  "validate",
+  "confidence",
+  "expectation_understand",
+  "investigate",
+  "summary",
+  "expectation_solve",
+  "solution",
+  "consensus",
+  "close",
+  "conclusion",
+  "thank",
+  "final_information",
+];
+export function analysis(purpose: "sales" | "general" = "sales"): Analysis {
+  return {
+    purpose,
+    title: "Fictional example",
+    summary: "Fictional test",
+    secondaryIntents: [],
+    outcomes: {} as Analysis["outcomes"],
+    facts: [],
+    followups: [],
+    coaching: [],
+    complete: true,
+    noObjections: false,
+    reviewReasons: [],
+    assessments: (purpose === "sales" ? salesIds : generalIds).map((id) => ({
+      id,
+      status: "passed",
+      reason: "Observed in sample",
+      evidence: { segmentIds: ["s1"], quote: "Hello" },
+    })),
+  };
+}
