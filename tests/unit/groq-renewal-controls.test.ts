@@ -74,7 +74,10 @@ it("a rehashed payload cannot promote unaudited role or completeness", () => {
 });
 it("client probes require complete explicit semantic acceptance bound to this input", () => {
   expect(() =>
-    assertFictionalAcceptance({ semanticPass: true }, binding().inputHash),
+    assertFictionalAcceptance({ semanticPass: true }, binding().inputHash, {
+      sourceHash: "a".repeat(64),
+      resultHash: "b".repeat(64),
+    }),
   ).toThrow("FICTIONAL_ACCEPTANCE_REQUIRED");
   const r = {
     version: "fictional-semantic-acceptance-v1",
@@ -95,14 +98,25 @@ it("client probes require complete explicit semantic acceptance bound to this in
     reviewedAt: "2026-10-09T00:00:00Z",
     artifact: "fictional-audit.json",
   };
-  expect(() => assertFictionalAcceptance(r, binding().inputHash)).not.toThrow();
+  const known = { sourceHash: r.sourceHash, resultHash: r.resultHash };
+  expect(() =>
+    assertFictionalAcceptance(r, binding().inputHash, known),
+  ).not.toThrow();
   expect(() =>
     assertFictionalAcceptance(
       { ...r, coverage: ["purpose"] },
       binding().inputHash,
+      known,
     ),
   ).toThrow();
-  expect(() => assertFictionalAcceptance(r, "c".repeat(64))).toThrow();
+  expect(() => assertFictionalAcceptance(r, "c".repeat(64), known)).toThrow();
+  expect(() =>
+    assertFictionalAcceptance(
+      { ...r, resultHash: "d".repeat(64) },
+      binding().inputHash,
+      known,
+    ),
+  ).toThrow();
 });
 it("holds a case lock across stage gaps and refuses an entire sequence without headroom", async () => {
   const root = ".private/qa/renewal-controls-" + randomUUID();

@@ -54,7 +54,11 @@ export function verifyClientBinding(
   )
     throw new Error("CLIENT_TRANSCRIPT_SUBSTITUTION");
 }
-export function assertFictionalAcceptance(receipt: unknown, inputHash: string) {
+export function assertFictionalAcceptance(
+  receipt: unknown,
+  inputHash: string,
+  known: { sourceHash: string; resultHash: string },
+) {
   const r = receipt as {
     version?: string;
     status?: string;
@@ -82,6 +86,8 @@ export function assertFictionalAcceptance(receipt: unknown, inputHash: string) {
     r.inputHash !== inputHash ||
     !/^[a-f0-9]{64}$/.test(r.sourceHash ?? "") ||
     !/^[a-f0-9]{64}$/.test(r.resultHash ?? "") ||
+    r.sourceHash !== known.sourceHash ||
+    r.resultHash !== known.resultHash ||
     r.schemaAccepted !== true ||
     r.safetyAccepted !== true ||
     !r.reviewedAt ||

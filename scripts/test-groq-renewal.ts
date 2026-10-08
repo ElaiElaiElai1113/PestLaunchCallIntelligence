@@ -79,10 +79,29 @@ try {
         binding.transcriptionSourceHash,
       );
     }
-    assertFictionalAcceptance(
-      JSON.parse(await readFile(root + "/fictional-acceptance.json", "utf8")),
-      targetHash,
+    const acceptance = JSON.parse(
+      await readFile(root + "/fictional-acceptance.json", "utf8"),
     );
+    assert.ok(
+      /^(one-time|service|retention)-result\.json$/.test(
+        acceptance.resultArtifact,
+      ),
+      "Known fictional artifact required",
+    );
+    const acceptedBytes = await readFile(
+      root + "/" + acceptance.resultArtifact,
+      "utf8",
+    );
+    const accepted = JSON.parse(acceptedBytes);
+    assertFictionalAcceptance(acceptance, targetHash, {
+      sourceHash: fingerprint(
+        JSON.stringify({
+          segments: accepted.source.segments,
+          context: accepted.source.context,
+        }),
+      ),
+      resultHash: fingerprint(acceptedBytes),
+    });
   }
   // Admission and full-sequence headroom precede credential reads/reservation.
   const config = await readFile(".env.local", "utf8");
