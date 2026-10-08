@@ -1,5 +1,7 @@
 # Demonstration and release checklist
 
+Latest delivery status: private GitHub source was created and private visibility verified, with accepted candidate `394553b` pushed. The fictional provider phase stopped after extraction200/scoring400 `json_validate_failed` (two requests); no accepted analysis or deployed recording run. Vercel Pro team authorization and exposed Supabase server-key replacement are queued human handoffs. The current deployment sequence is `docs/deployment-runbook.md`; the Loom remains a rehearsal script, not a recorded/accepted submission. Older entries below are historical snapshots.
+
 The latest local control repair at `48d96a873809a84001140cb4778c6b4ea564adb5` is independently accepted with no further actionable findings. This closes retry-input admission and fact-label/manual-audit control issues. The round remains closed at3requests; no provider work resumes. Known Sales/General, full ASR semantics and deployed submission acceptance remain pending.
 
 Local keyless demonstration: sign in to the sample workspace; add an inspection sample; inspect the separate commitments; open Scorecard; review pricing with a reason; inspect original/effective history; follow evidence to the transcript; open Coaching; return to Calls and filter; inspect data controls. All examples are fictional and text-only.

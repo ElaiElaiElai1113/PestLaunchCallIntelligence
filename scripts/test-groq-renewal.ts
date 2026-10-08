@@ -14,6 +14,7 @@ import {
   verifyClientBinding,
 } from "./groq-renewal-controls";
 import { resolveSampleRoot } from "../src/lib/server/sample-paths";
+import { retainProbeFailure } from "./groq-probe-retention";
 
 // The human's overnight demo request authorizes a separate bounded Free phase.
 // No option can reset or change the historical renewal's ledger/cap.
@@ -203,7 +204,7 @@ try {
               }
             : response.ok
               ? body
-              : { error: { code: body.error?.code, type: body.error?.type } };
+              : retainProbeFailure(body, demoPhase && !clientCase);
         await writeArtifact(reserved.folder, "response.json", retained);
         const reset = response.headers.get("x-ratelimit-reset-tokens");
         notBefore = Date.now() + Math.max(65000, tokenResetMs(reset) ?? 0);
