@@ -296,3 +296,27 @@ No persistent issue exceeded three local repair rounds. Self-review checked curr
 
 One editing owner, no subagents, credential inspection/changes, customer content, actual provider calls, Supabase secrets/hosted scripts/migrations/accounts/key rotation, Groq settings, deployment/purchases/GitHub/push/client/recruiter messages. QA remains keyless and real customer processing disabled. These two local controls do not repair the third strategy's missing Sales rows, General400`json_validate_failed` or saved-ASR follow-up omission. Known-source AI, deployed reviewer/new-recording acceptance, all hosted privacy/recovery/deletion/retention/commercial/source/Loom gates remain open. Return this local repair for independent review; no fourth architecture or additional provider round is authorized by it.
 
+### Retry admission and fact-label manual review — 9 October 2026
+
+Application `48d96a873809a84001140cb4778c6b4ea564adb5`, starting clean docs HEAD `afb1907ccc19794c13d839cd1d85f233c953bff7`; focused commits `2df2b4d` and `48d96a8`. Two further local review findings are repaired and awaiting independent acceptance. No model/prompt/wire contract,17/12/12, source-attribution, output/byte-budget or publication-history change, no new AI strategy and **zero provider/CLI executions**.
+
+- **Retry entry:** factored pure provider-input admission independently from source-review active/current exclusions. UI Retry and actual retry route enforce transcript preparation/checksum/media-kind/privacy and current byte-budget checks before mutation/dispatch. Four actual-handler regressions returned200 and dispatched on missing preparation, wrong checksum, missing prepared media or oversized input before repair; all now return safe400 with zero write/start/model effect. Valid revised input and pending-start retries retain the attempt ID; running work remains refused. Current accepted-result status restoration is locally verified to skip provider/storage effects and preserve the result. Legitimate initial audio resumption does not require nonexistent transcript derivatives or analysis budget, and continues through the existing validated-upload/transcription path. No raw fallback, invented preparation or automatic source-review dispatch was added.
+- **Label semantics:** the original complete-manual-audit test with only the fact caption changed to Customer concern failed before repair. Audit v3 now compares factual content and cited evidence independently from display labels. Exact content/evidence-identical label variation creates a manual-review note, not a hard contradiction. Automatic full-reference agreement remains false for that variation; required checks can pass, but semantic acceptance still requires complete six-area manual coverage and correct source/result hashes. Wrong text, wrong evidence, wrong business outcomes, missing coaching/source certainty, incomplete/mismatched audits remain blocked or pending. Optional gating uses required checks plus completed manual semantic acceptance; legacy versions/booleans remain insufficient. No fuzzy matching, generated evaluator or blanket override was introduced.
+
+The existing stopped ledger was read only: exactly3requests, `initial_acceptance_failed`, optional admission false,10per-request artifacts present. Ledger SHA-256 remained `6c1d5de9ecf45cda3dde9f58ba8b0b681a0b12aa2c7c1aaea62c8a4060c117ff`. No ledger, request/response/metadata/history file was rewritten, reopened or incremented in this pass; no retrospective provider acceptance was recorded.
+
+| Final verification | Result / boundary |
+| --- | --- |
+| `npm test` |246pass,28files; local fictional/injected/embedded tests only |
+| Focused route/audit suites |31pass across2files after repair;4meaningful retry refusals and1label-manual red/green reproduction |
+| Focused mocked recovery suites |6pass,32.2seconds; includes admitted-but-unprepared Retry bypass refusal and preserved pending-start/running behavior |
+| Lint/typecheck/whitespace |Pass; typecheck repeated after restoring only QA-generated next-env imports |
+| `npm run build` |Pass,20steps/one workflow; privacy guard24traces/zero private-env references |
+| `npm run test:http` |11actual isolated sample checks pass; keys empty, no hosted/provider work |
+| `npm run test:e2e` |5actual isolated Chromium journeys pass |
+| `npm run test:e2e:mocked` |20pass,25.7seconds, with all API/external behavior intercepted/denied as specified |
+| QA listener check |Zero on3001/3002 |
+| Actual provider requests |Zero; closed round remains3 |
+
+Self-review checked all processing entry points, preservation of initial-audio/pending/current-result semantics, no provider effects on restoration, preparation/privacy/budget refusals before dispatch, required checks versus manually resolved label notes, hash/coverage binding and unchanged stopped history. No persistent issue exceeded three repair rounds. One editing owner/no subagents; no credentials/customer data, Groq account changes, Supabase hosted operations/migrations/accounts/key rotation, deployment/purchases/GitHub/push/client/recruiter messages. Existing Sales missing-row, General400 and ASR follow-up failures—and all deployed/privacy/source/Loom acceptance gates—remain unresolved. Return these two local fixes for review, without starting any provider work.
+
