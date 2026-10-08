@@ -11,6 +11,8 @@
 
 ### Keyless build — 8 October 2026
 
+Verified implementation commit: `7d31ce234d8f801792161aa65e8ac8e553494339`. This follow-up records that revision without changing application code.
+
 User direction: build the frontend/backend and AI integration with the AI key empty. Completed in the standalone sibling repository on `codex/call-intelligence`; baseline `026e98b9e23ffcaacdc4bef53214fe61c7c39cd7`. Native project/chat registration remained unavailable; no separate GPT-6.1 Sol Medium implementation chat was launched.
 
 Implemented: all primary screens, persistent fictional sample data, authenticated API boundary, correct rubric arithmetic, strict provider contracts, timestamp/quote checks, review conflicts/history, owner deletion, Supabase schema/RLS/private bucket adapter, keyless recording admission, direct upload/finalize and ID-only workflow code. Four distinct fictional text examples are present in the local preview. No imported real recording, actual AI request, paid resource, hosted migration or deployment occurred.
