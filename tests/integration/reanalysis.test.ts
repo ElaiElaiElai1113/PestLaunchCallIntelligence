@@ -50,6 +50,7 @@ vi.mock("@/lib/groq/provider", () => ({
 }));
 import { processCall } from "@/workflows/process-call";
 import { POST } from "@/app/api/calls/[callId]/reanalyze/route";
+import { POST as retry } from "@/app/api/calls/[callId]/retry/route";
 import { POST as reviewSource } from "@/app/api/calls/[callId]/source-review/route";
 const context = { params: Promise.resolve({ callId: "fictional-call" }) };
 beforeEach(() => {
@@ -138,6 +139,116 @@ async function saveSource(unknown = false) {
     context,
   );
 }
+const retryRequest = () =>
+  new Request("http://localhost/api/calls/fictional-call/retry", {
+    method: "POST",
+    headers: { Origin: "http://localhost" },
+  });
+it.each(["missing", "checksum", "media", "budget"])(
+  "retry refuses %s input before mutation or dispatch",
+  async (kind) => {
+    state.call = recoveryCall();
+    vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+    if (kind === "missing") delete state.call.sourcePreparation;
+    if (kind === "checksum")
+      state.call.sourcePreparation!.checksum = "b".repeat(64);
+    if (kind === "media") state.call.sanitizedPath = null;
+    if (kind === "budget")
+      state.call.segments[0].text = "Fictional long context. ".repeat(1000);
+    const before = structuredClone(state.call);
+    state.put.mockClear();
+    const response = await retry(retryRequest(), context);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error:
+        kind === "budget"
+          ? "ANALYSIS_BUDGET_EXCEEDED"
+          : "SOURCE_PREPARATION_REQUIRED",
+    });
+    expect(state.start).not.toHaveBeenCalled();
+    expect(state.put).not.toHaveBeenCalled();
+    expect(state.model).not.toHaveBeenCalled();
+    expect(state.call).toEqual(before);
+  },
+);
+it("valid transcript pending-start retry preserves its ownership intent", async () => {
+  state.call = recoveryCall();
+  state.call.status = "analyzing";
+  state.call.errorCode = "PROCESSING_START_PENDING";
+  state.call.processingAttempt = {
+    id: "same-pending",
+    state: "pending",
+    runId: null,
+  };
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  state.start.mockResolvedValue({ runId: "not-executed" });
+  expect((await retry(retryRequest(), context)).status).toBe(200);
+  expect(state.start).toHaveBeenCalledWith(expect.anything(), [
+    "fictional-call",
+    "same-pending",
+  ]);
+  expect(state.model).not.toHaveBeenCalled();
+});
+it("retry admission uses the revised audited transcript while preserving its pending attempt", async () => {
+  state.call = recoveryCall();
+  state.call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
+  for (let n = 100; n < 300; n++) {
+    state.call.segments[0].text = "Fictional context. ".repeat(n);
+    const changed = structuredClone(state.call);
+    changed.segments.forEach((s) => (s.speaker = "unknown"));
+    if (
+      analysisRecovery(state.call, false).budget === "exceeded" &&
+      analysisRecovery(changed, false).budget === "admitted"
+    )
+      break;
+  }
+  expect((await saveSource(true)).status).toBe(200);
+  state.call!.status = "failed";
+  state.call!.errorCode = "PROCESSING_START_FAILED";
+  state.call!.processingAttempt = {
+    id: "revised-pending",
+    state: "pending",
+    runId: null,
+  };
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  state.start.mockResolvedValue({ runId: "not-executed" });
+  expect((await retry(retryRequest(), context)).status).toBe(200);
+  expect(state.start).toHaveBeenCalledWith(expect.anything(), [
+    "fictional-call",
+    "revised-pending",
+  ]);
+  expect(state.model).not.toHaveBeenCalled();
+  expect(state.call!.analysis).toBeNull();
+});
+it("current-result retry restores status without another provider or storage effect", async () => {
+  const fixture = sampleCall("service", "fictional-call");
+  state.call = recoveryCall();
+  state.call.analysis = fixture.analysis;
+  state.call.originalAnalysis = fixture.originalAnalysis;
+  state.call.score = fixture.score;
+  state.call.analysisSourceRevision = 0;
+  delete state.call.sourcePreparation;
+  state.call.checksum = null;
+  state.call.sanitizedPath = null;
+  const result = structuredClone(state.call.analysis);
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  expect((await retry(retryRequest(), context)).status).toBe(200);
+  expect(state.model).not.toHaveBeenCalled();
+  expect(state.call!.analysis).toEqual(result);
+  expect(state.call!.processingAttempt?.state).toBe("finished");
+});
+it("validated initial-audio resume does not require a transcript derivative or analysis budget", async () => {
+  state.call = recoveryCall();
+  state.call.segments = [];
+  state.call.sourcePath = "sample-workspace/fictional-call.wav";
+  state.call.sanitizedPath = null;
+  state.call.errorCode = "AI_NOT_CONFIGURED";
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  state.start.mockResolvedValue({ runId: "not-executed" });
+  expect((await retry(retryRequest(), context)).status).toBe(200);
+  expect(state.model).not.toHaveBeenCalled();
+  expect(state.call!.analysis).toBeNull();
+});
 it("actual source-review transition leaves first analysis startable but never auto-dispatches", async () => {
   state.call = recoveryCall();
   state.start.mockResolvedValue({ runId: "not-executed" });

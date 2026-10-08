@@ -26,7 +26,10 @@ import { RUBRICS, OBJECTION_IDS } from "@/lib/scoring/rubrics";
 import { OUTCOME_LABELS } from "@/lib/samples/fixtures";
 import { analysisCurrent, activeProcessing } from "@/lib/domain/source-review";
 import { TranscriptSourceReview } from "./transcript-source-review";
-import { analysisRecovery } from "@/lib/groq/analysis-recovery";
+import {
+  analysisRecovery,
+  providerInputAdmission,
+} from "@/lib/groq/analysis-recovery";
 import { matchesCallFilters } from "@/lib/domain/call-filters";
 import {
   pendingProcessing,
@@ -146,6 +149,7 @@ export function CallDetail({ id }: { id: string }) {
   const current = analysisCurrent(call);
   const pending = pendingProcessing(call);
   const recovery = analysisRecovery(call, session.processingEnabled);
+  const retryInput = providerInputAdmission(call, session.processingEnabled);
   const waitingForAnalysis =
     !current &&
     call.segments.length > 0 &&
@@ -159,8 +163,7 @@ export function CallDetail({ id }: { id: string }) {
   const retryControl =
     session.identity.role === "owner" &&
     retryAvailable(call) &&
-    (call.errorCode !== "ANALYSIS_BUDGET_EXCEEDED" ||
-      recovery.budget === "admitted") ? (
+    retryInput.eligible ? (
       <button
         className="button primary"
         disabled={
@@ -178,9 +181,11 @@ export function CallDetail({ id }: { id: string }) {
       >
         {pending
           ? "Retry starting analysis"
-          : call.status === "failed"
-            ? "Retry processing"
-            : "Resume analysis"}
+          : retryInput.restoreOnly
+            ? "Restore analysis status"
+            : call.status === "failed"
+              ? "Retry processing"
+              : "Resume analysis"}
       </button>
     ) : null;
   const backQuery = new URLSearchParams(back.split("?")[1] || "");

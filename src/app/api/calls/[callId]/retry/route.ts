@@ -10,6 +10,7 @@ import {
 import { respond } from "@/lib/server/http";
 import { dispatchRetry } from "@/lib/jobs/retry-dispatch";
 import { retryAvailable } from "@/lib/domain/processing-attempt";
+import { providerInputAdmission } from "@/lib/groq/analysis-recovery";
 export async function POST(
   request: Request,
   context: { params: Promise<{ callId: string }> },
@@ -27,6 +28,12 @@ export async function POST(
     )
       throw new AppError("PRIVACY_APPROVAL_REQUIRED", 403);
     if (!retryAvailable(call)) throw new AppError("RETRY_UNAVAILABLE");
+    const input = providerInputAdmission(
+      call,
+      process.env.REAL_CALL_PROCESSING_ENABLED === "true",
+    );
+    if (!input.eligible)
+      throw new AppError(input.blockedReason ?? "RETRY_UNAVAILABLE", 400);
     try {
       await dispatchRetry(repo, call, async (id, attemptId) => {
         await start(processCall, [id, attemptId]);

@@ -137,3 +137,33 @@ test("reviewer sees waiting state but cannot start first analysis", async ({
   ).toBeVisible();
   expect(unexpected).toEqual([]);
 });
+test("a budget-admitted but source-ineligible transcript cannot use Retry processing", async ({
+  page,
+}) => {
+  const call = recoveryCall();
+  call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
+  delete call.sourcePreparation;
+  expect(analysisRecovery(call, false)).toMatchObject({
+    budget: "admitted",
+    eligible: false,
+  });
+  const unexpected = await mockApi(page, (path) =>
+    path === "/api/session"
+      ? { json: fictionalSession("owner", true) }
+      : path === "/api/calls"
+        ? { json: { calls: [call] } }
+        : path === `/api/calls/${call.id}`
+          ? { json: { call } }
+          : path === `/api/calls/${call.id}/media`
+            ? { status: 404, json: { error: "MEDIA_UNAVAILABLE" } }
+            : null,
+  );
+  await page.goto(`/calls/${call.id}`);
+  await expect(
+    page.getByRole("button", { name: "Retry processing", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Analyze transcript", exact: true }),
+  ).toBeDisabled();
+  expect(unexpected).toEqual([]);
+});

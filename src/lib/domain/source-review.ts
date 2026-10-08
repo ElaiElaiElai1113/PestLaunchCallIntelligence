@@ -19,6 +19,14 @@ export function sourceReviewBlock(
   realAllowed: boolean,
 ): string | null {
   if (activeProcessing(call)) return "PROCESSING_ACTIVE";
+  return preparedTranscriptBlock(call, realAllowed);
+}
+// Provider-input checks exclude run state; pending retry ownership is checked
+// separately and must not be treated as a request to review active source.
+export function preparedTranscriptBlock(
+  call: CallRecord,
+  realAllowed: boolean,
+): string | null {
   if (
     call.status === "privacy_review" ||
     [

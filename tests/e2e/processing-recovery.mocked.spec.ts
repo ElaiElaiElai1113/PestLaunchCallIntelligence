@@ -20,6 +20,14 @@ test("pending start survives error and reload, while a claimed job hides retry",
     },
   });
   let attempts = 0;
+  call.checksum = "a".repeat(64);
+  call.sanitizedPath = `${call.workspaceId}/${call.id}.wav`;
+  call.sourcePreparation = {
+    checksum: call.checksum,
+    attestedBy: "fictional-owner",
+    at: "2026-10-09T00:00:00Z",
+    kind: "synthetic",
+  };
   const unexpected = await mockApi(page, (path, method) => {
     if (path === "/api/session" && method === "GET")
       return { json: fictionalSession("owner", true) };
@@ -27,6 +35,8 @@ test("pending start survives error and reload, while a claimed job hides retry",
       return { json: { calls: [call] } };
     if (path === `/api/calls/${call.id}` && method === "GET")
       return { json: { call } };
+    if (path === `/api/calls/${call.id}/media`)
+      return { status: 404, json: { error: "MEDIA_UNAVAILABLE" } };
     if (path === `/api/calls/${call.id}/retry` && method === "POST") {
       attempts++;
       if (attempts === 1)
