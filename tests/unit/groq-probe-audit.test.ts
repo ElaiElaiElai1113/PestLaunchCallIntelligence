@@ -55,12 +55,16 @@ it("legitimate partial uncertainty stays partial rather than becoming a wrong cl
   expect(audit.semanticStatus).toBe("pending");
   expect(audit.semanticAccepted).toBe(false);
 });
-it.each(["coaching", "facts"])(
+it.each(["coaching", "facts", "objection-policy"])(
   "known-source %s gaps are not hidden by matching status and outcome values",
   (kind) => {
-    const expected = sampleCall("service", "fictional-audit"),
+    const expected = sampleCall(
+        kind === "objection-policy" ? "one-time" : "service",
+        "fictional-audit",
+      ),
       actual = structuredClone(expected.analysis!);
     if (kind === "coaching") actual.coaching = [];
+    else if (kind === "objection-policy") actual.noObjections = true;
     else
       actual.facts[0].text =
         "A different fictional pest claim not established by the source.";

@@ -98,6 +98,14 @@ export function auditProbeAnalysis(
         "Unverified ASR must retain uncertainty without grade or employee coaching",
       );
   } else {
+    if (
+      reference.purpose === "sales" &&
+      !reference.noObjections &&
+      actual.noObjections
+    )
+      issues.push("No-objection claim contradicts the known source");
+    if (reference.complete && !actual.complete)
+      issues.push("Known source completeness remains unresolved");
     for (const item of reference.assessments)
       if (
         actual.assessments.find((a) => a.id === item.id)?.status !== item.status
