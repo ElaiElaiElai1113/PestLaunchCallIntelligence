@@ -17,13 +17,26 @@ export function scoringSchema(segments: Segment[], purpose: Purpose) {
   const item = contractSchema(segments).shape.assessments.element.omit({
     id: true,
   });
+  const coached = item.shape.coaching;
+  const validatedItem =
+    coached instanceof z.ZodNullable
+      ? z.union([
+          item.extend({ coaching: z.null() }),
+          item.extend({
+            coaching: coached.unwrap(),
+            evidence: item.shape.evidence.extend({
+              segmentIds: item.shape.evidence.shape.segmentIds.min(1),
+            }),
+          }),
+        ])
+      : item;
   return z.strictObject({
     noObjections: z.boolean(),
     checkpoints: z.strictObject(
       Object.fromEntries(
         (purpose === "unknown" ? [] : RUBRICS[purpose]).map((c) => [
           c.id,
-          item,
+          validatedItem,
         ]),
       ),
     ),
