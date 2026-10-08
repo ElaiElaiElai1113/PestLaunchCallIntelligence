@@ -61,7 +61,11 @@ export async function closeProbeRound(root: string, reason: string) {
     await unlink(lockPath);
   }
 }
-export async function reserveProbe(root: string, caseName: string, cap: 6 | 12 = 6) {
+export async function reserveProbe(
+  root: string,
+  caseName: string,
+  cap: 1 | 6 | 12 = 6,
+) {
   await mkdir(root, { recursive: true });
   const lockPath = join(root, "active.lock");
   const lock = await open(lockPath, "wx");

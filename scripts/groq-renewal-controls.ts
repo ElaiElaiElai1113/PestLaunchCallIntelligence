@@ -99,7 +99,7 @@ export function assertFictionalAcceptance(
 export async function acquireRenewalCase(
   root: string,
   plannedRequests: number,
-  cap: 6 | 12 = 12,
+  cap: 1 | 6 | 12 = 12,
 ) {
   if (
     !Number.isInteger(plannedRequests) ||
