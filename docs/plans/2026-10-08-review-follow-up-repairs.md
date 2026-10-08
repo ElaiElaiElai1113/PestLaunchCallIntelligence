@@ -44,9 +44,9 @@ The prior review freshly passed 88 tests in 15 files, lint, typecheck and whites
 - Create tests/integration/test-data-routes.test.ts.
 - Create tests/e2e/data-controls.mocked.spec.ts, executed only after Task 3.
 
-- [ ] Add a failing route/repository regression using the actual Repository.list and delete methods with fictional Supabase/Storage ports. Do not spy away list/get; the missing tombstoned row is the bug. Seed one retained live/synthetic call and source/derivative objects. Make Storage inventory fail on the first request. Assert 503, tombstone retained, call retained and no delete_call RPC/receipt. Assert the owner summary is retained=1, pendingDeletion=1 while ordinary list/get hides the call. Restore the fake Storage port, repeat DELETE, and assert deleted=1, both bucket inventories empty, row removed and one deletion receipt. A third request returns deleted=0 without another receipt.
-- [ ] Add owner-only GET/DELETE coverage, workspace isolation, malformed confirmation rejection and a continuing Storage failure that never returns successful deletion. Count only tombstones that still have a retained call row; historical tombstones are not retained content.
-- [ ] Run the focused regression before repair:
+- [x] Add a failing route/repository regression using the actual Repository.list and delete methods with fictional Supabase/Storage ports. Do not spy away list/get; the missing tombstoned row is the bug. Seed one retained live/synthetic call and source/derivative objects. Make Storage inventory fail on the first request. Assert 503, tombstone retained, call retained and no delete_call RPC/receipt. Assert the owner summary is retained=1, pendingDeletion=1 while ordinary list/get hides the call. Restore the fake Storage port, repeat DELETE, and assert deleted=1, both bucket inventories empty, row removed and one deletion receipt. A third request returns deleted=0 without another receipt.
+- [x] Add owner-only GET/DELETE coverage, workspace isolation, malformed confirmation rejection and a continuing Storage failure that never returns successful deletion. Count only tombstones that still have a retained call row; historical tombstones are not retained content.
+- [x] Run the focused regression before repair:
 
 ~~~powershell
 npm test -- tests/integration/repository-deletion.test.ts tests/integration/test-data-routes.test.ts
@@ -54,7 +54,7 @@ npm test -- tests/integration/repository-deletion.test.ts tests/integration/test
 
 Expected new regressions fail on the existing implementation, while the existing cleanup-failure contracts remain passing.
 
-- [ ] Add Repository.retentionSummary() as a server-side count-only operation. Require an owner even if called outside the route; remain workspace-scoped. A suitable implementation using the existing list path is:
+- [x] Add Repository.retentionSummary() as a server-side count-only operation. Require an owner even if called outside the route; remain workspace-scoped. A suitable implementation using the existing list path is:
 
 ~~~typescript
 async retentionSummary(): Promise<{ retained: number; pendingDeletion: number }> {
@@ -77,7 +77,7 @@ async retentionSummary(): Promise<{ retained: number; pendingDeletion: number }>
 
 The summary is a refreshed observation, not an atomic certification of concurrent storage deletion. It returns no labels, paths, transcripts or other deleted-content payloads to the browser.
 
-- [ ] Export a dynamic, authenticated owner GET from /api/test-data returning {retained,pendingDeletion}. Keep respond() no-store behavior. Change DELETE's inventory to await repo.list(true), retaining typed DELETE confirmation and existing verified cleanup ordering:
+- [x] Export a dynamic, authenticated owner GET from /api/test-data returning {retained,pendingDeletion}. Keep respond() no-store behavior. Change DELETE's inventory to await repo.list(true), retaining typed DELETE confirmation and existing verified cleanup ordering:
 
 ~~~typescript
 export const dynamic = "force-dynamic";
@@ -96,7 +96,7 @@ return { deleted: calls.length, at: new Date().toISOString() };
 
 Keep ordinary Repository.list()/get()/media filtering unchanged. Keep failures explicit; do not emit success for a partially finished batch. Cleanup must still verify both buckets before the row/receipt RPC.
 
-- [ ] Update Data controls to load the owner summary on entry and refresh it after either successful or failed deletion. Keep an explicit loading/error state; unavailable counts must not be shown as zero. Owner deletion is enabled whenever retained>0, including pending-only rows. Use the summary in the confirmation count. After a failure, refresh the ordinary call list as well, since tombstoned content must disappear there.
+- [x] Update Data controls to load the owner summary on entry and refresh it after either successful or failed deletion. Keep an explicit loading/error state; unavailable counts must not be shown as zero. Owner deletion is enabled whenever retained>0, including pending-only rows. Use the summary in the confirmation count. After a failure, refresh the ordinary call list as well, since tombstoned content must disappear there.
 
 Use existing panel/button styles, with this behavior and copy:
 
@@ -118,8 +118,8 @@ type RetentionSummary = { retained: number; pendingDeletion: number };
 
 Reviewer views must not call the owner summary endpoint. Label their ordinary call count "Available conversations" so it does not claim to include inaccessible deletion-pending content. Do not expose a tombstoned call link or restore playback to make cleanup accessible.
 
-- [ ] Add an isolated mocked owner journey: ordinary /api/calls=[] and summary={retained:1,pendingDeletion:1}; Data controls shows 1, explains pending cleanup and has an enabled retry button. First mocked DELETE fails; summary stays 1/1 and no success is shown. Second succeeds; summary becomes 0/0 and the button disables. Also check failed GET displays an unavailable/loading state rather than zero. Mock all APIs, reject unexpected/external traffic, and keep screenshots fictional and ignored.
-- [ ] Rerun the focused tests and record red/green results. Commit only the owned deletion/UI/test changes.
+- [x] Add an isolated mocked owner journey: ordinary /api/calls=[] and summary={retained:1,pendingDeletion:1}; Data controls shows 1, explains pending cleanup and has an enabled retry button. First mocked DELETE fails; summary stays 1/1 and no success is shown. Second succeeds; summary becomes 0/0 and the button disables. Also check failed GET displays an unavailable/loading state rather than zero. Mock all APIs, reject unexpected/external traffic, and keep screenshots fictional and ignored.
+- [x] Rerun the focused tests and record red/green results. Commit only the owned deletion/UI/test changes.
 
 ## Task 2 — Persist dispatch intent and fence provider work by attempt ownership
 
@@ -140,11 +140,11 @@ The installed Workflow docs and current official [start reference](https://workf
 - Create tests/integration/finalize-dispatch.test.ts.
 - Create tests/e2e/processing-recovery.mocked.spec.ts, executed only after Task 3.
 
-- [ ] Reproduce recovery get failure, recovery put exception, recovery put false, successful dispatch followed by worker delay, and process restart using a newly constructed helper/repository over the same saved fictional state. Tests must assert a later legitimate owner request can dispatch the pending attempt while unrelated active calls remain unavailable.
-- [ ] Add concurrent duplicate-run claim tests and a worker-before-start-error race. Only one run may own provider work; restoration cannot overwrite a worker claim. Preserve analysis/transcript/quality metadata across every transition. Assert tombstones/deletion and version advances are never overwritten or reconstructed from the pre-dispatch snapshot.
-- [ ] Run focused retry/route/workflow tests before implementation; record the new meaningful failures.
+- [x] Reproduce recovery get failure, recovery put exception, recovery put false, successful dispatch followed by worker delay, and process restart using a newly constructed helper/repository over the same saved fictional state. Tests must assert a later legitimate owner request can dispatch the pending attempt while unrelated active calls remain unavailable.
+- [x] Add concurrent duplicate-run claim tests and a worker-before-start-error race. Only one run may own provider work; restoration cannot overwrite a worker claim. Preserve analysis/transcript/quality metadata across every transition. Assert tombstones/deletion and version advances are never overwritten or reconstructed from the pre-dispatch snapshot.
+- [x] Run focused retry/route/workflow tests before implementation; record the new meaningful failures.
 
-- [ ] Add optional server-owned metadata to CallRecord. Existing records with no field keep their current behavior; do not infer that an untracked queued/analyzing call is safe to retry.
+- [x] Add optional server-owned metadata to CallRecord. Existing records with no field keep their current behavior; do not infer that an untracked queued/analyzing call is safe to retry.
 
 ~~~typescript
 export type ProcessingAttempt = {
@@ -158,7 +158,7 @@ processingAttempt?: ProcessingAttempt;
 
 This lives in the existing protected JSON payload. IDs are safe metadata; no new table, caller-controlled certification field, transcript or provider response belongs in it.
 
-- [ ] Implement the client-safe predicates:
+- [x] Implement the client-safe predicates:
 
 ~~~typescript
 import type { CallRecord } from "./types";
@@ -184,7 +184,7 @@ export function ownsProcessing(
 
 Server auth, provider configuration and real-recording privacy checks still run before any dispatch. This predicate is eligibility, not authorization.
 
-- [ ] Replace the helper with a durable-pending transition. Reuse the ID of an existing pending attempt. A finished failed attempt receives a new ID; a running attempt is unavailable. Inject the ID factory for deterministic tests. A successful start must not depend on a further route-side database write. Use this algorithm:
+- [x] Replace the helper with a durable-pending transition. Reuse the ID of an existing pending attempt. A finished failed attempt receives a new ID; a running attempt is unavailable. Inject the ID factory for deterministic tests. A successful start must not depend on a further route-side database write. Use this algorithm:
 
 ~~~typescript
 import { randomUUID } from "node:crypto";
@@ -230,7 +230,7 @@ export async function dispatchRetry(
 
 The fallback remains best effort, but correctness now rests on the earlier durable pending record. Do not clear pending on a route-side successful start: the worker owns that transition. Initial put failure/conflict must never dispatch. A false recovery CAS must leave the newer state untouched.
 
-- [ ] Add the repository-port claim helper. The same run can repeat its claim after a step retry; a different run cannot. A database error must propagate to the Workflow step retry mechanism before any provider effect. If the CAS loses, reread and accept only the same recorded owner:
+- [x] Add the repository-port claim helper. The same run can repeat its claim after a step retry; a different run cannot. A database error must propagate to the Workflow step retry mechanism before any provider effect. If the CAS loses, reread and accept only the same recorded owner:
 
 ~~~typescript
 import { ownsProcessing } from "../domain/processing-attempt";
@@ -253,9 +253,9 @@ export async function claimProcessingAttempt(
 }
 ~~~
 
-- [ ] Use retryAvailable in the retry route and client. Dispatch with start(processCall,[id,attemptId]); return only safe call identifiers/error codes. Map conflict to 409 and start failure to 503. Keep owner/key/privacy gates. An ordinary active call with no pending metadata, or a running attempt, remains RETRY_UNAVAILABLE.
-- [ ] Route successful upload-finalize admission through the same helper, after header/checksum/size/admission checks. For admission=run, dispatch from the validated UPLOAD_PENDING call directly; the helper's CAS is its finalization write. For awaiting_ai/privacy_held, retain the existing versioned persistence and do not start anything. Do not restore UPLOAD_PENDING after start failure. Remove the old route-side run-ID upsert for the new dispatch path; the claimed run ID in protected processingAttempt metadata is authoritative. Existing call_jobs history stays intact. No feature currently reads it; do not add a second conflicting dispatch state store.
-- [ ] Make processCall accept an optional attemptId for backward compatibility. Obtain workflowRunId in the workflow function and call a use-step claim wrapper before transcription or analysis. If another run owns the attempt, return {callId} without provider/Storage effects. For legacy calls, allow the old path only while no processingAttempt exists. Step arguments and return values remain identifiers, booleans and safe metadata.
+- [x] Use retryAvailable in the retry route and client. Dispatch with start(processCall,[id,attemptId]); return only safe call identifiers/error codes. Map conflict to 409 and start failure to 503. Keep owner/key/privacy gates. An ordinary active call with no pending metadata, or a running attempt, remains RETRY_UNAVAILABLE.
+- [x] Route successful upload-finalize admission through the same helper, after header/checksum/size/admission checks. For admission=run, dispatch from the validated UPLOAD_PENDING call directly; the helper's CAS is its finalization write. For awaiting_ai/privacy_held, retain the existing versioned persistence and do not start anything. Do not restore UPLOAD_PENDING after start failure. Remove the old route-side run-ID upsert for the new dispatch path; the claimed run ID in protected processingAttempt metadata is authoritative. Existing call_jobs history stays intact. No feature currently reads it; do not add a second conflicting dispatch state store.
+- [x] Make processCall accept an optional attemptId for backward compatibility. Obtain workflowRunId in the workflow function and call a use-step claim wrapper before transcription or analysis. If another run owns the attempt, return {callId} without provider/Storage effects. For legacy calls, allow the old path only while no processingAttempt exists. Step arguments and return values remain identifiers, booleans and safe metadata.
 
 ~~~typescript
 // Inside processCall, after "use workflow":
@@ -278,7 +278,7 @@ When publishing an analysis, holding privacy review, or persisting a terminal pr
 
 For the already-present-analysis case, use its existing guarded score/review reasons to restore ready/needs_review while finishing the attempt; do not leave a finished call labeled analyzing. A deleted/not-found call exits without effects; only database availability errors should retry the claim step.
 
-- [ ] Add these focused regression contracts. Use real helper/predicate logic with in-memory saved state, not tests that simply return the desired result:
+- [x] Add these focused regression contracts. Use real helper/predicate logic with in-memory saved state, not tests that simply return the desired result:
 
 ~~~typescript
 // Table-driven expectations for a fresh helper instance over the persisted state:
@@ -363,8 +363,8 @@ it("one workflow owns an attempt and its own step retry retains ownership", asyn
 });
 ~~~
 
-- [ ] Update pending-start UI to show "Waiting to start" and explain "Processing has not confirmed a start yet. You can retry starting it." The owner can use "Retry starting analysis" for durable pending metadata. After claim, the normal processing state appears and retry disappears. Keep provider/privacy controls effective. Add a fully mocked browser reload journey for pending eligibility, retry error, reloaded pending state, and claimed running state. A separate untracked active fixture must have no retry control.
-- [ ] Run focused verification:
+- [x] Update pending-start UI to show "Waiting to start" and explain "Processing has not confirmed a start yet. You can retry starting it." The owner can use "Retry starting analysis" for durable pending metadata. After claim, the normal processing state appears and retry disappears. Keep provider/privacy controls effective. Add a fully mocked browser reload journey for pending eligibility, retry error, reloaded pending state, and claimed running state. A separate untracked active fixture must have no retry control.
+- [x] Run focused verification:
 
 ~~~powershell
 npm test -- tests/unit/retry-dispatch.test.ts tests/unit/processing-claim.test.ts tests/integration/review-retry-routes.test.ts tests/integration/workflow-publication.test.ts tests/integration/finalize-dispatch.test.ts
@@ -381,7 +381,7 @@ Expected all focused contracts pass with no real provider/workflow/hosted reques
 - Modify package.json only for an explicit mocked-suite script.
 - Keep scripts/run-isolated-preview.mjs's empty provider/Supabase overrides and isolated output.
 
-- [ ] Verify the baseline discovery issue using list-only commands (these do not start the app):
+- [x] Verify the baseline discovery issue using list-only commands (these do not start the app):
 
 ~~~powershell
 npx --no-install playwright test --list
@@ -390,7 +390,7 @@ npx --no-install playwright test --config playwright.mocked.config.ts --list
 
 The current default list incorrectly includes remediation.mocked.spec.ts. Capture this before repair; do not run the default suite against the configured backend or an existing port-3000 server.
 
-- [ ] Exclude mocked specs from default discovery and include every mocked spec in the isolated configuration. Add an explicit script:
+- [x] Exclude mocked specs from default discovery and include every mocked spec in the isolated configuration. Add an explicit script:
 
 ~~~typescript
 // playwright.config.ts, alongside testDir:
@@ -405,14 +405,14 @@ testMatch: "**/*.mocked.spec.ts",
 
 No dependency update is needed. Do not weaken the mocked tests' network allowlist or change the default suite to port 3001 merely to conceal the discovery issue.
 
-- [ ] Repeat both list-only commands. Default discovery contains only workspace.spec.ts's existing three tests; mocked discovery contains remediation.mocked.spec.ts and the new owner-cleanup/processing-recovery journeys. Record actual test counts rather than hardcoding a total across new test cases.
-- [ ] Run npm run test:e2e:mocked against the owned isolated preview. Confirm no existing server reuse, port 3001 only, empty provider/Supabase overrides and rejection of unexpected external/API requests. Verify pending-only cleanup stays accessible, loading/error counts are truthful, retry recovers after reload, running jobs have no retry control, and existing coaching/follow-up checks still pass. Check new states at 320/390/768/1024/1440 px using the existing layout checks.
-- [ ] Commit the owned suite-isolation changes. Default full-browser/sample-CRUD acceptance remains pending its own isolated datastore harness; list-only success does not prove those journeys run.
+- [x] Repeat both list-only commands. Default discovery contains only workspace.spec.ts's existing three tests; mocked discovery contains remediation.mocked.spec.ts and the new owner-cleanup/processing-recovery journeys. Record actual test counts rather than hardcoding a total across new test cases.
+- [x] Run npm run test:e2e:mocked against the owned isolated preview. Confirm no existing server reuse, port 3001 only, empty provider/Supabase overrides and rejection of unexpected external/API requests. Verify pending-only cleanup stays accessible, loading/error counts are truthful, retry recovers after reload, running jobs have no retry control, and existing coaching/follow-up checks still pass. Check new states at 320/390/768/1024/1440 px using the existing layout checks.
+- [x] Commit the owned suite-isolation changes. Default full-browser/sample-CRUD acceptance remains pending its own isolated datastore harness; list-only success does not prove those journeys run.
 
 ## Task 4 — Final verification and review handoff
 
-- [ ] Review the owned patch against the three acceptance rows and the authorization boundaries. Pay particular attention to deletion retries, counts after failed cleanup, attempt ownership before both provider stages, old-run delivery, version/tombstone preservation, raw original assessment preservation and suite discovery.
-- [ ] Run each check once on the final source revision; rerun only if a change/failure justifies it:
+- [x] Review the owned patch against the three acceptance rows and the authorization boundaries. Pay particular attention to deletion retries, counts after failed cleanup, attempt ownership before both provider stages, old-run delivery, version/tombstone preservation, raw original assessment preservation and suite discovery.
+- [x] Run each check once on the final source revision; rerun only if a change/failure justifies it:
 
 ~~~powershell
 npm test
@@ -427,9 +427,9 @@ npm run test:e2e:mocked
 
 Do not run test:http, hosted acceptance/cleanup, default browser mutation suites or the real provider. A successful build compiles workflows; it does not execute or certify them.
 
-- [ ] Update docs/evidence/progress.md with exact source commit, red/green reproduction, command results/test counts, mocked-preview boundaries and remaining gates. Mark this plan's checkboxes only where verified. Distinguish application/provider effects claimed once in fictional tests from actual hosted workflow/queue acceptance. Record that duplicate pending starts can create idle runs but only one claimed run may perform provider effects.
-- [ ] Keep server-key replacement, unapplied local migration, trusted completeness/attribution, verified sanitization, real-provider fictional processing, hosted races/recovery/log/backup deletion and deployment acceptance pending.
-- [ ] Produce a concise completion handoff with source commit, final HEAD, clean/dirty status, changed files, each finding's result, exact checks and pending boundaries. The human previously authorized this implementation chat to send each completed implementation to the planning/review chat; use that existing direct authorization to return the owned revision there for read-only review. Do not claim review approval before that independent review occurs.
+- [x] Update docs/evidence/progress.md with exact source commit, red/green reproduction, command results/test counts, mocked-preview boundaries and remaining gates. Mark this plan's checkboxes only where verified. Distinguish application/provider effects claimed once in fictional tests from actual hosted workflow/queue acceptance. Record that duplicate pending starts can create idle runs but only one claimed run may perform provider effects.
+- [x] Keep server-key replacement, unapplied local migration, trusted completeness/attribution, verified sanitization, real-provider fictional processing, hosted races/recovery/log/backup deletion and deployment acceptance pending.
+- [x] Produce a concise completion handoff with source commit, final HEAD, clean/dirty status, changed files, each finding's result, exact checks and pending boundaries. The human previously authorized this implementation chat to send each completed implementation to the planning/review chat; use that existing direct authorization to return the owned revision there for read-only review. Do not claim review approval before that independent review occurs.
 
 ## Plan self-review
 
