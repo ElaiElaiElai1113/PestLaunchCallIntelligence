@@ -2,6 +2,7 @@ import { Repository } from "@/lib/server/repository";
 import { requireIdentity, AppError } from "@/lib/server/auth";
 import { respond } from "@/lib/server/http";
 import { adminClient } from "@/lib/supabase/server";
+import { sourceReviewBlock } from "@/lib/domain/source-review";
 export async function GET(
   _request: Request,
   context: { params: Promise<{ callId: string }> },
@@ -12,7 +13,16 @@ export async function GET(
     );
     if (call.mode === "sample")
       throw new AppError("SAMPLE_AUDIO_UNAVAILABLE", 404);
-    if (!call.sanitizedPath || !["ready", "needs_review"].includes(call.status))
+    const settledFailure =
+      call.status === "failed" &&
+      sourceReviewBlock(
+        call,
+        process.env.REAL_CALL_PROCESSING_ENABLED === "true",
+      ) === null;
+    if (
+      !call.sanitizedPath ||
+      (!settledFailure && !["ready", "needs_review"].includes(call.status))
+    )
       throw new AppError("PLAYBACK_UNAVAILABLE", 403);
     const { data, error } = await adminClient()
       .storage.from("call-sanitized")

@@ -106,11 +106,11 @@ it("a supported live correction cannot clear completeness or independent quality
     }),
     context,
   );
-  expect(result.status).toBe(200);
-  expect(state.call!.score!.grade).toBe(null);
-  expect(state.call!.analysis!.reviewReasons).toContain(
-    "Transcription quality needs review.",
-  );
+  expect(result.status).toBe(400);
+  expect(await result.json()).toEqual({
+    error: "SOURCE_VERIFICATION_REQUIRED",
+  });
+  expect(state.put).not.toHaveBeenCalled();
   expect(state.call!.originalAnalysis).toEqual(original);
 });
 it("a new owner request can redispatch the same durable pending attempt", async () => {
@@ -159,5 +159,82 @@ it.each(["running", "untracked"] as const)(
     expect(result.status).toBe(400);
     expect(await result.json()).toEqual({ error: "RETRY_UNAVAILABLE" });
     expect(state.start).not.toHaveBeenCalled();
+  },
+);
+function trusted() {
+  state.call!.status = "needs_review";
+  state.call!.transcriptCompleteness = "verified";
+  state.call!.transcriptReviewReasons = [];
+  state.call!.checksum = "a".repeat(64);
+  state.call!.sanitizedPath = "sample-workspace/fictional-call.wav";
+  state.call!.sourcePreparation = {
+    checksum: state.call!.checksum,
+    attestedBy: "fictional-owner",
+    at: "2026-10-08T00:00:00Z",
+    kind: "synthetic",
+  };
+}
+it("a verified reviewer can select actual employee evidence and preserve original/audit", async () => {
+  trusted();
+  const original = structuredClone(state.call!.originalAnalysis);
+  const segment = state.call!.segments.find((s) => s.speaker === "employee")!;
+  const result = await review(
+    new Request("http://localhost/api/calls/fictional-call/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version: 1,
+        checkpointId: "confidence",
+        status: "passed",
+        reason: "Verified this employee statement in the fictional source.",
+        evidence: { segmentIds: [segment.id], quote: segment.text },
+      }),
+    }),
+    context,
+  );
+  expect(result.status).toBe(200);
+  expect(state.call!.originalAnalysis).toEqual(original);
+  expect(state.call!.decisions.at(-1)).toMatchObject({
+    sourceRevision: 0,
+    evidence: { segmentIds: [segment.id], quote: segment.text },
+  });
+});
+it.each(["fabricated", "customer", "stale-source", "active"])(
+  "checkpoint correction rejects %s evidence/state",
+  async (kind) => {
+    trusted();
+    if (kind === "stale-source") state.call!.sourceRevision = 1;
+    if (kind === "active")
+      state.call!.processingAttempt = {
+        id: "active-attempt",
+        state: "pending",
+        runId: null,
+      };
+    const segment = state.call!.segments.find(
+      (s) => s.speaker === (kind === "customer" ? "customer" : "employee"),
+    )!;
+    const result = await review(
+      new Request("http://localhost/api/calls/fictional-call/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          version: 1,
+          checkpointId: "confidence",
+          status: "passed",
+          reason:
+            "Fictional evidence correction with an explicit source check.",
+          evidence: {
+            segmentIds: [segment.id],
+            quote:
+              kind === "fabricated" ? "fabricated source text" : segment.text,
+          },
+        }),
+      }),
+      context,
+    );
+    expect(result.status).toBe(
+      kind === "active" || kind === "stale-source" ? 409 : 400,
+    );
+    expect(state.put).not.toHaveBeenCalled();
   },
 );

@@ -58,6 +58,43 @@ beforeEach(() => {
   ];
 });
 afterEach(() => vi.unstubAllEnvs());
+it("a stale source revision cannot take the existing-analysis shortcut", async () => {
+  const raw = analysis();
+  state.call!.analysis = guardAssessment(raw, state.call!.segments, {
+    transcriptComplete: false,
+  });
+  state.call!.originalAnalysis = structuredClone(raw);
+  state.call!.sourceRevision = 1;
+  state.call!.analysisSourceRevision = 0;
+  state.call!.processingAttempt = {
+    id: "new-source-attempt",
+    state: "pending",
+    runId: null,
+  };
+  state.analyze.mockImplementation(async (s, c) => ({
+    original: { ...raw, title: "New-source fictional result" },
+    effective: guardAssessment(raw, s, c),
+  }));
+  await processCall("fictional-call", "new-source-attempt");
+  expect(state.analyze).toHaveBeenCalledTimes(1);
+  expect(state.call!.originalAnalysis).toEqual(raw);
+  expect(state.call!.analysisSourceRevision).toBe(1);
+});
+it("a source revision conflict cannot publish even if the version was not advanced", async () => {
+  state.call!.sourceRevision = 0;
+  state.call!.processingAttempt = {
+    id: "source-attempt",
+    state: "pending",
+    runId: null,
+  };
+  const raw = analysis();
+  state.analyze.mockImplementation(async (s, c) => {
+    state.call!.sourceRevision = 1;
+    return { original: raw, effective: guardAssessment(raw, s, c) };
+  });
+  await processCall("fictional-call", "source-attempt");
+  expect(state.call!.analysis).toBe(null);
+});
 it("analysis failure and retry preserve uncertainty and separate original/effective output", async () => {
   const raw = analysis();
   state.analyze

@@ -4,6 +4,12 @@ import { checkOrigin, requireIdentity, AppError } from "@/lib/server/auth";
 import { respond } from "@/lib/server/http";
 import { reviewSchema } from "@/lib/domain/schemas";
 import { computeScore } from "@/lib/scoring/engine";
+import { validateEvidence } from "@/lib/domain/evidence";
+import {
+  activeProcessing,
+  analysisCurrent,
+  sourceReviewBlock,
+} from "@/lib/domain/source-review";
 import {
   guardAssessment,
   assessmentContext,
@@ -20,19 +26,27 @@ export async function POST(
     const decision = reviewSchema.parse(await request.json());
     if (call.version !== decision.version)
       throw new AppError("STALE_REVIEW", 409);
+    if (activeProcessing(call)) throw new AppError("PROCESSING_ACTIVE", 409);
+    if (call.status === "privacy_review")
+      throw new AppError("PRIVACY_APPROVAL_REQUIRED", 400);
     if (!call.analysis) throw new AppError("NO_ANALYSIS");
+    if (!analysisCurrent(call)) throw new AppError("STALE_ANALYSIS", 409);
     const checkpoint = call.analysis.assessments.find(
       (x) => x.id === decision.checkpointId,
     );
     if (!checkpoint) throw new AppError("INVALID_CHECKPOINT");
+    if (decision.evidence)
+      checkpoint.evidence = structuredClone(decision.evidence);
     if (decision.status === "passed" && !checkpoint.evidence.segmentIds.length)
       throw new AppError("EVIDENCE_REQUIRED");
     checkpoint.status = decision.status;
     checkpoint.reason = decision.reason;
+    if (validateEvidence(call.analysis, call.segments).length)
+      throw new AppError("INVALID_EVIDENCE", 400);
     call.analysis.reviewReasons = call.analysis.reviewReasons.filter(
       (x) => x !== `Checkpoint needs review: ${decision.checkpointId}`,
     );
-    if (call.mode === "live") {
+    {
       const guarded = guardAssessment(
         call.analysis,
         call.segments,
@@ -44,6 +58,21 @@ export async function POST(
           ?.status !== "passed"
       )
         throw new AppError("ATTRIBUTION_REVIEW_REQUIRED", 400);
+      if (
+        (decision.status === "passed" || decision.status === "missed") &&
+        !assessmentContext(call).transcriptComplete
+      )
+        throw new AppError("SOURCE_VERIFICATION_REQUIRED", 400);
+      if (
+        call.mode === "live" &&
+        (decision.status === "passed" || decision.status === "missed")
+      ) {
+        const blocked = sourceReviewBlock(
+          call,
+          process.env.REAL_CALL_PROCESSING_ENABLED === "true",
+        );
+        if (blocked) throw new AppError(blocked, 400);
+      }
       guarded.reviewReasons = [
         ...new Set([
           ...guarded.reviewReasons,
@@ -65,6 +94,8 @@ export async function POST(
       userId: identity.userId,
       at: new Date().toISOString(),
       previousVersion: call.version,
+      sourceRevision: call.sourceRevision ?? 0,
+      evidence: structuredClone(checkpoint.evidence),
     });
     call.version++;
     if (!(await repo.put(call, decision.version)))

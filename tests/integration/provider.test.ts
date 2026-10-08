@@ -187,6 +187,11 @@ it("uses strict structured output and computes no provider-owned grade", async (
     result.effective.assessments.every((x) => x.status === "unknown"),
   ).toBe(true);
   expect(result.effective.complete).toBe(false);
+  expect(
+    (body.messages as { role: string; content: string }[]).find(
+      (x) => x.role === "user",
+    )!.content,
+  ).toContain('"sourceVerification":{"transcriptComplete":false}');
   expect(body.response_format).toMatchObject({
     type: "json_schema",
     json_schema: { strict: true },

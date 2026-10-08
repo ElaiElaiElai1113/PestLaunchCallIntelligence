@@ -7,6 +7,8 @@ import { computeScore } from "@/lib/scoring/engine";
 import { ownsProcessing } from "@/lib/domain/processing-attempt";
 import { claimProcessingAttempt } from "@/lib/jobs/processing-claim";
 import type { CallRecord } from "@/lib/domain/types";
+import { analysisCurrent } from "@/lib/domain/source-review";
+import { assessmentContext } from "@/lib/domain/assessment-guards";
 const provider = () => new GroqProvider({ apiKey: process.env.GROQ_API_KEY });
 const missing = (error: unknown) =>
   error instanceof Error && error.message === "CALL_NOT_FOUND";
@@ -152,11 +154,11 @@ async function analysisStep(
   const loaded = await ownedCall(callId, attemptId, runId);
   if (!loaded) return { callId };
   const { repo, call } = loaded;
-  if (call.analysis) {
+  if (analysisCurrent(call)) {
     if (attemptId) {
       const previous = call.version;
       call.status =
-        call.score?.grade == null || call.analysis.reviewReasons.length
+        call.score?.grade == null || call.analysis!.reviewReasons.length
           ? "needs_review"
           : "ready";
       call.errorCode = null;
@@ -173,11 +175,18 @@ async function analysisStep(
       process.env.REAL_CALL_PROCESSING_ENABLED !== "true"
     )
       throw new Error("PRIVACY_APPROVAL_REQUIRED");
-    const { original, effective } = await provider().analyze(call.segments, {
-      transcriptComplete: call.transcriptCompleteness === "verified",
-    });
+    const sourceRevision = call.sourceRevision ?? 0;
+    const { original, effective } = await provider().analyze(
+      call.segments,
+      assessmentContext(call),
+    );
     const latest = await ownedCall(callId, attemptId, runId);
-    if (!latest || latest.call.version !== call.version) return { callId };
+    if (
+      !latest ||
+      latest.call.version !== call.version ||
+      (latest.call.sourceRevision ?? 0) !== sourceRevision
+    )
+      return { callId };
     effective.reviewReasons = [
       ...new Set([
         ...effective.reviewReasons,
@@ -186,7 +195,9 @@ async function analysisStep(
     ];
     const previous = call.version;
     call.analysis = effective;
-    call.originalAnalysis = original;
+    call.originalAnalysis ??= structuredClone(original);
+    call.latestModelAnalysis = structuredClone(original);
+    call.analysisSourceRevision = sourceRevision;
     call.score = computeScore(effective);
     call.status =
       call.score.grade === null || effective.reviewReasons.length
