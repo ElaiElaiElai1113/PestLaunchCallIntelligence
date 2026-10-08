@@ -1,6 +1,133 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdir } from "node:fs/promises";
+test("actual next/previous navigation stays inside the outcome filter", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Open sample workspace" }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Good conversations start with listening.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const ids: string[] = [];
+  for (const sample of ["inspection", "inspection", "one-time"]) {
+    const response = await page.request.post("/api/calls", {
+      headers: { Origin: "http://127.0.0.1:3002" },
+      data: { sample },
+    });
+    ids.push((await response.json()).call.id);
+  }
+  try {
+    await page.goto("/calls?outcome=inspectionBooked");
+    await expect(page.locator(".call-row")).toHaveCount(2);
+    await page.locator(".call-row").first().click();
+    await expect(page.locator(".call-navigation span").first()).toHaveText(
+      "1 of 2",
+    );
+    await page.getByRole("link", { name: "Next call", exact: true }).click();
+    await expect(page.locator(".call-navigation span").first()).toHaveText(
+      "2 of 2",
+    );
+    await page
+      .getByRole("link", { name: "Back to calls", exact: true })
+      .click();
+    await expect(page.locator(".call-row")).toHaveCount(2);
+  } finally {
+    for (const id of ids)
+      await page.request.delete(`/api/calls/${id}`, {
+        headers: { Origin: "http://127.0.0.1:3002" },
+      });
+  }
+});
+test("actual isolated app audits text-only source review, reloads history and withholds stale grade", async ({
+  page,
+}) => {
+  const external: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).origin !== "http://127.0.0.1:3002")
+      external.push(new URL(request.url()).hostname);
+  });
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Open sample workspace" }).click();
+  await page.getByRole("button", { name: "Add call", exact: true }).click();
+  await page.getByRole("radio", { name: /A service concern resolved/ }).check();
+  await page
+    .getByRole("button", { name: "Add fictional call", exact: true })
+    .click();
+  await expect(page.getByText("Green · 11/12", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Review transcript", exact: true })
+    .click();
+  await expect(
+    page.getByText(/text-only example has no recording/),
+  ).toBeVisible();
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    const result = await new AxeBuilder({ page }).analyze();
+    expect(
+      result.violations
+        .filter((x) => ["serious", "critical"].includes(x.impact ?? ""))
+        .map((x) => x.id),
+    ).toEqual([]);
+  }
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: "Review transcript", exact: true }),
+  ).toBeFocused();
+  await page
+    .getByRole("button", { name: "Review transcript", exact: true })
+    .click();
+  await page
+    .getByRole("checkbox", {
+      name: "I reviewed the complete fictional dialogue.",
+      exact: true,
+    })
+    .check();
+  await page
+    .getByRole("checkbox", {
+      name: "I checked the accuracy of the displayed fictional text.",
+      exact: true,
+    })
+    .check();
+  await page
+    .getByLabel("Reason for transcript review")
+    .fill(
+      "Reviewed the complete fictional text, without claiming recorded audio.",
+    );
+  await page
+    .getByRole("button", { name: "Save transcript review", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Transcript review history",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("Green · 11/12", { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Re-analyze", exact: true }),
+  ).toBeDisabled();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", {
+      name: "Previous analysis — source revision 0",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const id = new URL(page.url()).pathname.split("/").at(-1)!;
+  await page.request.delete(`/api/calls/${id}`, {
+    headers: { Origin: "http://127.0.0.1:3002" },
+  });
+  expect(external).toEqual([]);
+});
 
 test("mobile call views, filter return, keyboard dialog and zoom remain usable", async ({
   page,
@@ -78,7 +205,7 @@ test("mobile call views, filter return, keyboard dialog and zoom remain usable",
     ),
   ).toBe(true);
   await page.request.delete(`/api/calls/${id}`, {
-    headers: { Origin: "http://127.0.0.1:3000" },
+    headers: { Origin: "http://127.0.0.1:3002" },
   });
 });
 test("sample call, evidence, correction, history and deletion work together", async ({

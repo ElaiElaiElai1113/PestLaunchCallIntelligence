@@ -1,5 +1,10 @@
 import { beforeAll, afterAll, it, expect } from "vitest";
-const base = "http://127.0.0.1:3000";
+const base: string = (() => {
+  const value = process.env.PESTLAUNCH_HTTP_BASE_URL;
+  if (value !== "http://127.0.0.1:3002")
+    throw new Error("ISOLATED_HTTP_HARNESS_REQUIRED");
+  return value;
+})();
 let cookie = "",
   callId = "";
 async function request(
@@ -23,9 +28,56 @@ beforeAll(async () => {
   const response = await request("/api/session", "POST", undefined, false);
   expect(response.status).toBe(200);
   cookie = response.headers.get("set-cookie")!.split(";")[0];
+  expect((await (await request("/api/calls")).json()).calls).toEqual([]);
   const result = await request("/api/calls", "POST", { sample: "inspection" });
   expect(result.status).toBe(200);
   callId = (await result.json()).call.id;
+});
+it("actual source review is audited, persists after reload, and never creates keyless analysis", async () => {
+  const created = await request("/api/calls", "POST", { sample: "service" });
+  const initial = (await created.json()).call;
+  const id = initial.id;
+  try {
+    expect(initial.score).toMatchObject({
+      points: 11,
+      denominator: 12,
+      grade: "green",
+    });
+    const response = await request(`/api/calls/${id}/source-review`, "POST", {
+      version: 1,
+      roles: [],
+      completenessVerified: true,
+      qualityVerified: true,
+      reason:
+        "Reviewed the complete fictional text; this example has no audio.",
+    });
+    expect(response.status).toBe(200);
+    const saved = (await response.json()).call;
+    expect(saved.score.grade).toBe(null);
+    expect(saved.originalAnalysis).toEqual(initial.originalAnalysis);
+    expect(saved.originalSegments).toEqual(initial.segments);
+    expect(saved.sourceReviews).toHaveLength(1);
+    expect(
+      (await (await request(`/api/calls/${id}`)).json()).call.sourceRevision,
+    ).toBe(1);
+    const reanalysis = await request(`/api/calls/${id}/reanalyze`, "POST", {
+      version: saved.version,
+    });
+    expect(reanalysis.status).toBe(503);
+    expect((await reanalysis.json()).error).toBe("AI_NOT_CONFIGURED");
+  } finally {
+    await request(`/api/calls/${id}`, "DELETE");
+  }
+});
+it("actual owner retention counts refresh after creating and deleting a fictional call", async () => {
+  const before = await (await request("/api/test-data")).json();
+  const created = (
+    await (await request("/api/calls", "POST", { sample: "service" })).json()
+  ).call;
+  const during = await (await request("/api/test-data")).json();
+  expect(during.retained).toBe(before.retained + 1);
+  await request(`/api/calls/${created.id}`, "DELETE");
+  expect(await (await request("/api/test-data")).json()).toEqual(before);
 });
 afterAll(async () => {
   if (callId) await request(`/api/calls/${callId}`, "DELETE");

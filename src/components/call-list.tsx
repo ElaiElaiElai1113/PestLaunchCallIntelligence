@@ -14,6 +14,7 @@ import type { CallRecord } from "@/lib/domain/types";
 import { outcomeLabel } from "@/lib/domain/outcomes";
 import { pendingProcessing } from "@/lib/domain/processing-attempt";
 import { analysisCurrent } from "@/lib/domain/source-review";
+import { matchesCallFilters } from "@/lib/domain/call-filters";
 import { api, errorText, useWorkspace } from "./workspace-shell";
 export const time = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
@@ -151,8 +152,7 @@ export function CallLog({ review = false }: { review?: boolean }) {
   const query = params.get("q") || "",
     purpose = params.get("purpose") || "",
     status = params.get("status") || "",
-    grade = params.get("grade") || "",
-    outcomeFilter = params.get("outcome") || "";
+    grade = params.get("grade") || "";
   function filter(key: string, value: string) {
     const next = new URLSearchParams(latest.current.toString());
     if (value) next.set(key, value);
@@ -166,19 +166,8 @@ export function CallLog({ review = false }: { review?: boolean }) {
       ),
     );
   }
-  const filtered = calls.filter(
-    (call) =>
-      (!review || ["needs_review", "privacy_review"].includes(call.status)) &&
-      (!purpose || call.analysis?.purpose === purpose) &&
-      (!status || call.status === status) &&
-      (!grade || call.score?.grade === grade) &&
-      (!outcomeFilter ||
-        call.analysis?.outcomes[outcomeFilter as "inspectionBooked"]?.value ===
-          true) &&
-      (!query ||
-        `${call.label} ${call.analysis?.title} ${call.analysis?.summary} ${call.rep || ""} ${call.segments.map((x) => x.text).join(" ")}`
-          .toLowerCase()
-          .includes(query.toLowerCase())),
+  const filtered = calls.filter((call) =>
+    matchesCallFilters(call, params, review),
   );
   const back = `${review ? "/review" : "/calls"}${params.size ? "?" + params.toString() : ""}`;
   return (

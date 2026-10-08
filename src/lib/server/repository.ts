@@ -4,8 +4,9 @@ import { adminClient } from "../supabase/server";
 import { SampleStore } from "./store";
 import { AppError } from "./auth";
 import { deleteCallMedia } from "./storage-cleanup";
+import { resolveSampleRoot } from "./sample-paths";
 const sampleStore = () =>
-  new SampleStore(join(process.cwd(), ".private", "app", "samples.json"));
+  new SampleStore(join(resolveSampleRoot(), "samples.json"));
 export class Repository {
   constructor(readonly identity: Identity) {}
   async list(includeDeleting = false): Promise<CallRecord[]> {

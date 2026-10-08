@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { hasSupabase, userClient } from "../supabase/server";
 import type { Identity } from "../domain/types";
 import { originAllowed } from "./origin";
+import { resolveSampleRoot } from "./sample-paths";
 export class AppError extends Error {
   constructor(
     readonly code: string,
@@ -16,7 +17,7 @@ export class AppError extends Error {
 export const sampleEnabled = () =>
   process.env.NODE_ENV === "development" && !hasSupabase();
 async function sampleKey() {
-  const folder = join(process.cwd(), ".private", "app");
+  const folder = resolveSampleRoot();
   await mkdir(folder, { recursive: true });
   const path = join(folder, "sample-session-key");
   try {

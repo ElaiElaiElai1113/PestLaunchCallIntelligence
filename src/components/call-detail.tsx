@@ -26,6 +26,7 @@ import { RUBRICS, OBJECTION_IDS } from "@/lib/scoring/rubrics";
 import { OUTCOME_LABELS } from "@/lib/samples/fixtures";
 import { analysisCurrent, activeProcessing } from "@/lib/domain/source-review";
 import { TranscriptSourceReview } from "./transcript-source-review";
+import { matchesCallFilters } from "@/lib/domain/call-filters";
 import {
   pendingProcessing,
   retryAvailable,
@@ -168,18 +169,8 @@ export function CallDetail({ id }: { id: string }) {
       </button>
     ) : null;
   const backQuery = new URLSearchParams(back.split("?")[1] || "");
-  const sequence = calls.filter(
-    (x) =>
-      (!back.startsWith("/review") ||
-        ["needs_review", "privacy_review"].includes(x.status)) &&
-      (!backQuery.get("purpose") ||
-        x.analysis?.purpose === backQuery.get("purpose")) &&
-      (!backQuery.get("status") || x.status === backQuery.get("status")) &&
-      (!backQuery.get("grade") || x.score?.grade === backQuery.get("grade")) &&
-      (!backQuery.get("q") ||
-        JSON.stringify(x.analysis)
-          .toLowerCase()
-          .includes(backQuery.get("q")!.toLowerCase())),
+  const sequence = calls.filter((call) =>
+    matchesCallFilters(call, backQuery, back.startsWith("/review")),
   );
   const index = sequence.findIndex((x) => x.id === id);
   const evidenceButton = (e: Evidence) => (
