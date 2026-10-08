@@ -5,6 +5,8 @@ import {
   acquireScoringDiagnosticCase,
   assertDiagnosticHash,
   withScoringDiagnosticCase,
+  acquireStoppedPhaseCase,
+  admitSemanticRepair,
 } from "../../scripts/groq-probe-retention";
 import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -34,6 +36,48 @@ it("retains failed generation only for known fictional diagnostic artifacts", ()
   expect(retainProbeFailure(body, false)).toEqual({
     error: { code: "json_validate_failed", type: "invalid_request_error" },
   });
+});
+it("preserves aggregate consumption and hard child cap two for one repair pair", async () => {
+  const parent = {
+    stopped: "provider_failure",
+    requests: [{ case: "one-time" }, { case: "one-time" }],
+  };
+  const diagnostic = {
+    stopped: "diagnostic_complete",
+    requests: [{ case: "one-time-scoring-diagnostic" }],
+  };
+  expect(() => admitSemanticRepair(parent, diagnostic, 0)).not.toThrow();
+  expect(() => admitSemanticRepair(parent, diagnostic, 1)).toThrow();
+  expect(() =>
+    admitSemanticRepair(parent, { ...diagnostic, requests: [] }, 0),
+  ).toThrow();
+  expect(() =>
+    admitSemanticRepair({ ...parent, stopped: undefined }, diagnostic, 0),
+  ).toThrow();
+  expect(() =>
+    admitSemanticRepair(
+      parent,
+      { ...diagnostic, requests: [{ case: "customer" }] },
+      0,
+    ),
+  ).toThrow();
+  const phase = ".private/qa/repair-cap-" + randomUUID();
+  await mkdir(phase, { recursive: true });
+  const lease = await acquireStoppedPhaseCase(phase, phase + "/child", 2);
+  await expect(
+    acquireStoppedPhaseCase(phase, phase + "/other", 2),
+  ).rejects.toThrow();
+  for (let i = 0; i < 2; i++) {
+    const r = await reserveProbe(phase + "/child", "fictional", 2);
+    await r.finish();
+  }
+  await expect(reserveProbe(phase + "/child", "fictional", 2)).rejects.toThrow(
+    "PROBE_REQUEST_CAP",
+  );
+  await lease.release();
+  await expect(
+    acquireStoppedPhaseCase(phase, phase + "/child", 2),
+  ).rejects.toThrow("PROBE_SEQUENCE_CAP");
 });
 it("releases parent and child after an asynchronous operation failure", async () => {
   const parent = ".private/qa/diagnostic-operation-" + randomUUID();

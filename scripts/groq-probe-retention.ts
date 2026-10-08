@@ -26,11 +26,18 @@ export async function acquireScoringDiagnosticCase(
   parent: string,
   child: string,
 ) {
+  return acquireStoppedPhaseCase(parent, child, 1);
+}
+export async function acquireStoppedPhaseCase(
+  parent: string,
+  child: string,
+  cap: 1 | 2,
+) {
   const path = parent + "/case.lock";
   const parentLock = await open(path, "wx");
   await parentLock.close();
   try {
-    const childLock = await acquireRenewalCase(child, 1, 1);
+    const childLock = await acquireRenewalCase(child, cap, cap);
     return {
       release: async () => {
         try {
@@ -44,6 +51,22 @@ export async function acquireScoringDiagnosticCase(
     await unlink(path);
     throw error;
   }
+}
+export function admitSemanticRepair(
+  parent: { stopped?: string; requests: { case: string }[] },
+  diagnostic: { stopped?: string; requests: { case: string }[] },
+  ownRequests: number,
+) {
+  admitScoringDiagnostic(parent, 0);
+  if (
+    ownRequests !== 0 ||
+    diagnostic.stopped !== "diagnostic_complete" ||
+    diagnostic.requests.length !== 1 ||
+    diagnostic.requests[0].case !== "one-time-scoring-diagnostic"
+  )
+    throw new Error("SEMANTIC_REPAIR_REFUSED");
+  if (parent.requests.length + diagnostic.requests.length + ownRequests + 2 > 6)
+    throw new Error("PROBE_SEQUENCE_CAP");
 }
 
 export function admitScoringDiagnostic(

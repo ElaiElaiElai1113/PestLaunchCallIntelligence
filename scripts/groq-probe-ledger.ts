@@ -64,7 +64,7 @@ export async function closeProbeRound(root: string, reason: string) {
 export async function reserveProbe(
   root: string,
   caseName: string,
-  cap: 1 | 6 | 12 = 6,
+  cap: 1 | 2 | 6 | 12 = 6,
 ) {
   await mkdir(root, { recursive: true });
   const lockPath = join(root, "active.lock");
