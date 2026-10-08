@@ -6,6 +6,9 @@ const config: NextConfig = {
   devIndicators: false,
   turbopack: { root: process.cwd() },
   poweredByHeader: false,
+  outputFileTracingExcludes: {
+    "/*": ["./.private/**/*", "./.env", "./.env.*"],
+  },
   async headers() {
     return [
       {

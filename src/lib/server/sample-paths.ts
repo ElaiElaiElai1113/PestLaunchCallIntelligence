@@ -4,7 +4,7 @@ export function resolveSampleRoot(
   repoRoot = process.cwd(),
   override = process.env.PESTLAUNCH_SAMPLE_ROOT,
 ): string {
-  const repo = resolve(repoRoot);
+  const repo = resolve(/* turbopackIgnore: true */ repoRoot);
   if (!override) return join(repo, ".private", "app");
   if (override.split(/[\\/]/).includes(".."))
     throw new Error("INVALID_SAMPLE_ROOT");
@@ -21,8 +21,11 @@ export function resolveSampleRoot(
   if (!allowed) throw new Error("INVALID_SAMPLE_ROOT");
   let cursor = repo;
   for (const part of relative(repo, target).split(sep)) {
-    cursor = join(cursor, part);
-    if (existsSync(cursor) && lstatSync(cursor).isSymbolicLink())
+    cursor = join(/* turbopackIgnore: true */ cursor, part);
+    if (
+      existsSync(/* turbopackIgnore: true */ cursor) &&
+      lstatSync(/* turbopackIgnore: true */ cursor).isSymbolicLink()
+    )
       throw new Error("INVALID_SAMPLE_ROOT");
   }
   return target;
