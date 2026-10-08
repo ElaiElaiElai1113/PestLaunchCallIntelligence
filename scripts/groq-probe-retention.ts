@@ -68,6 +68,29 @@ export function admitSemanticRepair(
   if (parent.requests.length + diagnostic.requests.length + ownRequests + 2 > 6)
     throw new Error("PROBE_SEQUENCE_CAP");
 }
+export function admitEncodingDiagnostic(
+  parent: { stopped?: string; requests: { case: string }[] },
+  diagnostic: { stopped?: string; requests: { case: string }[] },
+  repair: { stopped?: string; requests: { case: string }[] },
+  ownRequests: number,
+) {
+  admitSemanticRepair(parent, diagnostic, 0);
+  if (
+    ownRequests !== 0 ||
+    repair.stopped !== "provider_failure" ||
+    repair.requests.length !== 2 ||
+    repair.requests.some((r) => r.case !== "one-time-semantic-repair")
+  )
+    throw new Error("ENCODING_DIAGNOSTIC_REFUSED");
+  if (
+    parent.requests.length +
+      diagnostic.requests.length +
+      repair.requests.length +
+      1 >
+    6
+  )
+    throw new Error("PROBE_SEQUENCE_CAP");
+}
 
 export function admitScoringDiagnostic(
   parent: { stopped?: string; requests: { case: string }[] },

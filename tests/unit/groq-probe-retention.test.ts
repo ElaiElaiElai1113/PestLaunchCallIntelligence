@@ -7,7 +7,50 @@ import {
   withScoringDiagnosticCase,
   acquireStoppedPhaseCase,
   admitSemanticRepair,
+  admitEncodingDiagnostic,
 } from "../../scripts/groq-probe-retention";
+it("accounts for all five prior requests before the final encoding diagnostic", () => {
+  const parent = {
+    stopped: "provider_failure",
+    requests: [{ case: "one-time" }, { case: "one-time" }],
+  };
+  const diagnostic = {
+    stopped: "diagnostic_complete",
+    requests: [{ case: "one-time-scoring-diagnostic" }],
+  };
+  const repair = {
+    stopped: "provider_failure",
+    requests: [
+      { case: "one-time-semantic-repair" },
+      { case: "one-time-semantic-repair" },
+    ],
+  };
+  expect(() =>
+    admitEncodingDiagnostic(parent, diagnostic, repair, 0),
+  ).not.toThrow();
+  expect(() =>
+    admitEncodingDiagnostic(parent, diagnostic, repair, 1),
+  ).toThrow();
+  expect(() =>
+    admitEncodingDiagnostic(
+      parent,
+      diagnostic,
+      {
+        ...repair,
+        requests: [...repair.requests, { case: "one-time-semantic-repair" }],
+      },
+      0,
+    ),
+  ).toThrow();
+  expect(() =>
+    admitEncodingDiagnostic(
+      parent,
+      diagnostic,
+      { ...repair, stopped: undefined },
+      0,
+    ),
+  ).toThrow();
+});
 import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import {
