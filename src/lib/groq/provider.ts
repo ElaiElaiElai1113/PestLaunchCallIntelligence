@@ -8,7 +8,13 @@ import {
   validateExtraction,
 } from "./staged-contract";
 export class GroqProvider {
-  constructor(readonly config: { apiKey?: string; fetch?: typeof fetch }) {}
+  constructor(
+    readonly config: {
+      apiKey?: string;
+      fetch?: typeof fetch;
+      beforeScoring?: () => Promise<void>;
+    },
+  ) {}
   private client() {
     if (!this.config.apiKey?.trim()) throw new Error("AI_NOT_CONFIGURED");
     return new Groq({
@@ -101,6 +107,7 @@ export class GroqProvider {
     let scoring: unknown = { noObjections: false, checkpoints: {} };
     if (extracted.purpose !== "unknown") {
       const next = buildScoringRequest(segments, context, extracted.purpose);
+      await this.config.beforeScoring?.();
       const scored = await client.chat.completions.create(next.request);
       if (
         scored.choices[0]?.finish_reason !== "stop" ||

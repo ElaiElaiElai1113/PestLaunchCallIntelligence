@@ -4,6 +4,33 @@ import { RUBRICS } from "@/lib/scoring/rubrics";
 import { scoringSchema } from "@/lib/groq/staged-contract";
 import { buildScoringRequest } from "@/lib/groq/analysis-request";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
+it("includes an explicit array type beside bounded array references for Groq", () => {
+  const source = sampleCall("one-time", "fictional-array-reference");
+  const request = buildScoringRequest(
+    source.segments,
+    { transcriptComplete: true },
+    "sales",
+  ).request;
+  const schema =
+    request.response_format!.type === "json_schema"
+      ? request.response_format!.json_schema.schema
+      : {};
+  const violations: string[] = [];
+  function walk(value: unknown, path: string) {
+    if (!value || typeof value !== "object") return;
+    const node = value as Record<string, unknown>;
+    if (
+      node.$ref &&
+      (node.minItems !== undefined || node.maxItems !== undefined) &&
+      node.type !== "array"
+    )
+      violations.push(path);
+    for (const [key, child] of Object.entries(node))
+      walk(child, path + "." + key);
+  }
+  walk(schema, "schema");
+  expect(violations).toEqual([]);
+});
 it("schema rejects coaching without a real parent reference before resolution", () => {
   const call = sampleCall("one-time", "fictional-empty-coaching");
   const scoring = stagedFromAnalysis(call.originalAnalysis!).scoring;

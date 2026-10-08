@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   runId: "fictional-run",
   transcribe: vi.fn(),
   getError: "",
+  beforeScoring: null as null | (() => Promise<void>),
 }));
 vi.mock("workflow", async (importOriginal) => ({
   ...(await importOriginal<typeof import("workflow")>()),
@@ -32,6 +33,9 @@ vi.mock("@/lib/server/repository", () => ({
 vi.mock("@/lib/supabase/server", () => ({ adminClient: state.admin }));
 vi.mock("@/lib/groq/provider", () => ({
   GroqProvider: class {
+    constructor(config: { beforeScoring?: () => Promise<void> }) {
+      state.beforeScoring = config.beforeScoring ?? null;
+    }
     analyze = state.analyze;
     transcribe = state.transcribe;
   },
@@ -40,6 +44,7 @@ import { processCall } from "@/workflows/process-call";
 beforeEach(() => {
   vi.resetAllMocks();
   state.getError = "";
+  state.beforeScoring = null;
   state.runId = "fictional-run";
   state.call = sampleCall("service", "fictional-call");
   Object.assign(state.call, {
@@ -63,6 +68,30 @@ const rawOutput = (content: string) => ({
   model: "openai/gpt-oss-120b",
   content,
 });
+it.each(["deleted", "version", "source", "owner"])(
+  "does not transmit scoring after %s during extraction",
+  async (kind) => {
+    state.analyze.mockImplementationOnce(async () => {
+      expect(state.beforeScoring).toBeTypeOf("function");
+      if (kind === "deleted") state.call = null;
+      else if (kind === "version") state.call!.version++;
+      else if (kind === "source")
+        state.call!.sourceRevision = (state.call!.sourceRevision ?? 0) + 1;
+      else
+        state.call!.processingAttempt = {
+          id: "new-owner",
+          state: "running",
+          runId: "new-run",
+        };
+      await expect(state.beforeScoring!()).rejects.toThrow(
+        "PROCESSING_SUPERSEDED",
+      );
+      throw new Error("PROCESSING_SUPERSEDED");
+    });
+    await processCall("fictional-call");
+    expect(state.call?.analysis ?? null).toBeNull();
+  },
+);
 it("first raw response remains immutable while latest follows accepted re-analysis", async () => {
   const raw = analysis(),
     first = rawOutput(' {"fictional":1} '),

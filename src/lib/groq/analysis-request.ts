@@ -51,6 +51,27 @@ function requestFor(
     { reused: "ref" },
   );
   delete schema.$schema;
+  // Zod emits $ref + minItems for a refined reused array. Groq's schema
+  // subset requires the array type at that same node; preserve all constraints.
+  function explicitArrayTypes(value: unknown) {
+    if (!value || typeof value !== "object") return;
+    const node = value as Record<string, unknown>;
+    if (
+      typeof node.$ref === "string" &&
+      (node.minItems !== undefined || node.maxItems !== undefined) &&
+      node.type === undefined
+    ) {
+      const parts = node.$ref.split("/");
+      if (parts.length !== 3 || parts[0] !== "#" || parts[1] !== "$defs")
+        throw new Error("INVALID_ANALYSIS_SCHEMA");
+      const target = schema.$defs?.[parts[2]];
+      if (!target || typeof target !== "object" || target.type !== "array")
+        throw new Error("INVALID_ANALYSIS_SCHEMA");
+      node.type = "array";
+    }
+    for (const child of Object.values(node)) explicitArrayTypes(child);
+  }
+  explicitArrayTypes(schema);
   const request: ChatCompletionCreateParamsNonStreaming = {
     model: "openai/gpt-oss-120b",
     temperature: 0,

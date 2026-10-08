@@ -176,10 +176,23 @@ async function analysisStep(
     )
       throw new Error("PRIVACY_APPROVAL_REQUIRED");
     const sourceRevision = call.sourceRevision ?? 0;
-    const { original, effective, providerOutput } = await provider().analyze(
-      call.segments,
-      assessmentContext(call),
-    );
+    const stagedProvider = new GroqProvider({
+      apiKey: process.env.GROQ_API_KEY,
+      beforeScoring: async () => {
+        const active = await ownedCall(callId, attemptId, runId);
+        if (
+          !active ||
+          active.call.version !== call.version ||
+          (active.call.sourceRevision ?? 0) !== sourceRevision ||
+          active.call.status === "privacy_review" ||
+          (active.call.sourceKind !== "synthetic" &&
+            process.env.REAL_CALL_PROCESSING_ENABLED !== "true")
+        )
+          throw new Error("PROCESSING_SUPERSEDED");
+      },
+    });
+    const { original, effective, providerOutput } =
+      await stagedProvider.analyze(call.segments, assessmentContext(call));
     const latest = await ownedCall(callId, attemptId, runId);
     if (
       !latest ||
@@ -213,6 +226,8 @@ async function analysisStep(
     call.version++;
     await repo.put(call, previous);
   } catch (error) {
+    if (error instanceof Error && error.message === "PROCESSING_SUPERSEDED")
+      return { callId };
     await safeFailure(callId, error, attemptId, runId, call.version);
   }
   return { callId };

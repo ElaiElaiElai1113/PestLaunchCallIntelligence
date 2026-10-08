@@ -54,6 +54,20 @@ it("reserves before effects, counts failures and refuses a seventh request", asy
     "PROBE_REQUEST_CAP",
   );
 });
+it("the separately renewed twelve-request bound never resets consumed requests", async () => {
+  const root = `.private/qa/probe-renewal-test-${randomUUID()}`;
+  for (let i = 0; i < 12; i++) {
+    const run = await reserveProbe(root, "fictional-renewal", 12);
+    expect(run.entry.ordinal).toBe(i + 1);
+    await run.finish();
+  }
+  await expect(reserveProbe(root, "extra", 12)).rejects.toThrow(
+    "PROBE_REQUEST_CAP",
+  );
+  expect(
+    JSON.parse(await readFile(`${root}/ledger.json`, "utf8")).requests,
+  ).toHaveLength(12);
+});
 it("immutable artifacts and one active owner prevent overwrites and parallel fetch", async () => {
   const root = `.private/qa/probe-ledger-test-${randomUUID()}`,
     run = await reserveProbe(root, "fictional");

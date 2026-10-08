@@ -4,6 +4,31 @@ import { sampleCall } from "@/lib/samples/fixtures";
 import { wireFromAnalysis } from "../helpers/provider-wire";
 
 const call = () => sampleCall("one-time", "fictional-staged");
+it("rechecks permission before a second provider transmission", async () => {
+  const { extraction } = responses();
+  let requests = 0;
+  const provider = new GroqProvider({
+    apiKey: "fictional-contract-token",
+    beforeScoring: async () => {
+      throw new Error("PROCESSING_SUPERSEDED");
+    },
+    fetch: async () => {
+      requests++;
+      return Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: { content: JSON.stringify(extraction) },
+          },
+        ],
+      });
+    },
+  });
+  await expect(
+    provider.analyze(call().segments, { transcriptComplete: true }),
+  ).rejects.toThrow("PROCESSING_SUPERSEDED");
+  expect(requests).toBe(1);
+});
 function responses() {
   const wire = wireFromAnalysis(call().originalAnalysis!);
   const { assessments, ...extraction } = wire;
