@@ -5,8 +5,9 @@ import type {
   Purpose,
   Segment,
 } from "../domain/types";
-import { RUBRICS } from "../scoring/rubrics";
 import { computeScore } from "../scoring/engine";
+import { guardAssessment } from "../domain/assessment-guards";
+import { sampleAssessments, sampleCoaching } from "./assessments";
 export const OUTCOME_LABELS: Record<OutcomeKey, string> = {
   quoteProvided: "Quote provided",
   inspectionBooked: "Inspection booked",
@@ -46,7 +47,7 @@ const conversations: Record<string, [Segment["speaker"], string][]> = {
   inspection: [
     [
       "employee",
-      "Thanks for calling. I can help you work out the next step. What have you noticed?",
+      "Thanks for calling. I can help you work out the next step. I will ask a few questions first. What have you noticed?",
     ],
     ["customer", "I have seen ants near the kitchen window for a few days."],
     [
@@ -59,12 +60,12 @@ const conversations: Record<string, [Segment["speaker"], string][]> = {
     ],
     [
       "employee",
-      "So you want an inspection first. We can arrange a free inspection, then discuss treatment options if needed. Does that sound right?",
+      "So you want an inspection first. I will explain how the inspection works next. We can arrange a free inspection, then discuss treatment options if needed. Does that sound right?",
     ],
     ["customer", "Yes, an inspection would be helpful."],
     [
       "employee",
-      "I can book an inspection for tomorrow morning. This books the inspection only; there is no treatment agreement or payment today.",
+      "I can book an inspection for tomorrow morning. Shall I book that? This books the inspection only; there is no treatment agreement or payment today.",
     ],
     ["customer", "Tomorrow morning works for me."],
     [
@@ -80,12 +81,12 @@ const conversations: Record<string, [Segment["speaker"], string][]> = {
     ],
     [
       "employee",
-      "I understand. I can help arrange a follow-up. Where are you seeing activity now?",
+      "I understand. I can help arrange a follow-up. I will ask a few questions first so we can choose the right next step. Where are you seeing activity now?",
     ],
     ["customer", "Around the same kitchen window."],
     [
       "employee",
-      "So the activity has continued in the same area. We can arrange a no-cost follow-up visit. Would tomorrow between nine and twelve work?",
+      "So the activity has continued in the same area. I will explain the visit options next. We can arrange a no-cost follow-up visit. Would tomorrow between nine and twelve work?",
     ],
     ["customer", "Yes, that works. Please use the side entrance."],
     [
@@ -106,12 +107,12 @@ const conversations: Record<string, [Segment["speaker"], string][]> = {
     ],
     [
       "employee",
-      "I understand. May I ask whether there is a service concern we can resolve?",
+      "I understand. I can help with your request. May I ask whether there is a service concern we can resolve?",
     ],
     ["customer", "No, we are happy with the service. It is just the move."],
     [
       "employee",
-      "So the move is the reason. I will send the cancellation request to the account team and ask them to confirm it.",
+      "So the move is the reason. I will explain the next step. I will send the cancellation request to the account team and ask them to confirm it. Does that next step sound right?",
     ],
     ["customer", "Please do. I need written confirmation."],
     [
@@ -122,7 +123,7 @@ const conversations: Record<string, [Segment["speaker"], string][]> = {
   "one-time": [
     [
       "employee",
-      "Thanks for calling. I can help with your pest concern. What are you noticing?",
+      "Thanks for calling. I can help with your pest concern. I will ask a few questions first. What are you noticing?",
     ],
     ["customer", "There are ants by the patio. I only want one treatment."],
     [
@@ -186,7 +187,6 @@ export function sampleCall(key: string, id: string): CallRecord {
       : key === "inspection"
         ? ["pricing", "final_information"]
         : [];
-  const missed = key === "one-time" ? ["summary", "expectation_solve"] : [];
   const analysis: Analysis = {
     purpose,
     title: option.title,
@@ -206,7 +206,11 @@ export function sampleCall(key: string, id: string): CallRecord {
           : ["scheduling", key === "inspection" ? "inspection" : "one-time"],
     outcomes,
     facts: [
-      { label: "Customer need", text: segments[1].text, evidence: evidence(1) },
+      {
+        label: "Customer-reported need",
+        text: segments[1].text,
+        evidence: evidence(1),
+      },
       {
         label: "Agreed next step",
         text: segments[segments.length - 1].text,
@@ -218,70 +222,45 @@ export function sampleCall(key: string, id: string): CallRecord {
         text:
           key === "retention"
             ? "Request written cancellation confirmation from the account team."
-            : "Confirm the agreed visit and necessary access details.",
-        state: "promised",
+            : "Proceed with the agreed visit in the stated arrival window.",
+        state: key === "retention" ? "promised" : "accepted",
         dueText:
           key === "retention"
             ? null
             : key === "one-time"
               ? "Friday afternoon"
               : "tomorrow",
-        evidence: evidence(segments.length - 1),
+        evidence:
+          key === "retention"
+            ? evidence(segments.length - 1)
+            : {
+                segmentIds: [
+                  segments[key === "service" ? 4 : 6].id,
+                  segments[key === "service" ? 5 : 7].id,
+                ],
+                quote: [
+                  segments[key === "service" ? 4 : 6].text,
+                  segments[key === "service" ? 5 : 7].text,
+                ].join(" "),
+              },
       },
     ],
-    assessments: RUBRICS[purpose].map((x, i) => ({
-      id: x.id,
-      status: unresolved.includes(x.id)
-        ? "unknown"
-        : missed.includes(x.id)
-          ? "missed"
-          : "passed",
-      reason: unresolved.includes(x.id)
-        ? "The sample does not establish this step or its applicability."
-        : missed.includes(x.id)
-          ? "A clear confirmation of understanding was not heard."
-          : "Fictional assessment for interface testing; not an AI evaluation.",
-      evidence: evidence(Math.min(i, segments.length - 1)),
-    })),
-    coaching: [
-      {
-        kind: "strength",
-        title: "Make the next step explicit",
-        detail:
-          "The closing statement separates the agreed action from an unverified account or payment action.",
-        suggestedResponse: null,
-        checkpointId: "conclusion",
-        evidence: evidence(segments.length - 1),
-      },
-      {
-        kind: "improvement",
-        title:
-          key === "retention"
-            ? "Confirm who owns the follow-up"
-            : "Check understanding before proposing the next step",
-        detail:
-          key === "retention"
-            ? "Add a specific owner and expected confirmation time without promising that an account action has already happened."
-            : "Restate the customer’s need and check agreement before discussing the solution.",
-        suggestedResponse:
-          key === "retention"
-            ? "I will send this to the account team today. They will confirm the request once it has been reviewed."
-            : "You would like us to address this concern with the agreed visit. Have I understood that correctly?",
-        checkpointId: purpose === "retention" ? "research" : "summary",
-        evidence: evidence(Math.min(4, segments.length - 1)),
-      },
-    ],
+    assessments: sampleAssessments(key, purpose, segments),
+    coaching: sampleCoaching(key, segments),
     complete: true,
     noObjections: key === "inspection",
     reviewReasons: unresolved.map((x) => `Checkpoint needs review: ${x}`),
   };
-  const score = computeScore(analysis);
+  const effective = guardAssessment(analysis, segments, {
+    transcriptComplete: true,
+  });
+  const score = computeScore(effective);
   return {
     id,
     workspaceId: "sample-workspace",
     label: `SAMPLE-${id.slice(-4).toUpperCase()}`,
     mode: "sample",
-    status: score.unresolved ? "needs_review" : "ready",
+    status: score.grade === null ? "needs_review" : "ready",
     uploadedAt: new Date().toISOString(),
     recordedAt: null,
     rep: null,
@@ -292,7 +271,7 @@ export function sampleCall(key: string, id: string): CallRecord {
     checksum: null,
     errorCode: null,
     segments,
-    analysis,
+    analysis: effective,
     originalAnalysis: structuredClone(analysis),
     score,
     decisions: [],

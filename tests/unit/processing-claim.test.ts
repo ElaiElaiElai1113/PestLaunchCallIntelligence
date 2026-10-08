@@ -7,13 +7,32 @@ import {
   retryAvailable,
   ownsProcessing,
 } from "@/lib/domain/processing-attempt";
-it.each([true,false])("a delayed claim restores active status, existing transcript=%s",async hasTranscript=>{
-  let saved=sampleCall("service","delayed-call");if(!hasTranscript)saved.segments=[];
-  saved.status="failed";saved.errorCode="PROCESSING_START_FAILED";saved.processingAttempt={id:"pending-attempt",state:"pending",runId:null};
-  const repo:RetryRepository={get:async()=>structuredClone(saved),put:async(next,expected)=>{if(saved.version!==expected)return false;saved=structuredClone(next);return true;}};
-  await claimProcessingAttempt(repo,saved.id,"pending-attempt","run-a");
-  expect(saved.status).toBe(hasTranscript?"analyzing":"queued");expect(saved.errorCode).toBe(null);expect(retryAvailable(saved)).toBe(false);
-});
+it.each([true, false])(
+  "a delayed claim restores active status, existing transcript=%s",
+  async (hasTranscript) => {
+    let saved = sampleCall("service", "delayed-call");
+    if (!hasTranscript) saved.segments = [];
+    saved.status = "failed";
+    saved.errorCode = "PROCESSING_START_FAILED";
+    saved.processingAttempt = {
+      id: "pending-attempt",
+      state: "pending",
+      runId: null,
+    };
+    const repo: RetryRepository = {
+      get: async () => structuredClone(saved),
+      put: async (next, expected) => {
+        if (saved.version !== expected) return false;
+        saved = structuredClone(next);
+        return true;
+      },
+    };
+    await claimProcessingAttempt(repo, saved.id, "pending-attempt", "run-a");
+    expect(saved.status).toBe(hasTranscript ? "analyzing" : "queued");
+    expect(saved.errorCode).toBe(null);
+    expect(retryAvailable(saved)).toBe(false);
+  },
+);
 function setup() {
   let saved: CallRecord | null = sampleCall("service", "fictional-claim-call");
   saved.processingAttempt = {
