@@ -61,7 +61,7 @@ export async function closeProbeRound(root: string, reason: string) {
     await unlink(lockPath);
   }
 }
-export async function reserveProbe(root: string, caseName: string) {
+export async function reserveProbe(root: string, caseName: string, cap: 6 | 12 = 6) {
   await mkdir(root, { recursive: true });
   const lockPath = join(root, "active.lock");
   const lock = await open(lockPath, "wx");
@@ -76,7 +76,7 @@ export async function reserveProbe(root: string, caseName: string) {
       ledger = { requests: [] };
     }
     if (ledger.stopped) throw new Error("PROBE_STOPPED");
-    if (ledger.requests.length >= 6) throw new Error("PROBE_REQUEST_CAP");
+    if (ledger.requests.length >= cap) throw new Error("PROBE_REQUEST_CAP");
     if (ledger.notBefore && ledger.notBefore > Date.now())
       throw new Error("PROBE_QUOTA_WAIT");
     const entry: ProbeEntry = {

@@ -64,7 +64,7 @@ export type ProcessingAttempt = {
   runId: string | null;
 };
 export type ProviderOutput = {
-  contract: "call_analysis_refs_v1";
+  contract: "call_analysis_refs_v1" | "call_analysis_staged_v2";
   model: string;
   content: string;
 };

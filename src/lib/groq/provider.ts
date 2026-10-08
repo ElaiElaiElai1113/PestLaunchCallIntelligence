@@ -1,8 +1,12 @@
 import type { Segment } from "../domain/types";
 import Groq, { toFile } from "groq-sdk";
 import { z } from "zod";
-import { buildAnalysisRequest } from "./analysis-request";
-import { CONTRACT, resolveAnalysis } from "./analysis-contract";
+import { buildAnalysisRequest, buildScoringRequest } from "./analysis-request";
+import {
+  STAGED_CONTRACT,
+  resolveStaged,
+  validateExtraction,
+} from "./staged-contract";
 export class GroqProvider {
   constructor(readonly config: { apiKey?: string; fetch?: typeof fetch }) {}
   private client() {
@@ -92,10 +96,31 @@ export class GroqProvider {
       throw new Error("INCOMPLETE_ANALYSIS");
     const content = response.choices[0]?.message.content;
     if (typeof content !== "string") throw new Error("INCOMPLETE_ANALYSIS");
-    const result = resolveAnalysis(JSON.parse(content), segments, context);
+    const extracted = validateExtraction(JSON.parse(content), segments);
+    let scoringContent: string | null = null;
+    let scoring: unknown = { noObjections: false, checkpoints: {} };
+    if (extracted.purpose !== "unknown") {
+      const next = buildScoringRequest(segments, context, extracted.purpose);
+      const scored = await client.chat.completions.create(next.request);
+      if (
+        scored.choices[0]?.finish_reason !== "stop" ||
+        typeof scored.choices[0]?.message.content !== "string"
+      )
+        throw new Error("INCOMPLETE_ANALYSIS");
+      scoringContent = scored.choices[0].message.content;
+      scoring = JSON.parse(scoringContent);
+    }
+    const result = resolveStaged(extracted, scoring, segments, context);
     return {
       ...result,
-      providerOutput: { contract: CONTRACT, model: request.model, content },
+      providerOutput: {
+        contract: STAGED_CONTRACT,
+        model: request.model,
+        content: JSON.stringify({
+          extraction: content,
+          scoring: scoringContent,
+        }),
+      },
     };
   }
 }

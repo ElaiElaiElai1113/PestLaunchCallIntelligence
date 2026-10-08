@@ -41,3 +41,17 @@ export function wireFromAnalysis(analysis: Analysis): WireAnalysis {
     }),
   };
 }
+
+export function stagedFromAnalysis(analysis: Analysis) {
+  const { assessments, noObjections, ...extraction } =
+    wireFromAnalysis(analysis);
+  return {
+    extraction,
+    scoring: {
+      noObjections,
+      checkpoints: Object.fromEntries(
+        assessments.map(({ id, ...item }) => [id, item]),
+      ),
+    },
+  };
+}

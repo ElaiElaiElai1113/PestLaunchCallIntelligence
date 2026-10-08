@@ -1,7 +1,7 @@
 import { it, expect } from "vitest";
 import { GroqProvider } from "@/lib/groq/provider";
 import { analysis } from "../helpers/analysis";
-import { wireFromAnalysis } from "../helpers/provider-wire";
+import { wireFromAnalysis, stagedFromAnalysis } from "../helpers/provider-wire";
 const segments = [
   {
     id: "s1",
@@ -146,6 +146,7 @@ it("missing AI key fails before any network request", async () => {
 });
 it("uses strict structured output and computes no provider-owned grade", async () => {
   let body: Record<string, unknown> = {};
+  let count = 0;
   const a = analysis();
   a.outcomes = Object.fromEntries(
     [
@@ -169,6 +170,7 @@ it("uses strict structured output and computes no provider-owned grade", async (
     apiKey: "fictional-contract-token",
     fetch: async (_input, init) => {
       body = JSON.parse(String(init?.body));
+      count++;
       return Response.json({
         id: "contract",
         choices: [
@@ -176,7 +178,11 @@ it("uses strict structured output and computes no provider-owned grade", async (
             index: 0,
             message: {
               role: "assistant",
-              content: JSON.stringify(wireFromAnalysis(a)),
+              content: JSON.stringify(
+                count === 1
+                  ? stagedFromAnalysis(a).extraction
+                  : stagedFromAnalysis(a).scoring,
+              ),
             },
             finish_reason: "stop",
           },
@@ -187,9 +193,11 @@ it("uses strict structured output and computes no provider-owned grade", async (
   const result = await provider.analyze(segments);
   expect(result.effective.purpose).toBe("sales");
   expect(result.original).toEqual(a);
-  expect(result.providerOutput.content).toBe(
-    JSON.stringify(wireFromAnalysis(a)),
-  );
+  expect(count).toBe(2);
+  expect(JSON.parse(result.providerOutput.content)).toEqual({
+    extraction: JSON.stringify(stagedFromAnalysis(a).extraction),
+    scoring: JSON.stringify(stagedFromAnalysis(a).scoring),
+  });
   expect(
     result.effective.assessments.every((x) => x.status === "unknown"),
   ).toBe(true);

@@ -52,7 +52,7 @@ export function contractSchema(segments: Segment[]) {
       .max(6),
     followups: z
       .array(analysisSchema.shape.followups.element.extend({ evidence: refs }))
-      .max(4),
+      .max(8),
     assessments: z.array(checkpoint).max(17),
   });
 }
