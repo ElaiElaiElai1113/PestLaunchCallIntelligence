@@ -1,6 +1,10 @@
 # PestLaunch Call Intelligence Implementation Plan
 
-## Current phase amendment — 8 October 2026
+## Current phase — 9 October 2026
+
+A server-only Groq test key is configured for human-authorized bounded fictional direct-provider probes; sample QA still forces empty keys. The compact reference contract, exact source excerpts, raw/normalized provenance and budget controls are implemented locally. The initial provider cases did not establish known-source grading acceptance; see the latest evidence entry. Real customer, hosted/deployed and account/cost/privacy gates remain pending.
+
+## Historical phase amendment — 8 October 2026
 
 The registered implementation chat exists, and the dedicated Supabase project is already selected in Projects. The current pass adds accurate fictional examples, audited source verification, revision-aware re-analysis/evidence correction and isolated actual sample API/browser walkthroughs, with Groq empty and real processing disabled. The third exact-path migration remains local/unapplied and remote history needs reconciliation. Replace the exposed server key before hosted use. The original checklist below remains the full release target: real provider, hosted recovery/privacy/deletion, deployment, all-20-call accuracy, private remote source and Loom submission are not closed by local evidence. The UI retains custom native controls and Next polling; see architecture for rationale.
 

@@ -2,7 +2,7 @@
 
 ## Scope and execution
 
-- Latest user direction: implement the frontend, backend and AI adapter now, leaving `GROQ_API_KEY` empty. Validate with explicitly fictional data and provider contract tests. Real AI, real-call processing and deployment acceptance remain pending; never simulate results for an uploaded real recording.
+- Latest user direction: the frontend/backend/AI adapter implementation is authorized, and the human supplied a server-only Groq test key and authorized bounded direct real-provider testing with explicitly fictional inputs. Follow the 2026-10-09 reference-contract repair plan and its persistent six-request cap; the initial three cases did not establish known-source acceptance, so no optional provider probes are authorized in this pass. Ordinary sample/HTTP/browser QA still forces empty keys. Real customer processing remains disabled and hosted/deployment/customer-data acceptance stays pending; never simulate results for an uploaded real recording. Return implementation/testing passes to the existing planning/review chat under the human's standing instruction.
 
 - This is a standalone repository at `C:/Users/Admin/Desktop/Projects/Portfolio/PestLaunchCallIntelligence`. Do not edit the sibling Portfolio app or any other existing client project.
 - The user authorized full implementation in a separate Codex chat using GPT-6.1 Sol with medium thinking. Execute sequentially with one editing owner. Do not spawn subagents or message other chats unless the human explicitly requests it.

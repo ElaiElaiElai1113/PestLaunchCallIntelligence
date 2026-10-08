@@ -1,8 +1,8 @@
 # Full implementation — PestLaunch Call Intelligence
 
-## Current phase: keyless implementation
+## Current phase: bounded fictional-provider repair
 
-The user explicitly asked to implement the frontend, backend and AI integration while leaving `GROQ_API_KEY` empty. This phase uses fictional sample data, a persistent development-only sample repository, actual local PostgreSQL policy tests and mocked HTTP provider contract tests. Do not buy credentials, make real AI requests, import client recordings or pretend fixtures are AI output. The production Supabase adapter and Vercel workflow are present; actual cloud Auth/Storage/workflow and real-provider acceptance remain pending. See README and the evidence ledger before continuing. A separate GPT-6.1 Sol Medium chat was requested, but native project registration remained unavailable; do not claim it was launched.
+The human supplied a server-only Groq test key and authorized bounded direct-provider tests with explicitly fictional input. Execute `docs/plans/2026-10-09-groq-reference-contract-repair.md` under its request/strategy limits. Ordinary sample/HTTP/browser QA still overrides all backend/provider keys empty; real customer processing stays disabled. Do not buy credentials, change account settings, import client recordings, use hosted operations or pretend fixtures/direct adapter probes prove deployment. The initial phase was keyless; its acceptance and historical account/registration limitations remain recorded in the evidence ledger. The implementation chat is now registered and the dedicated backend is selected, with exposed-key replacement/migration/access gates still pending.
 
 Implement this product end to end in `C:/Users/Admin/Desktop/Projects/Portfolio/PestLaunchCallIntelligence`. Use **GPT-6.1 Sol with medium thinking** for this implementation chat. Work sequentially as the sole editing owner. The user explicitly authorized implementation and access to connected accounts for this project. Begin useful work immediately; complete the requested V1 rather than returning another plan or a visual-only demo.
 
