@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run tests/integration",
+    "test:groq:fictional": "tsx scripts/test-groq-fictional.ts",
     "test:http": "node scripts/test-isolated-http.mjs",
     "demo": "node scripts/run-isolated-sample.mjs --port 3003",
     "test:e2e": "node scripts/test-isolated-browser.mjs",
