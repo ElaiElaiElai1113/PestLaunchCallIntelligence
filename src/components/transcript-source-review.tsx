@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CallRecord, Segment } from "@/lib/domain/types";
 import { api, errorText } from "./workspace-shell";
 import { activeProcessing } from "@/lib/domain/source-review";
@@ -19,6 +19,12 @@ export function TranscriptSourceReview({
   onRefresh: (call: CallRecord) => void;
 }) {
   const returnFocus = useRef<HTMLElement | null>(null);
+  const audio = useRef<HTMLAudioElement>(null);
+  const mediaGeneration = useRef(0);
+  const [media, setMedia] = useState(""),
+    [mediaBusy, setMediaBusy] = useState(false),
+    [mediaReady, setMediaReady] = useState(false),
+    [playing, setPlaying] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null),
     [reviewed, setReviewed] = useState(call),
     [latest, setLatest] = useState<CallRecord | null>(null),
@@ -28,6 +34,32 @@ export function TranscriptSourceReview({
     [reason, setReason] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const refreshMedia = useCallback(async () => {
+    const generation = ++mediaGeneration.current;
+    setMedia("");
+    setMediaReady(false);
+    setPlaying(false);
+    setMediaBusy(false);
+    if (reviewed.mode === "sample" || !reviewed.sanitizedPath) return;
+    setMediaBusy(true);
+    try {
+      const result = await api<{ url: string }>(
+        `/api/calls/${reviewed.id}/media`,
+      );
+      if (generation === mediaGeneration.current) setMedia(result.url);
+    } catch {
+      // No raw-source fallback: the reviewer must refresh protected playback.
+    } finally {
+      if (generation === mediaGeneration.current) setMediaBusy(false);
+    }
+  }, [reviewed.id, reviewed.mode, reviewed.sanitizedPath]);
+  useEffect(() => {
+    const generation = mediaGeneration;
+    void refreshMedia();
+    return () => {
+      generation.current++;
+    };
+  }, [refreshMedia]);
   useEffect(() => {
     returnFocus.current ??= document.activeElement as HTMLElement | null;
     const element = dialog.current;
@@ -87,7 +119,8 @@ export function TranscriptSourceReview({
       ref={dialog}
       className="modal source-review-modal"
       aria-labelledby="source-review-title"
-      onCancel={() => {
+      onCancel={(event) => {
+        event.preventDefault();
         if (!busy) onClose();
       }}
     >
@@ -107,12 +140,89 @@ export function TranscriptSourceReview({
           ? "Review the complete fictional dialogue. This text-only example has no recording; these confirmations concern its displayed text only."
           : "Listen to the entire privately prepared recording and compare it with the transcript. Leave mixed or unclear speakers Unknown. This review does not change words or timestamps."}
       </p>
+      {reviewed.mode !== "sample" && (
+        <section
+          className="source-recording"
+          aria-label="Prepared recording playback"
+        >
+          {media ? (
+            <>
+              <audio
+                ref={audio}
+                aria-label="Prepared recording"
+                controls
+                preload="metadata"
+                src={media}
+                onLoadedMetadata={() => setMediaReady(true)}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
+                onEnded={() => setPlaying(false)}
+                onError={() => {
+                  setMedia("");
+                  setMediaReady(false);
+                  setPlaying(false);
+                }}
+              />
+              <button
+                type="button"
+                className="button"
+                disabled={!mediaReady}
+                onClick={async () => {
+                  if (!audio.current) return;
+                  if (playing) audio.current.pause();
+                  else
+                    try {
+                      await audio.current.play();
+                    } catch {
+                      setPlaying(false);
+                    }
+                }}
+              >
+                {playing
+                  ? "Pause prepared recording"
+                  : "Play prepared recording"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p role="status">
+                {mediaBusy
+                  ? "Opening prepared recording…"
+                  : "Prepared recording is unavailable. Try refreshing playback before verifying the source."}
+              </p>
+              <button
+                type="button"
+                className="button"
+                disabled={mediaBusy || !reviewed.sanitizedPath}
+                onClick={() => void refreshMedia()}
+              >
+                Refresh prepared recording
+              </button>
+            </>
+          )}
+        </section>
+      )}
       <form onSubmit={save}>
         <div className="source-role-list">
           {reviewed.segments.map((segment) => (
             <div className="source-role-row" key={segment.id}>
               <div>
-                <span className="muted">{clock(segment.startMs)}</span>
+                {reviewed.mode === "sample" ? (
+                  <span className="muted">{clock(segment.startMs)}</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="button"
+                    aria-label={`Seek recording to ${clock(segment.startMs)}`}
+                    disabled={!mediaReady}
+                    onClick={() => {
+                      if (audio.current)
+                        audio.current.currentTime = segment.startMs / 1000;
+                    }}
+                  >
+                    {clock(segment.startMs)}
+                  </button>
+                )}
                 <p>{segment.text}</p>
               </div>
               <label>
@@ -161,6 +271,7 @@ export function TranscriptSourceReview({
         <label>
           Reason for transcript review
           <textarea
+            disabled={busy}
             value={reason}
             maxLength={800}
             rows={3}

@@ -3006,6 +3006,8 @@ textarea:focus {
 .source-status { padding:20px; margin:16px 0; }
 .source-status h2 { font-size:18px; }
 .source-review-modal { width:min(760px,calc(100vw - 24px)); max-height:90vh; overflow:auto; }
+.source-recording { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:16px 0; }
+.source-recording audio { width:100%; }
 .source-role-list { max-height:42vh; overflow:auto; margin:16px 0; border:1px solid var(--border); border-radius:8px; }
 .source-role-row { display:grid; grid-template-columns:minmax(0,1fr) 160px; gap:16px; padding:12px; border-bottom:1px solid var(--border); }
 .source-role-row p { margin:4px 0; line-height:1.5; }

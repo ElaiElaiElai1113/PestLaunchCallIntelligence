@@ -7,11 +7,14 @@ import {
 } from "@/lib/domain/assessment-guards";
 import { computeScore } from "@/lib/scoring/engine";
 import { analysisSchema } from "@/lib/domain/schemas";
-it.each(SAMPLE_OPTIONS)("$id original and effective analyses match the strict contract", (option) => {
-  const call = sampleCall(option.id, `fictional-${option.id}`);
-  expect(analysisSchema.safeParse(call.originalAnalysis).success).toBe(true);
-  expect(analysisSchema.safeParse(call.analysis).success).toBe(true);
-});
+it.each(SAMPLE_OPTIONS)(
+  "$id original and effective analyses match the strict contract",
+  (option) => {
+    const call = sampleCall(option.id, `fictional-${option.id}`);
+    expect(analysisSchema.safeParse(call.originalAnalysis).success).toBe(true);
+    expect(analysisSchema.safeParse(call.analysis).success).toBe(true);
+  },
+);
 it.each(SAMPLE_OPTIONS)(
   "$id is internally accurate under production evidence guards",
   (option) => {

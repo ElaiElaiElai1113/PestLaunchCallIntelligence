@@ -285,7 +285,7 @@ export function CallDetail({ id }: { id: string }) {
                   : "Playback appears after processing and privacy checks."}
           </span>
         </div>
-        {media && (
+        {media && !sourceReview && (
           <audio
             ref={audio}
             controls
@@ -329,7 +329,10 @@ export function CallDetail({ id }: { id: string }) {
             disabled={
               activeProcessing(call) || call.status === "privacy_review"
             }
-            onClick={() => setSourceReview(true)}
+            onClick={() => {
+              audio.current?.pause();
+              setSourceReview(true);
+            }}
           >
             Review transcript
           </button>
@@ -1044,7 +1047,10 @@ function ReviewDialog({
       ref={dialog}
       className="modal review-modal"
       aria-labelledby="review-title"
-      onCancel={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!busy) onClose();
+      }}
     >
       <div className="modal-head">
         <div>
@@ -1054,6 +1060,7 @@ function ReviewDialog({
         <button
           className="icon-button"
           aria-label="Close review"
+          disabled={busy}
           onClick={onClose}
         >
           <X size={20} />
@@ -1071,7 +1078,7 @@ function ReviewDialog({
           "No quoted evidence is available for this checkpoint."}
       </blockquote>
       <form onSubmit={save}>
-        <fieldset className="evidence-picker">
+        <fieldset className="evidence-picker" disabled={busy}>
           <legend>Transcript evidence for this decision</legend>
           {call.segments.map((segment) => (
             <label className="evidence-choice" key={segment.id}>
@@ -1096,6 +1103,7 @@ function ReviewDialog({
         <label>
           Checkpoint decision
           <select
+            disabled={busy}
             value={status}
             onChange={(e) => setStatus(e.target.value as typeof status)}
           >
@@ -1108,6 +1116,7 @@ function ReviewDialog({
         <label>
           Reason for this decision
           <textarea
+            disabled={busy}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             minLength={10}
@@ -1200,7 +1209,8 @@ export function ConfirmDelete({
       ref={dialog}
       className="modal delete-modal"
       aria-labelledby="delete-title"
-      onCancel={() => {
+      onCancel={(event) => {
+        event.preventDefault();
         if (!busy) onClose();
       }}
     >
