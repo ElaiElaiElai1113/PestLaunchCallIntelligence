@@ -1,5 +1,7 @@
 # Client requirements and evidence matrix
 
+Latest independent local acceptance: retry admission and fact-label manual-review controls at `48d96a873809a84001140cb4778c6b4ea564adb5` are accepted with no further actionable findings. Earlier review-status statements are historical. Provider, hosted and deployed/client-demo acceptance remain pending; the probe round stays closed at3requests.
+
 Current local review status: the three follow-up repairs at application `3594559a70c681109e2395356ad52cb1963d0966` are independently accepted with no additional actionable findings in those changes. Real-provider and deployed acceptance remain pending.
 
 Historical first-round provider status (9 October): a direct real Whisper request transcribed 62.345 seconds of newly generated fictional speech with timestamps and unknown speakers. Analysis did not pass acceptance: schema-generation failure, invalid coaching and incorrectly bound quote/segment evidence were rejected. An experimental schema request exceeded Free TPM and was rolled back. These direct adapter probes do not close R01/R10 or prove hosted playback, workflow, scoring or coaching. The previously pending real-provider cells below now have this partial ASR evidence plus unresolved analysis findings; all deployed cells remain pending.

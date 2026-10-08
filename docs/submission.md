@@ -1,6 +1,6 @@
 # Demonstration and release checklist
 
-The latest local control repair at `48d96a873809a84001140cb4778c6b4ea564adb5` is awaiting independent review. It restores first-analysis recovery and corrects probe acceptance/round closure without making provider requests. It does not establish known Sales/General or full ASR semantic acceptance.
+The latest local control repair at `48d96a873809a84001140cb4778c6b4ea564adb5` is independently accepted with no further actionable findings. This closes retry-input admission and fact-label/manual-audit control issues. The round remains closed at3requests; no provider work resumes. Known Sales/General, full ASR semantics and deployed submission acceptance remain pending.
 
 Local keyless demonstration: sign in to the sample workspace; add an inspection sample; inspect the separate commitments; open Scorecard; review pricing with a reason; inspect original/effective history; follow evidence to the transcript; open Coaching; return to Calls and filter; inspect data controls. All examples are fictional and text-only.
 
