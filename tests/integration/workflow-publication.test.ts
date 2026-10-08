@@ -114,6 +114,7 @@ it("legacy live transcripts without metadata cannot inherit model completeness",
   });
 });
 it("duplicate starts permit only one owner to analyze", async () => {
+  state.call!.status = "failed";
   state.call!.processingAttempt = {
     id: "fictional-attempt",
     state: "pending",

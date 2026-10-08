@@ -15,6 +15,7 @@ export async function claimProcessingAttempt(
     return false;
   const claimed = {
     ...call,
+    status: call.segments.length ? ("analyzing" as const) : ("queued" as const),
     processingAttempt: { id: attemptId, state: "running" as const, runId },
     errorCode: null,
     version: call.version + 1,
