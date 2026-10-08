@@ -1,0 +1,130 @@
+import { expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import {
+  acquireRenewalCase,
+  assertFictionalAcceptance,
+  fingerprint,
+  verifyClientBinding,
+  type InputBinding,
+  type ClientInput,
+} from "../../scripts/groq-renewal-controls";
+const source: ClientInput = {
+  segments: [
+    {
+      id: "s1",
+      startMs: 0,
+      endMs: 1000,
+      text: "Fictional service concern",
+      speaker: "unknown",
+    },
+  ],
+  context: { transcriptComplete: false },
+};
+const files = {
+  source: Buffer.from("fictional source"),
+  derivative: Buffer.from("fictional derivative"),
+  transcription: JSON.stringify({ segments: source.segments }),
+};
+const binding = (): InputBinding => ({
+  version: "client-input-binding-v1",
+  sourceHash: fingerprint(files.source),
+  derivativeHash: fingerprint(files.derivative),
+  transcriptionHash: fingerprint(files.transcription),
+  transcriptionSourceHash: fingerprint(files.derivative),
+  inputHash: fingerprint(JSON.stringify(source)),
+  rolesVerified: false,
+  completenessVerified: false,
+});
+it("binds exact transmitted segments/context and every source artifact", () => {
+  expect(() => verifyClientBinding(source, files, binding())).not.toThrow();
+  for (const key of ["source", "derivative", "transcription"] as const)
+    expect(() =>
+      verifyClientBinding(
+        source,
+        {
+          ...files,
+          [key]: key === "transcription" ? "changed" : Buffer.from("changed"),
+        },
+        binding(),
+      ),
+    ).toThrow("CLIENT_INPUT_BINDING_FAILED");
+  const changed = structuredClone(source);
+  changed.segments[0].text = "Different fictional transcript";
+  expect(() => verifyClientBinding(changed, files, binding())).toThrow(
+    "CLIENT_INPUT_BINDING_FAILED",
+  );
+  const rebound = binding();
+  rebound.inputHash = fingerprint(JSON.stringify(changed));
+  expect(() => verifyClientBinding(changed, files, rebound)).toThrow(
+    "CLIENT_TRANSCRIPT_SUBSTITUTION",
+  );
+});
+it("a rehashed payload cannot promote unaudited role or completeness", () => {
+  for (const kind of ["role", "complete"]) {
+    const changed = structuredClone(source);
+    if (kind === "role") changed.segments[0].speaker = "employee";
+    else changed.context.transcriptComplete = true;
+    const b = binding();
+    b.inputHash = fingerprint(JSON.stringify(changed));
+    expect(() => verifyClientBinding(changed, files, b)).toThrow(
+      "CLIENT_SOURCE_AUDIT_REQUIRED",
+    );
+  }
+});
+it("client probes require complete explicit semantic acceptance bound to this input", () => {
+  expect(() =>
+    assertFictionalAcceptance({ semanticPass: true }, binding().inputHash),
+  ).toThrow("FICTIONAL_ACCEPTANCE_REQUIRED");
+  const r = {
+    version: "fictional-semantic-acceptance-v1",
+    status: "accepted",
+    coverage: [
+      "purpose",
+      "outcomes",
+      "followups",
+      "facts",
+      "checkpoints",
+      "coaching",
+    ],
+    inputHash: binding().inputHash,
+    sourceHash: "a".repeat(64),
+    resultHash: "b".repeat(64),
+    schemaAccepted: true,
+    safetyAccepted: true,
+    reviewedAt: "2026-10-09T00:00:00Z",
+    artifact: "fictional-audit.json",
+  };
+  expect(() => assertFictionalAcceptance(r, binding().inputHash)).not.toThrow();
+  expect(() =>
+    assertFictionalAcceptance(
+      { ...r, coverage: ["purpose"] },
+      binding().inputHash,
+    ),
+  ).toThrow();
+  expect(() => assertFictionalAcceptance(r, "c".repeat(64))).toThrow();
+});
+it("holds a case lock across stage gaps and refuses an entire sequence without headroom", async () => {
+  const root = ".private/qa/renewal-controls-" + randomUUID();
+  await mkdir(root, { recursive: true });
+  await writeFile(
+    root + "/ledger.json",
+    JSON.stringify({
+      requests: Array.from({ length: 10 }, (_, i) => ({ ordinal: i + 1 })),
+    }),
+  );
+  const first = await acquireRenewalCase(root, 2);
+  await expect(acquireRenewalCase(root, 1)).rejects.toThrow();
+  await first.release();
+  await writeFile(
+    root + "/ledger.json",
+    JSON.stringify({
+      requests: Array.from({ length: 11 }, (_, i) => ({ ordinal: i + 1 })),
+    }),
+  );
+  await expect(acquireRenewalCase(root, 2)).rejects.toThrow(
+    "PROBE_SEQUENCE_CAP",
+  );
+  const last = await acquireRenewalCase(root, 1);
+  await last.release();
+});
