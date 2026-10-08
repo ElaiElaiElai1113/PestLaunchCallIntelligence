@@ -143,3 +143,48 @@ it("rejects empty or duplicate source IDs", () => {
   segments[1].id = segments[0].id;
   expect(() => contractSchema(segments)).toThrow();
 });
+it("rejects excess strengths and independent coaching evidence", () => {
+  const wire = wireFixture();
+  delete wire.coaching;
+  const coach = {
+    kind: "strength" as const,
+    title: "Fictional strength",
+    detail: "Fictional evidence review",
+    suggestedResponse: null,
+  };
+  wire.assessments[0].coaching = coach;
+  wire.assessments[1].coaching = coach;
+  expect(() =>
+    resolveAnalysis(wire, source().segments, { transcriptComplete: true }),
+  ).toThrow();
+  const valid = wireFixture();
+  delete valid.coaching;
+  const parent = valid.assessments.find((a) => a.coaching)!;
+  Object.assign(parent.coaching!, {
+    checkpointId: "invented",
+    evidence: { segmentIds: ["fake"] },
+  });
+  expect(() =>
+    resolveAnalysis(valid, source().segments, { transcriptComplete: true }),
+  ).toThrow();
+});
+it("customer-only references cannot support employee coaching", () => {
+  const call = source(),
+    wire = wireFixture();
+  delete wire.coaching;
+  wire.assessments.forEach((a) => (a.coaching = null));
+  wire.assessments[0].coaching = {
+    kind: "strength",
+    title: "Fictional",
+    detail: "Fictional",
+    suggestedResponse: null,
+  };
+  wire.assessments[0].evidence.segmentIds = [
+    call.segments.find((s) => s.speaker === "customer")!.id,
+  ];
+  const result = resolveAnalysis(wire, call.segments, {
+    transcriptComplete: true,
+  });
+  expect(result.original.coaching).toHaveLength(1);
+  expect(result.effective.coaching).toEqual([]);
+});

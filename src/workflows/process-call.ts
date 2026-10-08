@@ -176,7 +176,7 @@ async function analysisStep(
     )
       throw new Error("PRIVACY_APPROVAL_REQUIRED");
     const sourceRevision = call.sourceRevision ?? 0;
-    const { original, effective } = await provider().analyze(
+    const { original, effective, providerOutput } = await provider().analyze(
       call.segments,
       assessmentContext(call),
     );
@@ -195,6 +195,11 @@ async function analysisStep(
     ];
     const previous = call.version;
     call.analysis = effective;
+    if (providerOutput) {
+      if (!call.originalAnalysis)
+        call.originalProviderOutput ??= structuredClone(providerOutput);
+      call.latestProviderOutput = structuredClone(providerOutput);
+    }
     call.originalAnalysis ??= structuredClone(original);
     call.latestModelAnalysis = structuredClone(original);
     call.analysisSourceRevision = sourceRevision;
@@ -235,6 +240,7 @@ async function safeFailure(
     "INVALID_TRANSCRIPT",
     "INCOMPLETE_ANALYSIS",
     "TRANSCRIPT_TOO_LONG",
+    "ANALYSIS_BUDGET_EXCEEDED",
     "SOURCE_UNAVAILABLE",
     "RECORDING_TOO_LONG",
     "SANITIZED_MEDIA_FAILED",

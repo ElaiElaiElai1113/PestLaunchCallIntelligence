@@ -63,7 +63,14 @@ export type ProcessingAttempt = {
   state: "pending" | "running" | "finished";
   runId: string | null;
 };
+export type ProviderOutput = {
+  contract: "call_analysis_refs_v1";
+  model: string;
+  content: string;
+};
 export type CallRecord = {
+  originalProviderOutput?: ProviderOutput | null;
+  latestProviderOutput?: ProviderOutput | null;
   sourceRevision?: number;
   analysisSourceRevision?: number;
   originalSegments?: Segment[];

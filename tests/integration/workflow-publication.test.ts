@@ -58,6 +58,106 @@ beforeEach(() => {
   ];
 });
 afterEach(() => vi.unstubAllEnvs());
+const rawOutput = (content: string) => ({
+  contract: "call_analysis_refs_v1" as const,
+  model: "openai/gpt-oss-120b",
+  content,
+});
+it("first raw response remains immutable while latest follows accepted re-analysis", async () => {
+  const raw = analysis(),
+    first = rawOutput(' {"fictional":1} '),
+    second = rawOutput('{"fictional":2}');
+  state.analyze.mockImplementationOnce(async (s, c) => ({
+    original: raw,
+    effective: guardAssessment(raw, s, c),
+    providerOutput: first,
+  }));
+  await processCall("fictional-call");
+  expect(state.call!.originalProviderOutput).toEqual(first);
+  const original = structuredClone(state.call!.originalAnalysis);
+  state.call!.sourceRevision = 1;
+  state.call!.version++;
+  state.analyze.mockImplementationOnce(async (s, c) => ({
+    original: { ...raw, title: "New fictional result" },
+    effective: guardAssessment(raw, s, c),
+    providerOutput: second,
+  }));
+  await processCall("fictional-call");
+  expect(state.call!.originalProviderOutput).toEqual(first);
+  expect(state.call!.latestProviderOutput).toEqual(second);
+  expect(state.call!.originalAnalysis).toEqual(original);
+});
+it("a legacy original is never relabelled as the newer reference response", async () => {
+  const raw = analysis();
+  state.call!.originalAnalysis = structuredClone(raw);
+  state.analyze.mockImplementation(async (s, c) => ({
+    original: raw,
+    effective: guardAssessment(raw, s, c),
+    providerOutput: rawOutput('{"new":true}'),
+  }));
+  await processCall("fictional-call");
+  expect(state.call!.originalProviderOutput).toBeUndefined();
+  expect(state.call!.latestProviderOutput?.content).toBe('{"new":true}');
+});
+it("an omitted optional raw response cannot erase existing provenance", async () => {
+  const first = rawOutput('{"existing":true}');
+  state.call!.originalProviderOutput = first;
+  state.call!.latestProviderOutput = first;
+  const raw = analysis();
+  state.analyze.mockImplementation(async (s, c) => ({
+    original: raw,
+    effective: guardAssessment(raw, s, c),
+  }));
+  await processCall("fictional-call");
+  expect(state.call!.originalProviderOutput).toEqual(first);
+  expect(state.call!.latestProviderOutput).toEqual(first);
+});
+it.each(["deletion", "source", "owner"])(
+  "raw provenance cannot publish after %s conflict",
+  async (kind) => {
+    const raw = analysis();
+    state.call!.processingAttempt = {
+      id: "raw-attempt",
+      state: "pending",
+      runId: null,
+    };
+    state.analyze.mockImplementation(async (s, c) => {
+      if (kind === "deletion") state.call = null;
+      else if (kind === "source") state.call!.sourceRevision = 1;
+      else
+        state.call!.processingAttempt = {
+          id: "other-attempt",
+          state: "running",
+          runId: "other-run",
+        };
+      return {
+        original: raw,
+        effective: guardAssessment(raw, s, c),
+        providerOutput: rawOutput('{"blocked":true}'),
+      };
+    });
+    await processCall("fictional-call", "raw-attempt");
+    expect(state.call?.latestProviderOutput).toBeUndefined();
+    expect(state.call?.analysis ?? null).toBeNull();
+  },
+);
+it("budget failure finishes its owner and retains source and immutable history", async () => {
+  const segments = structuredClone(state.call!.segments);
+  const raw = analysis();
+  state.call!.originalAnalysis = raw;
+  state.call!.processingAttempt = {
+    id: "budget-attempt",
+    state: "pending",
+    runId: null,
+  };
+  state.analyze.mockRejectedValue(new Error("ANALYSIS_BUDGET_EXCEEDED"));
+  await processCall("fictional-call", "budget-attempt");
+  expect(state.call!.errorCode).toBe("ANALYSIS_BUDGET_EXCEEDED");
+  expect(state.call!.status).toBe("failed");
+  expect(state.call!.processingAttempt?.state).toBe("finished");
+  expect(state.call!.segments).toEqual(segments);
+  expect(state.call!.originalAnalysis).toEqual(raw);
+});
 it("a stale source revision cannot take the existing-analysis shortcut", async () => {
   const raw = analysis();
   state.call!.analysis = guardAssessment(raw, state.call!.segments, {

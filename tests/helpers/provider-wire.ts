@@ -22,9 +22,12 @@ export function wireFromAnalysis(analysis: Analysis): WireAnalysis {
       evidence: refs(item.evidence),
     })),
     assessments: base.assessments.map((item) => {
+      if (item.status === "policy_award")
+        throw new Error("Wire fixtures cannot award policy points");
       const coach = coaching.find((c) => c.checkpointId === item.id);
       return {
         ...item,
+        status: item.status,
         evidence: refs(item.evidence),
         coaching: coach
           ? {
