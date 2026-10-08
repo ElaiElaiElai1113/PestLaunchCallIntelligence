@@ -21,6 +21,34 @@ const customer: Segment = {
   text: "Yes please",
   speaker: "customer",
 };
+it.each([
+  "A 30-day guarantee covers this treatment.",
+  "You receive a discount on your next service.",
+])(
+  "withholds coaching policy claims absent from the cited source: %s",
+  (suggestedResponse) => {
+    const original = analysis();
+    original.coaching = [
+      {
+        kind: "improvement",
+        title: "Clarify policy",
+        detail: "Explain the applicable terms.",
+        suggestedResponse,
+        checkpointId: "pricing",
+        evidence: { segmentIds: ["s1"], quote: "Hello" },
+      },
+    ];
+    const before = structuredClone(original);
+    const guarded = guardAssessment(original, [employee, customer], {
+      transcriptComplete: true,
+    });
+    expect(guarded.coaching).toEqual([]);
+    expect(guarded.reviewReasons).toContain(
+      "Coaching policy details need review.",
+    );
+    expect(original).toEqual(before);
+  },
+);
 it("unverified quality cannot certify reliable complete source", () => {
   const c = sampleCall("service", "fictional-call");
   c.mode = "live";

@@ -37,6 +37,7 @@ export function guardAssessment(
     return normalize(employeeText).includes(normalize(evidence.quote));
   };
   let attributionUnresolved = false;
+  let coachingPolicyUnresolved = false;
   for (const item of effective.assessments) {
     const unsupportedPass =
       item.status === "passed" && !employeeEvidence(item.evidence);
@@ -61,12 +62,29 @@ export function guardAssessment(
   effective.coaching = effective.coaching.filter((item) => {
     const supported = employeeEvidence(item.evidence);
     if (!supported) attributionUnresolved = true;
-    return supported;
+    // Conservative review trigger, not a general semantic validator: do not
+    // publish a guarantee/discount/refund claim the cited employee never made.
+    const text = normalize(`${item.detail} ${item.suggestedResponse ?? ""}`);
+    const policies =
+      text.match(
+        /\b(?:guarantee(?:d|s)?|discount(?:s|ed)?|refund(?:s|ed)?|warranty|warranties|free|waiver|waived)\b/g,
+      ) ?? [];
+    const source = normalize(item.evidence.quote);
+    const numbers = policies.length ? (text.match(/\d+(?:\.\d+)?/g) ?? []) : [];
+    const policySupported =
+      policies.every((word) => source.includes(word)) &&
+      numbers.every((number) =>
+        new RegExp(`\\b${number.replace(".", "\\.")}\\b`).test(source),
+      );
+    if (!policySupported) coachingPolicyUnresolved = true;
+    return supported && policySupported;
   });
   if (!effective.complete)
     effective.reviewReasons.push("Transcription completeness needs review.");
   if (attributionUnresolved)
     effective.reviewReasons.push("Speaker attribution needs review.");
+  if (coachingPolicyUnresolved)
+    effective.reviewReasons.push("Coaching policy details need review.");
   if (original.noObjections && !effective.noObjections)
     effective.reviewReasons.push(
       "No-objection policy needs complete attributable evidence.",
