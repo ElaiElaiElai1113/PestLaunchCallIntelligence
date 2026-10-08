@@ -39,7 +39,7 @@ Owner Data controls obtains a workspace-scoped count-only retention summary, inc
 UI components use native accessible controls/dialogs with custom Tailwind/CSS styling and Lucide icons. The implementation uses normal Next routing and bounded polling, without introducing a state library for this V1. This is an intentional simplification of the original shadcn/TanStack proposal. No external fonts, analytics or transcript localStorage are used.
 
 Current reference contracts: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client), [Storage access](https://supabase.com/docs/guides/storage/security/access-control), [Groq structured output](https://console.groq.com/docs/structured-outputs), [Groq speech](https://console.groq.com/docs/speech-to-text), [Vercel Workflow for Next](https://workflow-sdk.dev/docs/getting-started/next). Verified during implementation, 8 October 2026. Provider accuracy, account retention settings and deployment are unverified.
-# AI adapter renewal â€” 9 October
+# AI adapter renewal — 9 October
 
 The current `call_analysis_staged_v2` adapter separates detail extraction from purpose-specific scoring. Scoring requires every exact rubric key and three nullable coaching slots (one strength/two improvements); each slot selects a required checkpoint and inherits its exact source evidence. Protected provenance stores both exact response strings. Public evidence/scoring/attribution checks remain, with a conservative lexical review trigger for unsupported coaching policy terms. That trigger is not a semantic or company-policy verifier.
 

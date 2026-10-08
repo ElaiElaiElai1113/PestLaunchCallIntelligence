@@ -16,4 +16,3 @@ Source delivery checklist: private intended repository/account; lockfile and set
 # Current renewal status — 9 October
 
 Not ready for client submission. The two-stage adapter now produces structurally accepted fictional output, but semantic disagreements remain reviewed/withheld. One incomplete client-transcript extraction diagnostic occurred; scoring was stopped, and it is not full-call/new-upload/deployed acceptance. Latest local admission controls require exact source/input binding, fictional semantic acceptance and whole-case/cap checks. The current round is stopped at 11/12; no final grade, completed client pipeline or Loom/deployed proof should be claimed.
-

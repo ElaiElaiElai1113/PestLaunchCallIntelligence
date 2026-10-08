@@ -33,4 +33,3 @@ R01 and R10 are not closed by samples, contracts, screenshots, configured keys o
 # Current renewal note — 9 October
 
 The latest AI/control changes need independent review beyond the prior accepted local application revision. Wire/public acceptance was achieved for a fictional two-stage Sales result; semantic acceptance remains pending. An incomplete CALL-001 local-ASR extraction diagnostic does not close R01–R06 or deployed acceptance. Its official grade/result was never published. See the current evidence ledger for the stopped 11-request round and input/phase/locking corrections.
-
