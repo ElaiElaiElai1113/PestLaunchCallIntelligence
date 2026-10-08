@@ -272,7 +272,10 @@ export function sampleCoaching(
     },
     {
       kind: "improvement",
-      ...improvement,
+      checkpointId: improvement.checkpointId,
+      title: improvement.title,
+      detail: improvement.detail,
+      suggestedResponse: improvement.suggestedResponse,
       evidence: {
         segmentIds: [segments[improvement.index].id],
         quote: segments[improvement.index].text,
