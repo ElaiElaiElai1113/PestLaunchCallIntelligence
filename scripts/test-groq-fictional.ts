@@ -6,6 +6,7 @@ import { z } from "zod";
 import { GroqProvider } from "../src/lib/groq/provider";
 import { sampleCall } from "../src/lib/samples/fixtures";
 import { computeScore } from "../src/lib/scoring/engine";
+import { auditProbeAnalysis, optionalProbesAllowed } from "./groq-probe-audit";
 import type { Segment } from "../src/lib/domain/types";
 import { buildAnalysisRequest } from "../src/lib/groq/analysis-request";
 import { resolveSampleRoot } from "../src/lib/server/sample-paths";
@@ -52,9 +53,7 @@ if (ledger.requests.length < 3)
   );
 else
   assert.ok(
-    ledger.requests
-      .slice(0, 3)
-      .every((entry) => entry.accepted && entry.semanticPass),
+    optionalProbesAllowed(ledger),
     "Initial cases have unresolved acceptance; no optional probes",
   );
 while (ledger.notBefore && Date.now() < ledger.notBefore) {
@@ -113,6 +112,8 @@ const metadata: Record<string, unknown> = {
   wirePublicAccepted: false,
   safetyAccepted: false,
   semanticPass: false,
+  automatedChecksPassed: false,
+  semanticAuditStatus: "not_reached",
 };
 let status: number | undefined,
   reset: string | null = null,
@@ -185,52 +186,21 @@ try {
     assert.equal(result.effective.coaching.length, 0);
   }
   metadata.safetyAccepted = true;
-  const differences =
-    caseName === "saved-asr"
-      ? []
-      : fixture
-          .analysis!.assessments.filter(
-            (expected) =>
-              result.effective.assessments.find(
-                (item) => item.id === expected.id,
-              )?.status !== expected.status,
-          )
-          .map((expected) => ({
-            checkpoint: expected.id,
-            expected: expected.status,
-            actual:
-              result.effective.assessments.find(
-                (item) => item.id === expected.id,
-              )?.status ?? "missing",
-          }));
-  const outcomeDifferences = Object.entries(fixture.analysis!.outcomes)
-    .filter(
-      ([id, expected]) =>
-        result.effective.outcomes[id as keyof typeof result.effective.outcomes]
-          .value !== expected.value,
-    )
-    .map(([id, expected]) => ({
-      outcome: id,
-      expected: expected.value,
-      actual:
-        result.effective.outcomes[id as keyof typeof result.effective.outcomes]
-          .value,
-    }));
+  const audit = auditProbeAnalysis(
+    caseName,
+    fixture,
+    result.effective,
+    segments,
+  );
   metadata.purpose = result.effective.purpose;
-  const missingAcceptedFollowup =
-    fixture.analysis!.followups.some((item) => item.state === "accepted") &&
-    !result.effective.followups.some((item) => item.state === "accepted");
-  metadata.missingAcceptedFollowup = missingAcceptedFollowup;
   metadata.score = score;
-  metadata.semanticDifferences = differences;
-  metadata.outcomeDifferences = outcomeDifferences;
-  metadata.semanticPass =
-    caseName === "saved-asr"
-      ? result.effective.purpose === "sales" && !missingAcceptedFollowup
-      : !differences.length &&
-        !outcomeDifferences.length &&
-        result.effective.purpose === fixture.analysis!.purpose &&
-        !missingAcceptedFollowup;
+  metadata.automatedChecks = audit.automated;
+  metadata.automatedChecksPassed = audit.automated.passed;
+  metadata.semanticAuditStatus = audit.semanticStatus;
+  metadata.semanticPass = audit.semanticAccepted;
+  run.entry.audit = audit;
+  run.entry.sourceHash = audit.sourceHash;
+  run.entry.resultHash = audit.resultHash;
   await writeArtifact(run.folder, "accepted.json", result);
   run.entry.accepted = true;
   run.entry.semanticPass = metadata.semanticPass === true;
@@ -280,7 +250,9 @@ try {
       status,
       wirePublicAccepted: metadata.wirePublicAccepted,
       safetyAccepted: metadata.safetyAccepted,
-      semanticPass: metadata.semanticPass,
+      automatedChecksPassed: metadata.automatedChecksPassed,
+      semanticAuditStatus: metadata.semanticAuditStatus,
+      semanticAccepted: metadata.semanticPass,
       error: metadata.error ?? null,
       reportedUsage: metadata.usage ?? null,
     }),

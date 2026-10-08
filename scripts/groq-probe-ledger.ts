@@ -1,6 +1,7 @@
 import { mkdir, open, readFile, writeFile, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
+import type { ProbeAudit } from "./groq-probe-audit";
 export type ProbeEntry = {
   ordinal: number;
   case: string;
@@ -9,6 +10,9 @@ export type ProbeEntry = {
   folder: string;
   accepted?: boolean;
   semanticPass?: boolean;
+  audit?: ProbeAudit;
+  sourceHash?: string;
+  resultHash?: string;
 };
 export function assertProbeDestination(input: RequestInfo | URL) {
   const url = new URL(input instanceof Request ? input.url : String(input));
@@ -25,7 +29,38 @@ export type ProbeLedger = {
   requests: ProbeEntry[];
   notBefore?: number;
   stopped?: string;
+  controlCorrections?: {
+    at: string;
+    reason: string;
+    requestsPreserved: number;
+  }[];
 };
+export async function closeProbeRound(root: string, reason: string) {
+  const lockPath = join(root, "active.lock"),
+    lock = await open(lockPath, "wx");
+  await lock.close();
+  try {
+    const file = join(root, "ledger.json"),
+      ledger = JSON.parse(await readFile(file, "utf8")) as ProbeLedger;
+    const correction = {
+      at: new Date().toISOString(),
+      reason,
+      requestsPreserved: ledger.requests.length,
+    };
+    ledger.controlCorrections ??= [];
+    ledger.controlCorrections.push(correction);
+    ledger.stopped = "initial_acceptance_failed";
+    await writeArtifact(
+      root,
+      `control-correction-${randomUUID()}.json`,
+      correction,
+    );
+    await writeFile(file, JSON.stringify(ledger, null, 2));
+    return ledger;
+  } finally {
+    await unlink(lockPath);
+  }
+}
 export async function reserveProbe(root: string, caseName: string) {
   await mkdir(root, { recursive: true });
   const lockPath = join(root, "active.lock");

@@ -6,7 +6,27 @@ import {
   writeArtifact,
   tokenResetMs,
   assertProbeDestination,
+  closeProbeRound,
 } from "../../scripts/groq-probe-ledger";
+it("control closure preserves old request values and never reserves another request", async () => {
+  const root = `.private/qa/probe-closure-test-${randomUUID()}`;
+  for (let i = 0; i < 3; i++) {
+    const run = await reserveProbe(root, "fictional");
+    run.entry.accepted = i === 1;
+    run.entry.semanticPass = i === 1;
+    await run.finish();
+  }
+  const before = JSON.parse(await readFile(`${root}/ledger.json`, "utf8"));
+  const closed = await closeProbeRound(
+    root,
+    "Initial acceptance failed; old markers are historical only.",
+  );
+  expect(closed.requests).toEqual(before.requests);
+  expect(closed.requests).toHaveLength(3);
+  expect(closed.controlCorrections).toHaveLength(1);
+  expect(closed.stopped).toBe("initial_acceptance_failed");
+  await expect(reserveProbe(root, "optional")).rejects.toThrow("PROBE_STOPPED");
+});
 it("refuses redirects or another endpoint before transmitting credentials", () => {
   expect(() =>
     assertProbeDestination("https://api.groq.com/openai/v1/chat/completions"),
