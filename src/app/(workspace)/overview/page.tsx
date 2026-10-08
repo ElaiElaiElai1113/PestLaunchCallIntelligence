@@ -11,10 +11,11 @@ import {
 } from "lucide-react";
 import { CallRows, useCalls } from "@/components/call-list";
 import { useWorkspace } from "@/components/workspace-shell";
+import { analysisCurrent } from "@/lib/domain/source-review";
 export default function Overview() {
   const { calls, loading, error } = useCalls(),
     { session, openUpload } = useWorkspace();
-  const analyzed = calls.filter((x) => Boolean(x.analysis)),
+  const analyzed = calls.filter(analysisCurrent),
     review = calls.filter((x) =>
       ["needs_review", "privacy_review"].includes(x.status),
     ),

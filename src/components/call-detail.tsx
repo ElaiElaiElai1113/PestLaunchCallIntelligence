@@ -24,6 +24,8 @@ import {
 import type { Assessment, CallRecord, Evidence } from "@/lib/domain/types";
 import { RUBRICS, OBJECTION_IDS } from "@/lib/scoring/rubrics";
 import { OUTCOME_LABELS } from "@/lib/samples/fixtures";
+import { analysisCurrent, activeProcessing } from "@/lib/domain/source-review";
+import { TranscriptSourceReview } from "./transcript-source-review";
 import {
   pendingProcessing,
   retryAvailable,
@@ -52,6 +54,7 @@ export function CallDetail({ id }: { id: string }) {
     } | null>(null),
     [media, setMedia] = useState(""),
     [deleting, setDeleting] = useState(false),
+    [sourceReview, setSourceReview] = useState(false),
     audio = useRef<HTMLAudioElement>(null);
   const tab = params.get("tab") || "summary",
     backCandidate = params.get("back") || "/calls",
@@ -138,6 +141,7 @@ export function CallDetail({ id }: { id: string }) {
     );
   const a = call.analysis,
     score = call.score;
+  const current = analysisCurrent(call);
   const pending = pendingProcessing(call);
   const retryControl =
     session.identity.role === "owner" && retryAvailable(call) ? (
@@ -313,6 +317,77 @@ export function CallDetail({ id }: { id: string }) {
           {error}
         </p>
       )}
+      {call.segments.length > 0 && (
+        <section className="source-toolbar panel">
+          <div>
+            <strong>Transcript source</strong>
+            <p>
+              {!current && a
+                ? "Transcript updated — analysis needs to run again."
+                : call.segments.some((s) => s.speaker === "unknown")
+                  ? "Speaker review needed"
+                  : call.transcriptCompleteness === "unverified"
+                    ? "Transcript needs review"
+                    : call.mode === "sample"
+                      ? "Fictional text example; no recording exists."
+                      : "Source review stays with this conversation."}
+            </p>
+          </div>
+          <button
+            className="button"
+            disabled={
+              activeProcessing(call) || call.status === "privacy_review"
+            }
+            onClick={() => setSourceReview(true)}
+          >
+            Review transcript
+          </button>
+        </section>
+      )}
+      {a && !current && !activeProcessing(call) && (
+        <section className="panel source-status">
+          <h2>
+            Previous analysis — source revision{" "}
+            {call.analysisSourceRevision ?? 0}
+          </h2>
+          <p>
+            Current transcript source revision: {call.sourceRevision ?? 0}.
+            Previous results remain as history; no current grade is published.
+          </p>
+          {session.identity.role === "owner" ? (
+            <>
+              <button
+                className="button primary"
+                disabled={!session.aiConfigured || call.mode === "sample"}
+                onClick={async () => {
+                  try {
+                    await api(`/api/calls/${id}/reanalyze`, {
+                      method: "POST",
+                      body: JSON.stringify({ version: call.version }),
+                    });
+                    setCall(
+                      (await api<{ call: CallRecord }>(`/api/calls/${id}`))
+                        .call,
+                    );
+                  } catch (e) {
+                    setError(errorText(e));
+                  }
+                }}
+              >
+                Re-analyze
+              </button>
+              {!session.aiConfigured && (
+                <p>
+                  Analysis is unavailable until AI is configured. No new result
+                  has been produced.
+                </p>
+              )}
+            </>
+          ) : (
+            <p>A workspace owner must start re-analysis.</p>
+          )}
+        </section>
+      )}
       {a && pending && (
         <section className="panel processing-panel">
           <h2>Waiting to start</h2>
@@ -321,6 +396,15 @@ export function CallDetail({ id }: { id: string }) {
           </p>
           {retryControl}
         </section>
+      )}
+      {!a && call.segments.length > 0 && (
+        <Transcript
+          call={call}
+          selected={selected}
+          search={search}
+          setSearch={setSearch}
+          seek={seek}
+        />
       )}
       {!a ? (
         <section className="panel processing-panel">
@@ -624,6 +708,9 @@ export function CallDetail({ id }: { id: string }) {
                                             })
                                           }
                                           aria-label={`Review ${def.label}`}
+                                          disabled={
+                                            !current || activeProcessing(call)
+                                          }
                                         >
                                           <ClipboardCheck size={13} />
                                           Review checkpoint
@@ -647,7 +734,8 @@ export function CallDetail({ id }: { id: string }) {
                           </strong>
                           <p>{d.reason}</p>
                           <span>
-                            Version {d.previousVersion} ·{" "}
+                            Version {d.previousVersion} · Source revision{" "}
+                            {d.sourceRevision ?? 0} ·{" "}
                             {new Date(d.at).toLocaleString()}
                           </span>
                         </div>
@@ -761,11 +849,39 @@ export function CallDetail({ id }: { id: string }) {
           call={review.call}
           item={review.item}
           onClose={() => setReview(null)}
+          onRefresh={setCall}
           onSave={(value) => {
             setCall(value);
             setReview(null);
           }}
         />
+      )}
+      {sourceReview && (
+        <TranscriptSourceReview
+          call={call}
+          onClose={() => setSourceReview(false)}
+          onRefresh={setCall}
+          onSave={(value) => {
+            setCall(value);
+            setSourceReview(false);
+          }}
+        />
+      )}
+      {!!call.sourceReviews?.length && (
+        <section className="panel source-status">
+          <h2>Transcript review history</h2>
+          {call.sourceReviews.map((entry) => (
+            <div key={entry.id} className="audit-row">
+              <strong>Source revision {entry.sourceRevision}</strong>
+              <p>{entry.reason}</p>
+              <span>
+                {entry.changes.length} speaker change(s) · Completeness{" "}
+                {entry.completenessVerified ? "verified" : "unverified"} ·
+                Quality {entry.qualityVerified ? "verified" : "unverified"}
+              </span>
+            </div>
+          ))}
+        </section>
       )}
       {deleting && (
         <ConfirmDelete
@@ -848,25 +964,43 @@ function Transcript({
   );
 }
 function ReviewDialog({
-  call,
+  call: initialCall,
   item,
   onClose,
   onSave,
+  onRefresh,
 }: {
   call: CallRecord;
   item: Assessment;
   onClose: () => void;
   onSave: (c: CallRecord) => void;
+  onRefresh: (c: CallRecord) => void;
 }) {
+  const returnFocus = useRef<HTMLElement | null>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     [status, setStatus] = useState(
       item.status === "policy_award" ? "passed" : item.status,
     ),
     [reason, setReason] = useState(""),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [call, setReviewedCall] = useState(initialCall),
+    [latest, setLatest] = useState<CallRecord | null>(null),
+    [evidenceIds, setEvidenceIds] = useState(item.evidence.segmentIds);
+  const selectedSegments = call.segments.filter((segment) =>
+    evidenceIds.includes(segment.id),
+  );
+  const selectedQuote = selectedSegments
+    .map((segment) => segment.text)
+    .join(" ");
   useEffect(() => {
-    dialog.current?.showModal();
+    returnFocus.current ??= document.activeElement as HTMLElement | null;
+    const element = dialog.current;
+    element?.showModal();
+    return () => {
+      element?.close();
+      returnFocus.current?.focus();
+    };
   }, []);
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -882,12 +1016,34 @@ function ReviewDialog({
             checkpointId: item.id,
             status,
             reason,
+            evidence: {
+              segmentIds: selectedSegments.map((segment) => segment.id),
+              quote: selectedQuote,
+            },
           }),
         },
       );
       onSave(updated);
     } catch (e) {
       setError(errorText(e));
+      if (
+        e instanceof Error &&
+        ["STALE_REVIEW", "STALE_ANALYSIS", "PROCESSING_ACTIVE"].includes(
+          e.message,
+        )
+      ) {
+        try {
+          const result = await api<{ call: CallRecord }>(
+            `/api/calls/${call.id}`,
+          );
+          setLatest(result.call);
+          onRefresh(result.call);
+        } catch {
+          setError(
+            "The latest conversation could not be reached. Close this review and try again.",
+          );
+        }
+      }
     } finally {
       setBusy(false);
     }
@@ -914,16 +1070,38 @@ function ReviewDialog({
       </div>
       <p className="review-checkpoint-name">
         {
-          RUBRICS[call.analysis!.purpose as "sales"].find(
+          RUBRICS[call.analysis?.purpose as "sales"]?.find(
             (x) => x.id === item.id,
           )?.label
         }
       </p>
       <blockquote className="review-quote">
-        {item.evidence.quote ||
+        {selectedQuote ||
           "No quoted evidence is available for this checkpoint."}
       </blockquote>
       <form onSubmit={save}>
+        <fieldset className="evidence-picker">
+          <legend>Transcript evidence for this decision</legend>
+          {call.segments.map((segment) => (
+            <label className="evidence-choice" key={segment.id}>
+              <input
+                type="checkbox"
+                checked={evidenceIds.includes(segment.id)}
+                onChange={(event) =>
+                  setEvidenceIds(
+                    event.target.checked
+                      ? [...evidenceIds, segment.id]
+                      : evidenceIds.filter((id) => id !== segment.id),
+                  )
+                }
+              />
+              <span>
+                {time(segment.startMs)} · {purposeLabel(segment.speaker)} —{" "}
+                {segment.text}
+              </span>
+            </label>
+          ))}
+        </fieldset>
         <label>
           Checkpoint decision
           <select
@@ -957,6 +1135,26 @@ function ReviewDialog({
             {error}
           </p>
         )}
+        {latest && (
+          <div className="notice">
+            <p>
+              Your reason draft is preserved. Refresh and inspect the current
+              source before saving.
+            </p>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setReviewedCall(latest);
+                setEvidenceIds([]);
+                setLatest(null);
+                setError("");
+              }}
+            >
+              Refresh checkpoint review
+            </button>
+          </div>
+        )}
         <div className="modal-actions">
           <button
             className="button"
@@ -968,7 +1166,14 @@ function ReviewDialog({
           </button>
           <button
             className="button primary"
-            disabled={busy || reason.trim().length < 10}
+            disabled={
+              busy ||
+              !!latest ||
+              activeProcessing(call) ||
+              !analysisCurrent(call) ||
+              reason.trim().length < 10 ||
+              selectedQuote.length > 2000
+            }
           >
             {busy ? (
               <LoaderCircle size={16} className="spin" />

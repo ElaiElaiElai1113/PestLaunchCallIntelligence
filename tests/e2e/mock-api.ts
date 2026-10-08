@@ -4,6 +4,7 @@ export async function mockApi(
   respond: (
     path: string,
     method: string,
+    input?: unknown,
   ) => { status?: number; json: unknown } | null,
 ) {
   const unexpected: string[] = [];
@@ -18,7 +19,11 @@ export async function mockApi(
       await route.continue();
       return;
     }
-    const response = respond(url.pathname, route.request().method());
+    const response = respond(
+      url.pathname,
+      route.request().method(),
+      route.request().postData() ? route.request().postDataJSON() : undefined,
+    );
     if (!response) {
       unexpected.push(`${route.request().method()} ${url.pathname}`);
       await route.abort();

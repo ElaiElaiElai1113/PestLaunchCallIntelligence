@@ -1,4 +1,5 @@
 import type { CallRecord, Evidence } from "./types";
+import { analysisCurrent } from "./source-review";
 const normalize = (value: string) =>
   value.replace(/\s+/g, " ").trim().toLowerCase();
 function supported(evidence: Evidence, call: CallRecord) {
@@ -9,6 +10,8 @@ function supported(evidence: Evidence, call: CallRecord) {
   return normalize(text).includes(normalize(evidence.quote));
 }
 export function outcomeLabel(call: CallRecord) {
+  if (call.analysis && !analysisCurrent(call))
+    return "Analysis needs to run again";
   const values = call.analysis?.outcomes;
   if (values?.treatmentAccepted.value === true) return "Treatment accepted";
   if (values?.inspectionBooked.value === true) return "Inspection booked";

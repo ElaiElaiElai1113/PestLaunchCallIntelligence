@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { CallRecord } from "@/lib/domain/types";
 import { outcomeLabel } from "@/lib/domain/outcomes";
 import { pendingProcessing } from "@/lib/domain/processing-attempt";
+import { analysisCurrent } from "@/lib/domain/source-review";
 import { api, errorText, useWorkspace } from "./workspace-shell";
 export const time = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
@@ -24,6 +25,8 @@ export function outcome(call: CallRecord) {
   return outcomeLabel(call);
 }
 export function GradeBadge({ call }: { call: CallRecord }) {
+  if (call.analysis && !analysisCurrent(call))
+    return <span className="badge amber">Analysis needs to run again</span>;
   return (
     <span className={`badge ${call.score?.grade || "amber"}`}>
       {call.score?.grade

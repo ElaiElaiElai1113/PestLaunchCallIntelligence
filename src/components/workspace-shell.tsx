@@ -47,6 +47,19 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   return data;
 }
 export const ERRORS: Record<string, string> = {
+  STALE_SOURCE_REVIEW:
+    "The transcript changed during review. Refresh and inspect the latest source before saving.",
+  STALE_ANALYSIS:
+    "The transcript changed. Analysis needs to run again before this scorecard can be reviewed.",
+  PROCESSING_ACTIVE:
+    "Processing is active. Wait for it to finish before reviewing the source or scorecard.",
+  SOURCE_VERIFICATION_REQUIRED:
+    "Review the transcript completeness and quality before awarding this checkpoint.",
+  SOURCE_PREPARATION_REQUIRED:
+    "Privately prepare and re-upload this recording before verifying its transcript.",
+  INVALID_SOURCE_ROLES:
+    "Check the selected transcript segments and speaker roles.",
+  INVALID_EVIDENCE: "Select an actual employee statement from this transcript.",
   STALE_REVIEW:
     "This call changed while you were reviewing it. Refresh and try again.",
   AI_NOT_CONFIGURED:
