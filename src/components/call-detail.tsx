@@ -326,7 +326,7 @@ export function CallDetail({ id }: { id: string }) {
       {call.errorCode === "ANALYSIS_BUDGET_EXCEEDED" && (
         <p className="error-text" role="alert">
           {recovery.budget === "admitted"
-            ? "Previous analysis exceeded its limit. The current transcript fits the analysis limit; an owner can start analysis. No new result has been produced."
+            ? "Previous analysis exceeded its limit. The current transcript fits the analysis limit. Starting analysis still requires the owner and source checks below. No new result has been produced."
             : errorText(new Error("ANALYSIS_BUDGET_EXCEEDED"))}
         </p>
       )}
