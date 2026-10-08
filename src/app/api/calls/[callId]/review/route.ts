@@ -4,6 +4,10 @@ import { checkOrigin, requireIdentity, AppError } from "@/lib/server/auth";
 import { respond } from "@/lib/server/http";
 import { reviewSchema } from "@/lib/domain/schemas";
 import { computeScore } from "@/lib/scoring/engine";
+import {
+  guardAssessment,
+  assessmentContext,
+} from "@/lib/domain/assessment-guards";
 export async function POST(
   request: Request,
   context: { params: Promise<{ callId: string }> },
@@ -28,9 +32,29 @@ export async function POST(
     call.analysis.reviewReasons = call.analysis.reviewReasons.filter(
       (x) => x !== `Checkpoint needs review: ${decision.checkpointId}`,
     );
+    if (call.mode === "live") {
+      const guarded = guardAssessment(
+        call.analysis,
+        call.segments,
+        assessmentContext(call),
+      );
+      if (
+        decision.status === "passed" &&
+        guarded.assessments.find((x) => x.id === decision.checkpointId)
+          ?.status !== "passed"
+      )
+        throw new AppError("ATTRIBUTION_REVIEW_REQUIRED", 400);
+      guarded.reviewReasons = [
+        ...new Set([
+          ...guarded.reviewReasons,
+          ...(call.transcriptReviewReasons ?? []),
+        ]),
+      ];
+      call.analysis = guarded;
+    }
     call.score = computeScore(call.analysis);
     call.status =
-      call.score.unresolved || call.analysis.reviewReasons.length
+      call.score.grade === null || call.analysis.reviewReasons.length
         ? "needs_review"
         : "ready";
     call.decisions.push({

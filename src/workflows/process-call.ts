@@ -40,6 +40,8 @@ async function transcriptionStep(callId: string): Promise<boolean> {
     );
     if (transcript.durationMs > 3_600_000)
       throw new Error("RECORDING_TOO_LONG");
+    call.transcriptCompleteness = "unverified";
+    call.transcriptReviewReasons = transcript.reviewReasons;
     if (privacyRisk(transcript.segments.map((x) => x.text).join(" "))) {
       call.status = "privacy_review";
       call.errorCode = "PRIVACY_REVIEW_REQUIRED";
@@ -82,17 +84,21 @@ async function analysisStep(callId: string) {
     call = await repo.get(callId);
   if (call.analysis || !call.segments.length) return { callId };
   try {
-    const analysis = await provider().analyze(call.segments);
-    if (call.errorCode === "TRANSCRIPT_UNCERTAIN") {
-      analysis.complete = false;
-      analysis.reviewReasons.push("Transcription completeness needs review.");
-    }
+    const { original, effective } = await provider().analyze(call.segments, {
+      transcriptComplete: call.transcriptCompleteness === "verified",
+    });
+    effective.reviewReasons = [
+      ...new Set([
+        ...effective.reviewReasons,
+        ...(call.transcriptReviewReasons ?? []),
+      ]),
+    ];
     const previous = call.version;
-    call.analysis = analysis;
-    call.originalAnalysis = structuredClone(analysis);
-    call.score = computeScore(analysis);
+    call.analysis = effective;
+    call.originalAnalysis = original;
+    call.score = computeScore(effective);
     call.status =
-      call.score.grade === null || analysis.reviewReasons.length
+      call.score.grade === null || effective.reviewReasons.length
         ? "needs_review"
         : "ready";
     call.errorCode = null;

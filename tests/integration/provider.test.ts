@@ -55,7 +55,70 @@ it("transcription preserves offsets and does not invent speaker identity", async
     speaker: "unknown",
   });
   expect(result.durationMs).toBe(12500);
+  expect(result.complete).toBe(false);
 });
+it.each([
+  {
+    label: "unexplained coverage gap with missing quality",
+    duration: 60,
+    segment: { start: 0, end: 1, text: "Fictional test" },
+    qualityReview: true,
+  },
+  {
+    label: "missing confidence fields",
+    duration: 1,
+    segment: { start: 0, end: 1, text: "Fictional test" },
+    qualityReview: true,
+  },
+  {
+    label: "low confidence",
+    duration: 1,
+    segment: {
+      start: 0,
+      end: 1,
+      text: "Fictional test",
+      no_speech_prob: 0.9,
+      avg_logprob: -2,
+    },
+    qualityReview: true,
+  },
+  {
+    label: "plausible trailing silence",
+    duration: 4,
+    segment: {
+      start: 0,
+      end: 1,
+      text: "Fictional test",
+      no_speech_prob: 0.1,
+      avg_logprob: -0.2,
+    },
+    qualityReview: false,
+  },
+])(
+  "ASR remains unverified: $label",
+  async ({ duration, segment, qualityReview }) => {
+    const provider = new GroqProvider({
+      apiKey: "fictional-contract-token",
+      fetch: async () => Response.json({ duration, segments: [segment] }),
+    });
+    const result = await provider.transcribe(
+      Buffer.from("fictional audio"),
+      "wav",
+    );
+    expect(result.complete).toBe(false);
+    expect(result).toHaveProperty(
+      "reviewReasons",
+      expect.arrayContaining(["Transcription completeness needs review."]),
+    );
+    if (qualityReview)
+      expect(result).toHaveProperty(
+        "reviewReasons",
+        expect.arrayContaining(["Transcription quality needs review."]),
+      );
+    expect(result.segments).toHaveLength(1);
+    expect(result.durationMs).toBe(duration * 1000);
+  },
+);
 it("transcription rejects an impossible timestamp", async () => {
   const provider = new GroqProvider({
     apiKey: "fictional-contract-token",
@@ -118,7 +181,12 @@ it("uses strict structured output and computes no provider-owned grade", async (
     },
   });
   const result = await provider.analyze(segments);
-  expect(result.purpose).toBe("sales");
+  expect(result.effective.purpose).toBe("sales");
+  expect(result.original).toEqual(a);
+  expect(
+    result.effective.assessments.every((x) => x.status === "unknown"),
+  ).toBe(true);
+  expect(result.effective.complete).toBe(false);
   expect(body.response_format).toMatchObject({
     type: "json_schema",
     json_schema: { strict: true },

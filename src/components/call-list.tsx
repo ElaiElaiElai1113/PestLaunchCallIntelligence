@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CallRecord } from "@/lib/domain/types";
+import { outcomeLabel } from "@/lib/domain/outcomes";
 import { api, errorText, useWorkspace } from "./workspace-shell";
 export const time = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
@@ -19,14 +20,7 @@ export const purposeLabel = (purpose: string | undefined) =>
     ? purpose.charAt(0).toUpperCase() + purpose.slice(1)
     : "Awaiting analysis";
 export function outcome(call: CallRecord) {
-  const values = call.analysis?.outcomes;
-  if (values?.treatmentAccepted.value === true) return "Treatment accepted";
-  if (values?.inspectionBooked.value === true) return "Inspection booked";
-  if (values?.cancellationRequested.value === true)
-    return "Cancellation requested";
-  if (call.analysis?.secondaryIntents.includes("re-service"))
-    return "Follow-up agreed";
-  return call.analysis ? "No confirmed commitment" : "Awaiting analysis";
+  return outcomeLabel(call);
 }
 export function GradeBadge({ call }: { call: CallRecord }) {
   return (

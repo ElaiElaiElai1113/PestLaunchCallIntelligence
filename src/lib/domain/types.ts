@@ -83,6 +83,8 @@ export type CallRecord = {
   checksum: string | null;
   errorCode: string | null;
   segments: Segment[];
+  transcriptCompleteness?: "verified" | "unverified";
+  transcriptReviewReasons?: string[];
   analysis: Analysis | null;
   originalAnalysis: Analysis | null;
   score: Score | null;

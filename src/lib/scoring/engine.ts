@@ -29,7 +29,7 @@ export function computeScore(analysis: Analysis): Score {
   }
   const denominator = rubric.length;
   const grade =
-    unresolved || !analysis.complete
+    unresolved || !analysis.complete || analysis.reviewReasons.length
       ? null
       : points === denominator
         ? "gold"

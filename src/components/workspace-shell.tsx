@@ -55,6 +55,9 @@ export const ERRORS: Record<string, string> = {
   PRIVACY_APPROVAL_REQUIRED:
     "Real recordings are held until privacy settings have been verified.",
   EVIDENCE_REQUIRED: "A passed checkpoint needs transcript evidence.",
+  ATTRIBUTION_REVIEW_REQUIRED:
+    "This checkpoint needs verified employee evidence before it can pass.",
+  PROCESSING_START_FAILED: "Processing could not start. Try again.",
   DATABASE_UNAVAILABLE: "The workspace could not be reached. Please try again.",
   SIGN_IN_REQUIRED: "Your session expired. Sign in again.",
 };

@@ -659,6 +659,11 @@ export function CallDetail({ id }: { id: string }) {
                       standards.
                     </p>
                   </div>
+                  {!a.coaching.length && (
+                    <p className="muted">
+                      Employee-specific coaching needs speaker review.
+                    </p>
+                  )}
                   {a.coaching.map((item, i) => (
                     <section className={`coaching-card ${item.kind}`} key={i}>
                       <span className="coaching-kind">

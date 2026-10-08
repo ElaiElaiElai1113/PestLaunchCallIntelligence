@@ -3,6 +3,7 @@ import type { CallRecord, Identity } from "../domain/types";
 import { adminClient } from "../supabase/server";
 import { SampleStore } from "./store";
 import { AppError } from "./auth";
+import { deleteCallMedia } from "./storage-cleanup";
 const sampleStore = () =>
   new SampleStore(join(process.cwd(), ".private", "app", "samples.json"));
 export class Repository {
@@ -65,17 +66,29 @@ export class Repository {
         { onConflict: "call_id" },
       );
     if (tombstoneError) throw new AppError("DELETE_FAILED", 503);
-    if (call.sourcePath) {
-      const { error } = await client.storage
-        .from("call-source")
-        .remove([call.sourcePath]);
-      if (error) throw new AppError("DELETE_STORAGE_FAILED", 503);
-    }
-    if (call.sanitizedPath) {
-      const { error } = await client.storage
-        .from("call-sanitized")
-        .remove([call.sanitizedPath]);
-      if (error) throw new AppError("DELETE_STORAGE_FAILED", 503);
+    try {
+      await deleteCallMedia(
+        {
+          async list(bucket, prefix, offset, limit) {
+            const { data, error } = await client.storage
+              .from(bucket)
+              .list(prefix, {
+                offset,
+                limit,
+                sortBy: { column: "name", order: "asc" },
+              });
+            if (error || !data) throw new Error("DELETE_STORAGE_FAILED");
+            return data;
+          },
+          async remove(bucket, paths) {
+            const { error } = await client.storage.from(bucket).remove(paths);
+            if (error) throw new Error("DELETE_STORAGE_FAILED");
+          },
+        },
+        call,
+      );
+    } catch {
+      throw new AppError("DELETE_STORAGE_FAILED", 503);
     }
     const { error } = await client.rpc("delete_call", {
       p_id: id,

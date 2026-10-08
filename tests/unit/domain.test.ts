@@ -141,3 +141,12 @@ describe("evidence validation", () => {
     ).toEqual([]);
   });
 });
+it("independent review reasons withhold official grades without changing points", () => {
+  const original = analysis();
+  original.reviewReasons = ["Transcription quality needs review."];
+  expect(computeScore(original)).toMatchObject({
+    points: 17,
+    denominator: 17,
+    grade: null,
+  });
+});

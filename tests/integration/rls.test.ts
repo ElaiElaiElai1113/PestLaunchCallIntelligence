@@ -42,6 +42,10 @@ beforeAll(async () => {
         workspaceId: workspace,
         version: 1,
         analysis: null,
+        mode: "live",
+        sourcePath: `${workspace}/${callId}.wav`,
+        status: "queued",
+        errorCode: "UPLOAD_PENDING",
       }),
     ],
   );
@@ -105,6 +109,38 @@ it("source uploads reject forged call, workspace and nested paths", async () => 
         ),
       ),
     ).rejects.toThrow();
+});
+it("source uploads reject alternative filenames for an existing call", async () => {
+  for (const suffix of ["mp3", "extra.wav"])
+    await expect(
+      asUser(owner, () =>
+        db.query(
+          "insert into storage.objects(bucket_id,name) values('call-source',$1)",
+          [`${workspace}/${callId}.${suffix}`],
+        ),
+      ),
+    ).rejects.toThrow();
+});
+it("source upload closes after finalization", async () => {
+  await db.query(
+    "update calls set payload=jsonb_set(payload,'{errorCode}','\"AI_NOT_CONFIGURED\"') where id=$1",
+    [callId],
+  );
+  try {
+    await expect(
+      asUser(owner, () =>
+        db.query(
+          "insert into storage.objects(bucket_id,name) values('call-source',$1)",
+          [`${workspace}/${callId}.wav`],
+        ),
+      ),
+    ).rejects.toThrow();
+  } finally {
+    await db.query(
+      "update calls set payload=jsonb_set(payload,'{errorCode}','\"UPLOAD_PENDING\"') where id=$1",
+      [callId],
+    );
+  }
 });
 it("source audio has no read policy even for members", async () => {
   await db.query(

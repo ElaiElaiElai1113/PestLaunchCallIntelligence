@@ -8,6 +8,7 @@ import {
   AppError,
 } from "@/lib/server/auth";
 import { respond } from "@/lib/server/http";
+import { dispatchRetry } from "@/lib/jobs/retry-dispatch";
 export async function POST(
   request: Request,
   context: { params: Promise<{ callId: string }> },
@@ -31,12 +32,17 @@ export async function POST(
       )
     )
       throw new AppError("RETRY_UNAVAILABLE");
-    const previous = call.version;
-    call.status = call.segments.length ? "analyzing" : "queued";
-    call.errorCode = null;
-    call.version++;
-    if (!(await repo.put(call, previous))) throw new AppError("CONFLICT", 409);
-    await start(processCall, [call.id]);
+    try {
+      await dispatchRetry(repo, call, async (id) => {
+        await start(processCall, [id]);
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "CONFLICT")
+        throw new AppError("CONFLICT", 409);
+      if (error instanceof Error && error.message === "PROCESSING_START_FAILED")
+        throw new AppError("PROCESSING_START_FAILED", 503);
+      throw error;
+    }
     return { callId: call.id };
   });
 }

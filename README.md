@@ -15,6 +15,8 @@ With Supabase environment values absent, open http://127.0.0.1:3000 and choose *
 
 The AI key has intentionally **not** been entered. No real recording was imported or sent to a provider, and no paid resources were purchased.
 
+The latest remediation is local only. It tightens registered-path admission and complete owned-media cleanup, corrects manual guidance/grouping, guards effective assessments against unverified attribution/completeness, recovers failed retry dispatch and derives follow-up labels from accepted evidence. The new additive migration is **not applied remotely**. The earlier hosted checks predate these changes; the exposed server key must be replaced before any further hosted use.
+
 ## Implemented
 
 - Responsive Overview, Calls, Summary/Scorecard/Coaching/Transcript, Needs review, invited login and owner Data controls.
@@ -42,6 +44,8 @@ Add `GROQ_API_KEY` server-side only. Defaults: `whisper-large-v3` and `openai/gp
 
 Current ceilings are 25 MB/60 minutes. Excessive transcript input is refused rather than truncated. Recordings require manual private redaction first. Comprehensive automatic PII/audio redaction, verified diarization, chunking, resumable transfers, hosted recovery/deletion race checks and all-20-call accuracy evaluation remain release work. Whisper speaker roles are unknown, so uncertain employee checkpoints stay partial until reviewed. Sample audio playback is unavailable because the fixtures contain no recorded audio.
 
+ASR quality cannot certify completeness. Uploaded transcripts persist unverified completeness/review reasons; original model output is kept separate from the guarded effective assessment. Unknown/customer-only employee evidence cannot publish passes, no-objection awards or employee coaching. Independent review reasons withhold official grades without changing 17/12/12 denominators. A reasoned checkpoint correction cannot certify attribution or source completeness. Trusted source review is still pending. The sanitized-bucket copy does not itself redact audio.
+
 ## Verify
 
 ```powershell
@@ -58,6 +62,8 @@ npm run test:e2e
 ```
 
 Exact results: `docs/evidence/progress.md`. Reports and content-bearing screenshots remain ignored. Production dependency audit was clean during implementation; ESLint's development dependencies retain an unpatched braces advisory. Do not supply untrusted glob patterns to that toolchain; recheck before release.
+
+For the isolated mocked frontend regression, run `npx playwright test --config playwright.mocked.config.ts`. It starts its own preview on port 3001 with empty Supabase/Groq overrides and separate ignored build output. Every browser `/api/` request is mocked; unexpected API/external requests fail the test. It verifies the corrected follow-up label and empty coaching message at five widths. It does not exercise real Auth/Storage, sample CRUD or durable workflows. Do not run the older HTTP/E2E sample-mutation suites against the configured backend or reuse a different running app.
 
 ## Deployment and handoff
 

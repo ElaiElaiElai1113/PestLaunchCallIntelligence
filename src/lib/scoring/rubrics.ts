@@ -18,7 +18,7 @@ const common: Record<string, [string, string, string]> = {
   ],
   expectation_understand: [
     "Set the conversation up",
-    "Understand",
+    "Validate",
     "Set an expectation that you will first understand the concern.",
   ],
   investigate: [
@@ -33,7 +33,7 @@ const common: Record<string, [string, string, string]> = {
   ],
   expectation_solve: [
     "Set a solution expectation",
-    "Solve",
+    "Understand",
     "Explain the next step toward resolving the need.",
   ],
   solution: [
@@ -82,9 +82,9 @@ const common: Record<string, [string, string, string]> = {
     "Confirm the agreed outcome and next steps.",
   ],
   final_information: [
-    "Collect final information",
+    "Offer future-service information",
     "Verify",
-    "Confirm necessary final information; backend actions may require review.",
+    "Tell the customer to contact the company for future pest-control needs.",
   ],
   thank: ["Thank the customer", "Verify", "End with a clear thank-you."],
   validate_confidence: [
@@ -94,12 +94,12 @@ const common: Record<string, [string, string, string]> = {
   ],
   transition: [
     "Transition to understanding",
-    "Understand",
+    "Validate",
     "Ask permission to explore the underlying concern.",
   ],
   research: [
     "Research the account",
-    "Understand",
+    "Validate",
     "Review account context; do not infer inaudible backend work.",
   ],
   validate_summary: [
@@ -109,7 +109,7 @@ const common: Record<string, [string, string, string]> = {
   ],
   validate_expectation: [
     "Set a resolution expectation",
-    "Solve",
+    "Understand",
     "Explain the next step toward addressing the concern.",
   ],
   repeat: [
@@ -182,7 +182,10 @@ export const RUBRICS: Record<
       id,
       label: common[id][0],
       group: common[id][1],
-      guidance: common[id][2],
+      guidance:
+        purpose === "sales" && id === "final_information"
+          ? "Tell the customer to contact the company for future pest-control needs and explain the referral program."
+          : common[id][2],
     })),
   ]),
 ) as Record<Exclude<Purpose, "unknown">, Checkpoint[]>;

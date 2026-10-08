@@ -5,6 +5,7 @@ import { analysisSchema } from "../domain/schemas";
 import { validateEvidence } from "../domain/evidence";
 import { computeScore } from "../scoring/engine";
 import { RUBRICS } from "../scoring/rubrics";
+import { guardAssessment } from "../domain/assessment-guards";
 export class GroqProvider {
   constructor(readonly config: { apiKey?: string; fetch?: typeof fetch }) {}
   private client() {
@@ -19,7 +20,12 @@ export class GroqProvider {
   async transcribe(
     bytes: Buffer,
     extension: string,
-  ): Promise<{ segments: Segment[]; durationMs: number; complete: boolean }> {
+  ): Promise<{
+    segments: Segment[];
+    durationMs: number;
+    complete: boolean;
+    reviewReasons: string[];
+  }> {
     const response = await this.client().audio.transcriptions.create({
       file: await toFile(bytes, `recording.${extension}`),
       model: process.env.GROQ_TRANSCRIPTION_MODEL || "whisper-large-v3",
@@ -57,15 +63,29 @@ export class GroqProvider {
       )
     )
       throw new Error("INVALID_TRANSCRIPT");
+    const reviewReasons = ["Transcription completeness needs review."];
+    if (
+      parsed.segments.some(
+        (x) =>
+          x.no_speech_prob === undefined ||
+          x.avg_logprob === undefined ||
+          x.no_speech_prob >= 0.6 ||
+          x.avg_logprob <= -1,
+      )
+    )
+      reviewReasons.push("Transcription quality needs review.");
     return {
       segments,
       durationMs: Math.round(parsed.duration * 1000),
-      complete: parsed.segments.every(
-        (x) => (x.no_speech_prob ?? 0) < 0.6 && (x.avg_logprob ?? 0) > -1,
-      ),
+      // Confidence and plausible silence cannot certify complete source capture.
+      complete: false,
+      reviewReasons,
     };
   }
-  async analyze(segments: Segment[]): Promise<Analysis> {
+  async analyze(
+    segments: Segment[],
+    context: { transcriptComplete: boolean } = { transcriptComplete: false },
+  ): Promise<{ original: Analysis; effective: Analysis }> {
     const client = this.client();
     // Refuse oversize content rather than silently truncating the ending.
     if (JSON.stringify(segments).length > 150000)
@@ -102,6 +122,9 @@ export class GroqProvider {
     const ids = new Set(analysis.assessments.map((x) => x.id));
     if (analysis.coaching.some((x) => !ids.has(x.checkpointId)))
       throw new Error("INVALID_COACHING");
-    return analysis;
+    return {
+      original: structuredClone(analysis),
+      effective: guardAssessment(analysis, segments, context),
+    };
   }
 }
