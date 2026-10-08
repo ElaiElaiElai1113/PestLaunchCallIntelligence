@@ -43,6 +43,7 @@ export function auditProbeAnalysis(
     .update(JSON.stringify(actual))
     .digest("hex");
   const issues: string[] = [];
+  const reviewNotes: string[] = [];
   if (actual.purpose !== reference.purpose)
     issues.push("Purpose differs from the known source");
   if (validateEvidence(actual, segments).length)
@@ -64,29 +65,31 @@ export function auditProbeAnalysis(
     !actual.followups.some((item) => item.state === "accepted")
   )
     issues.push("Accepted follow-up coverage is missing");
+  const sameFactSupport = (
+    left: Analysis["facts"][number],
+    right: Analysis["facts"][number],
+  ) =>
+    normalized(left.text) === normalized(right.text) &&
+    JSON.stringify(left.evidence.segmentIds) ===
+      JSON.stringify(right.evidence.segmentIds) &&
+    normalized(left.evidence.quote) === normalized(right.evidence.quote);
   for (const fact of reference.facts) {
-    if (
-      !actual.facts.some(
-        (item) =>
-          normalized(item.label) === normalized(fact.label) &&
-          normalized(item.text) === normalized(fact.text),
-      )
-    )
-      issues.push(
-        "Expected fact content is not reference-verified; manual review required",
+    const match = actual.facts.find((item) => sameFactSupport(item, fact));
+    if (!match)
+      issues.push("Expected fact content/evidence is not reference-verified");
+    else if (normalized(match.label) !== normalized(fact.label))
+      reviewNotes.push(
+        "Fact display-label variation requires manual semantic review",
       );
   }
   if (
     actual.facts.some(
-      (item) =>
-        !reference.facts.some(
-          (fact) =>
-            normalized(item.label) === normalized(fact.label) &&
-            normalized(item.text) === normalized(fact.text),
-        ),
+      (item) => !reference.facts.some((fact) => sameFactSupport(item, fact)),
     )
   )
-    issues.push("Additional or different fact content requires manual review");
+    issues.push(
+      "Additional or different factual content/evidence is not reference-verified",
+    );
   if (caseName === "saved-asr") {
     if (
       actual.complete ||
@@ -154,10 +157,13 @@ export function auditProbeAnalysis(
     case: caseName,
     sourceHash,
     resultHash,
-    version: "probe_acceptance_v2" as const,
+    version: "probe_acceptance_v3" as const,
     automated: {
-      passed: issues.length === 0,
-      issues: [...new Set(issues)],
+      passed: issues.length === 0 && reviewNotes.length === 0,
+      requiredPassed: issues.length === 0,
+      issues: [...new Set([...issues, ...reviewNotes])],
+      blockingIssues: [...new Set(issues)],
+      reviewNotes: [...new Set(reviewNotes)],
       coverage: [...AUDIT_AREAS],
       meaning:
         "Conservative fixture consistency assertions; not completed semantic/manual review",
@@ -183,8 +189,8 @@ export function optionalProbesAllowed(ledger: ProbeLedger) {
           entry.sourceHash === entry.audit.sourceHash &&
           entry.resultHash === entry.audit.resultHash &&
           entry.accepted === true &&
-          entry.audit?.version === "probe_acceptance_v2" &&
-          entry.audit.automated.passed &&
+          entry.audit?.version === "probe_acceptance_v3" &&
+          entry.audit.automated.requiredPassed &&
           entry.audit.semanticAccepted &&
           entry.audit.semanticStatus === "accepted" &&
           entry.audit.manual?.status === "accepted" &&

@@ -90,6 +90,74 @@ it("matching automatic reference checks are distinct from completed manual seman
   expect(audit.semanticStatus).toBe("pending");
   expect(audit.semanticAccepted).toBe(false);
 });
+it("content/evidence-identical label variation can be accepted only by a full hash-bound manual audit", () => {
+  const expected = sampleCall("service", "fictional-audit"),
+    actual = structuredClone(expected.analysis!);
+  actual.facts[0].label = "Customer concern";
+  const pending = auditProbeAnalysis(
+    "known-service",
+    expected,
+    actual,
+    expected.segments,
+  );
+  expect(pending.semanticAccepted).toBe(false);
+  expect(pending.semanticStatus).toBe("pending");
+  const audited = auditProbeAnalysis(
+    "known-service",
+    expected,
+    actual,
+    expected.segments,
+    {
+      status: "accepted",
+      artifact: "private label semantics audit",
+      reviewedAt: "2026-10-09T00:00:00Z",
+      coverage: [...AUDIT_AREAS],
+      sourceHash: pending.sourceHash,
+      resultHash: pending.resultHash,
+    },
+  );
+  expect(audited.semanticAccepted).toBe(true);
+  expect(audited.semanticStatus).toBe("accepted");
+  expect(audited.automated.passed).toBe(false);
+});
+it.each(["text", "evidence", "outcome", "incomplete-audit"])(
+  "label review cannot override %s failure",
+  (kind) => {
+    const expected = sampleCall("one-time", "fictional-audit"),
+      actual = structuredClone(expected.analysis!);
+    actual.facts[0].label = "Customer concern";
+    if (kind === "text")
+      actual.facts[0].text = "A different unsupported factual claim.";
+    if (kind === "evidence")
+      actual.facts[0].evidence = {
+        segmentIds: [expected.segments[0].id],
+        quote: expected.segments[0].text,
+      };
+    if (kind === "outcome") actual.outcomes.treatmentAccepted.value = false;
+    const pending = auditProbeAnalysis(
+      "known-one-time",
+      expected,
+      actual,
+      expected.segments,
+    );
+    const audited = auditProbeAnalysis(
+      "known-one-time",
+      expected,
+      actual,
+      expected.segments,
+      {
+        status: "accepted",
+        artifact: "private label semantics audit",
+        reviewedAt: "2026-10-09T00:00:00Z",
+        coverage: kind === "incomplete-audit" ? ["purpose"] : [...AUDIT_AREAS],
+        sourceHash: pending.sourceHash,
+        resultHash: pending.resultHash,
+      },
+    );
+    expect(audited.semanticAccepted).toBe(false);
+    expect(audited.semanticStatus).toBe("pending");
+  },
+);
 it("a complete audit cannot override a known contradiction or a different reviewed result", () => {
   const expected = sampleCall("service", "fictional-audit"),
     actual = structuredClone(expected.analysis!);
@@ -155,6 +223,7 @@ it("optional admission requires complete, separate manual audit after mandatory 
       const actual = guardAssessment(expected.analysis!, segments, {
         transcriptComplete: caseName !== "saved-asr",
       });
+      if(caseName==="known-service")actual.facts[0].label="Customer concern";
       const pending = auditProbeAnalysis(caseName, expected, actual, segments);
       const audit = auditProbeAnalysis(caseName, expected, actual, segments, {
         status: "accepted",
