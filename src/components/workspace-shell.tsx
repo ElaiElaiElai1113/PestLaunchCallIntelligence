@@ -58,6 +58,10 @@ export const ERRORS: Record<string, string> = {
   ATTRIBUTION_REVIEW_REQUIRED:
     "This checkpoint needs verified employee evidence before it can pass.",
   PROCESSING_START_FAILED: "Processing could not start. Try again.",
+  DELETE_STORAGE_FAILED:
+    "Some recording copies could not be removed. Retry deletion to finish cleanup.",
+  DELETE_FAILED:
+    "Deletion could not finish. Retry cleanup after the workspace is available.",
   DATABASE_UNAVAILABLE: "The workspace could not be reached. Please try again.",
   SIGN_IN_REQUIRED: "Your session expired. Sign in again.",
 };

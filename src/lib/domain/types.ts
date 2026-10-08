@@ -58,7 +58,13 @@ export type Score = {
   unresolved: number;
   grade: Grade | null;
 };
+export type ProcessingAttempt = {
+  id: string;
+  state: "pending" | "running" | "finished";
+  runId: string | null;
+};
 export type CallRecord = {
+  processingAttempt?: ProcessingAttempt;
   id: string;
   workspaceId: string;
   label: string;

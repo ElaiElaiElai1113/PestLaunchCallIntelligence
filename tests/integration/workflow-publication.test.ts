@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { CallRecord } from "@/lib/domain/types";
 import { sampleCall } from "@/lib/samples/fixtures";
 import { analysis } from "../helpers/analysis";
@@ -7,10 +7,18 @@ const state = vi.hoisted(() => ({
   call: null as CallRecord | null,
   analyze: vi.fn(),
   admin: vi.fn(),
+  runId: "fictional-run",
+  transcribe: vi.fn(),
+  getError: "",
+}));
+vi.mock("workflow", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("workflow")>()),
+  getWorkflowMetadata: () => ({ workflowRunId: state.runId }),
 }));
 vi.mock("@/lib/server/repository", () => ({
   systemRepository: async () => ({
     get: async () => {
+      if (state.getError) throw new Error(state.getError);
       if (!state.call) throw new Error("CALL_NOT_FOUND");
       return structuredClone(state.call);
     },
@@ -25,11 +33,14 @@ vi.mock("@/lib/supabase/server", () => ({ adminClient: state.admin }));
 vi.mock("@/lib/groq/provider", () => ({
   GroqProvider: class {
     analyze = state.analyze;
+    transcribe = state.transcribe;
   },
 }));
 import { processCall } from "@/workflows/process-call";
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
+  state.getError = "";
+  state.runId = "fictional-run";
   state.call = sampleCall("service", "fictional-call");
   Object.assign(state.call, {
     mode: "live",
@@ -46,6 +57,7 @@ beforeEach(() => {
     { id: "s1", text: "Hello", startMs: 0, endMs: 1000, speaker: "unknown" },
   ];
 });
+afterEach(() => vi.unstubAllEnvs());
 it("analysis failure and retry preserve uncertainty and separate original/effective output", async () => {
   const raw = analysis();
   state.analyze
@@ -101,3 +113,243 @@ it("legacy live transcripts without metadata cannot inherit model completeness",
     transcriptComplete: false,
   });
 });
+it("duplicate starts permit only one owner to analyze", async () => {
+  state.call!.processingAttempt = {
+    id: "fictional-attempt",
+    state: "pending",
+    runId: null,
+  };
+  state.call!.errorCode = "PROCESSING_START_PENDING";
+  const raw = analysis();
+  state.analyze.mockImplementation(async (segments, context) => ({
+    original: raw,
+    effective: guardAssessment(raw, segments, context),
+  }));
+  state.runId = "fictional-run-a";
+  const first = processCall("fictional-call", "fictional-attempt");
+  state.runId = "fictional-run-b";
+  const second = processCall("fictional-call", "fictional-attempt");
+  await Promise.all([first, second]);
+  expect(state.analyze).toHaveBeenCalledTimes(1);
+  expect(state.call!.processingAttempt).toMatchObject({
+    state: "finished",
+    runId: "fictional-run-a",
+  });
+});
+it("old attempts and legacy runs cannot use a newly tracked call", async () => {
+  state.call!.processingAttempt = {
+    id: "new-attempt",
+    state: "pending",
+    runId: null,
+  };
+  await processCall("fictional-call", "old-attempt");
+  await processCall("fictional-call");
+  expect(state.analyze).not.toHaveBeenCalled();
+  expect(state.admin).not.toHaveBeenCalled();
+});
+it("duplicate starts allow one transcription owner before derivative and analysis effects", async () => {
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  state.call!.segments = [];
+  state.call!.sourcePath = "sample-workspace/fictional-call.wav";
+  state.call!.processingAttempt = {
+    id: "fictional-attempt",
+    state: "pending",
+    runId: null,
+  };
+  const upload = vi.fn(async () => ({ error: null })),
+    download = vi.fn(async () => ({
+      error: null,
+      data: new Blob(["fictional bytes"], { type: "audio/wav" }),
+    }));
+  state.admin.mockReturnValue({
+    storage: { from: () => ({ upload, download }) },
+  });
+  const segments = [
+    {
+      id: "s1",
+      text: "Hello",
+      startMs: 0,
+      endMs: 1000,
+      speaker: "unknown" as const,
+    },
+  ];
+  state.transcribe.mockResolvedValue({
+    segments,
+    durationMs: 1000,
+    complete: false,
+    reviewReasons: ["Transcription completeness needs review."],
+  });
+  const raw = analysis();
+  state.analyze.mockImplementation(async (s, c) => ({
+    original: raw,
+    effective: guardAssessment(raw, s, c),
+  }));
+  state.runId = "run-a";
+  const a = processCall("fictional-call", "fictional-attempt");
+  state.runId = "run-b";
+  const b = processCall("fictional-call", "fictional-attempt");
+  await Promise.all([a, b]);
+  expect(state.transcribe).toHaveBeenCalledTimes(1);
+  expect(state.analyze).toHaveBeenCalledTimes(1);
+  expect(upload).toHaveBeenCalledTimes(1);
+  expect(state.call!.processingAttempt).toMatchObject({
+    state: "finished",
+    runId: "run-a",
+  });
+  expect(state.call!.transcriptCompleteness).toBe("unverified");
+});
+it.each(["delete", "supersede"] as const)(
+  "%s during transcription blocks derivative and publication",
+  async (change) => {
+    vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+    state.call!.segments = [];
+    state.call!.sourcePath = "sample-workspace/fictional-call.wav";
+    state.call!.processingAttempt = {
+      id: "fictional-attempt",
+      state: "pending",
+      runId: null,
+    };
+    const upload = vi.fn(),
+      download = vi.fn(async () => ({
+        error: null,
+        data: new Blob(["fictional bytes"]),
+      }));
+    state.admin.mockReturnValue({
+      storage: { from: () => ({ upload, download }) },
+    });
+    state.transcribe.mockImplementation(async () => {
+      if (change === "delete") state.call = null;
+      else {
+        state.call!.processingAttempt = {
+          id: "new-attempt",
+          state: "pending",
+          runId: null,
+        };
+        state.call!.version++;
+      }
+      return {
+        segments: [
+          {
+            id: "s1",
+            text: "Hello",
+            startMs: 0,
+            endMs: 1000,
+            speaker: "unknown",
+          },
+        ],
+        durationMs: 1000,
+        complete: false,
+        reviewReasons: [],
+      };
+    });
+    await processCall("fictional-call", "fictional-attempt");
+    expect(upload).not.toHaveBeenCalled();
+    expect(state.analyze).not.toHaveBeenCalled();
+  },
+);
+it("supersession after analysis starts blocks old result publication", async () => {
+  state.call!.processingAttempt = {
+    id: "old-attempt",
+    state: "pending",
+    runId: null,
+  };
+  const raw = analysis();
+  state.analyze.mockImplementation(async (s, c) => {
+    state.call!.processingAttempt = {
+      id: "new-attempt",
+      state: "pending",
+      runId: null,
+    };
+    state.call!.version++;
+    return { original: raw, effective: guardAssessment(raw, s, c) };
+  });
+  await processCall("fictional-call", "old-attempt");
+  expect(state.call!.analysis).toBe(null);
+  expect(state.call!.processingAttempt!.id).toBe("new-attempt");
+});
+it("an already guarded result finishes its owned attempt and restores result status", async () => {
+  const fixture = sampleCall("service", "fictional-call");
+  state.call!.analysis = fixture.analysis;
+  state.call!.originalAnalysis = fixture.originalAnalysis;
+  state.call!.score = fixture.score;
+  state.call!.processingAttempt = {
+    id: "fictional-attempt",
+    state: "pending",
+    runId: null,
+  };
+  const original = structuredClone(state.call!.originalAnalysis);
+  await processCall("fictional-call", "fictional-attempt");
+  expect(state.call!.status).toBe("ready");
+  expect(state.call!.processingAttempt!.state).toBe("finished");
+  expect(state.call!.originalAnalysis).toEqual(original);
+  expect(state.analyze).not.toHaveBeenCalled();
+});
+it("terminal provider failure finishes the owner but temporary failure retains it", async () => {
+  state.call!.processingAttempt = {
+    id: "fictional-attempt",
+    state: "pending",
+    runId: null,
+  };
+  state.analyze.mockRejectedValueOnce(
+    Object.assign(new Error("fictional unavailable"), { status: 429 }),
+  );
+  await expect(
+    processCall("fictional-call", "fictional-attempt"),
+  ).rejects.toThrow("PROVIDER_TEMPORARILY_UNAVAILABLE");
+  expect(state.call!.processingAttempt!.state).toBe("running");
+  state.analyze.mockRejectedValueOnce(new Error("INVALID_EVIDENCE"));
+  await processCall("fictional-call", "fictional-attempt");
+  expect(state.call!.processingAttempt!.state).toBe("finished");
+  expect(state.call!.status).toBe("failed");
+});
+it("deletion during source download prevents the subsequent transcription request", async () => {
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  state.call!.segments = [];
+  state.call!.sourcePath = "sample-workspace/fictional-call.wav";
+  state.call!.processingAttempt = {
+    id: "fictional-attempt",
+    state: "pending",
+    runId: null,
+  };
+  state.admin.mockReturnValue({
+    storage: {
+      from: () => ({
+        download: async () => {
+          state.call = null;
+          return { error: null, data: new Blob(["fictional bytes"]) };
+        },
+        upload: vi.fn(),
+      }),
+    },
+  });
+  state.transcribe.mockResolvedValue({
+    segments: [],
+    durationMs: 1000,
+    complete: false,
+    reviewReasons: [],
+  });
+  await processCall("fictional-call", "fictional-attempt");
+  expect(state.transcribe).not.toHaveBeenCalled();
+});
+it.each(["CALL_NOT_FOUND", "DATABASE_UNAVAILABLE"])(
+  "claim %s exits or retries before effects",
+  async (code) => {
+    state.call!.processingAttempt = {
+      id: "fictional-attempt",
+      state: "pending",
+      runId: null,
+    };
+    state.getError = code;
+    if (code === "CALL_NOT_FOUND")
+      await expect(
+        processCall("fictional-call", "fictional-attempt"),
+      ).resolves.toEqual({ callId: "fictional-call" });
+    else
+      await expect(
+        processCall("fictional-call", "fictional-attempt"),
+      ).rejects.toThrow("DATABASE_UNAVAILABLE");
+    expect(state.analyze).not.toHaveBeenCalled();
+    expect(state.transcribe).not.toHaveBeenCalled();
+    expect(state.admin).not.toHaveBeenCalled();
+  },
+);

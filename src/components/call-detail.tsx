@@ -24,6 +24,10 @@ import {
 import type { Assessment, CallRecord, Evidence } from "@/lib/domain/types";
 import { RUBRICS, OBJECTION_IDS } from "@/lib/scoring/rubrics";
 import { OUTCOME_LABELS } from "@/lib/samples/fixtures";
+import {
+  pendingProcessing,
+  retryAvailable,
+} from "@/lib/domain/processing-attempt";
 import { api, errorText, useWorkspace } from "./workspace-shell";
 import {
   GradeBadge,
@@ -134,6 +138,31 @@ export function CallDetail({ id }: { id: string }) {
     );
   const a = call.analysis,
     score = call.score;
+  const pending = pendingProcessing(call);
+  const retryControl =
+    session.identity.role === "owner" && retryAvailable(call) ? (
+      <button
+        className="button primary"
+        disabled={
+          !session.aiConfigured ||
+          (call.sourceKind !== "synthetic" && !session.processingEnabled)
+        }
+        onClick={async () => {
+          try {
+            await api(`/api/calls/${id}/retry`, { method: "POST" });
+            setCall((await api<{ call: CallRecord }>(`/api/calls/${id}`)).call);
+          } catch (error) {
+            setError(errorText(error));
+          }
+        }}
+      >
+        {pending
+          ? "Retry starting analysis"
+          : call.status === "failed"
+            ? "Retry processing"
+            : "Resume analysis"}
+      </button>
+    ) : null;
   const backQuery = new URLSearchParams(back.split("?")[1] || "");
   const sequence = calls.filter(
     (x) =>
@@ -284,12 +313,22 @@ export function CallDetail({ id }: { id: string }) {
           {error}
         </p>
       )}
+      {a && pending && (
+        <section className="panel processing-panel">
+          <h2>Waiting to start</h2>
+          <p>
+            Processing has not confirmed a start yet. You can retry starting it.
+          </p>
+          {retryControl}
+        </section>
+      )}
       {!a ? (
         <section className="panel processing-panel">
           <span className="empty-icon">
             <LoaderCircle
               size={25}
               className={
+                pending ||
                 call.status === "failed" ||
                 call.status === "privacy_review" ||
                 call.errorCode === "AI_NOT_CONFIGURED" ||
@@ -300,61 +339,42 @@ export function CallDetail({ id }: { id: string }) {
             />
           </span>
           <h2>
-            {call.errorCode === "AI_NOT_CONFIGURED"
-              ? "Recording stored. AI is not configured."
-              : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
-                ? "Recording held for privacy approval."
-                : call.status === "failed"
-                  ? "This recording needs another try"
-                  : call.status === "privacy_review"
-                    ? "A private check is needed"
-                    : "Your recording is being processed"}
+            {pending
+              ? "Waiting to start"
+              : call.errorCode === "AI_NOT_CONFIGURED"
+                ? "Recording stored. AI is not configured."
+                : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
+                  ? "Recording held for privacy approval."
+                  : call.status === "failed"
+                    ? "This recording needs another try"
+                    : call.status === "privacy_review"
+                      ? "A private check is needed"
+                      : "Your recording is being processed"}
           </h2>
           <p>
-            {call.errorCode === "AI_NOT_CONFIGURED"
-              ? "The recording is stored privately. Add the server AI key later, then resume analysis. No transcript or result has been fabricated."
-              : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
-                ? "The recording stays private and will not be sent to AI until privacy approval is enabled."
-                : call.status === "privacy_review"
-                  ? "Re-upload a privately verified, redacted recording before analysis can continue. No transcript is published."
-                  : call.errorCode === "UPLOAD_PENDING"
-                    ? "The recording upload has not been finalized. Re-select the file to resume."
-                    : "You can leave this screen. The result will stay in your call log."}
+            {pending
+              ? "Processing has not confirmed a start yet. You can retry starting it."
+              : call.errorCode === "AI_NOT_CONFIGURED"
+                ? "The recording is stored privately. Add the server AI key later, then resume analysis. No transcript or result has been fabricated."
+                : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
+                  ? "The recording stays private and will not be sent to AI until privacy approval is enabled."
+                  : call.status === "privacy_review"
+                    ? "Re-upload a privately verified, redacted recording before analysis can continue. No transcript is published."
+                    : call.errorCode === "UPLOAD_PENDING"
+                      ? "The recording upload has not been finalized. Re-select the file to resume."
+                      : "You can leave this screen. The result will stay in your call log."}
           </p>
           <div className="processing-stages">
             {["queued", "transcribing", "analyzing", "ready"].map((stage) => (
               <span
-                className={stage === call.status ? "current" : ""}
+                className={!pending && stage === call.status ? "current" : ""}
                 key={stage}
               >
                 {purposeLabel(stage)}
               </span>
             ))}
           </div>
-          {(call.status === "failed" ||
-            ["AI_NOT_CONFIGURED", "PRIVACY_APPROVAL_REQUIRED"].includes(
-              call.errorCode || "",
-            )) && (
-            <button
-              className="button primary"
-              disabled={
-                !session.aiConfigured ||
-                (call.sourceKind !== "synthetic" && !session.processingEnabled)
-              }
-              onClick={async () => {
-                try {
-                  await api(`/api/calls/${id}/retry`, { method: "POST" });
-                  setCall({ ...call, status: "queued" });
-                } catch (e) {
-                  setError(errorText(e));
-                }
-              }}
-            >
-              {call.status === "failed"
-                ? "Retry processing"
-                : "Resume analysis"}
-            </button>
-          )}
+          {retryControl}
         </section>
       ) : (
         <div

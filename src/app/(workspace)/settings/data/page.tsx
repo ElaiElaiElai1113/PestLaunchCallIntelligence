@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
   AlertCircle,
@@ -11,24 +11,45 @@ import {
 import { api, errorText, useWorkspace } from "@/components/workspace-shell";
 import { useCalls } from "@/components/call-list";
 import { ConfirmDelete } from "@/components/call-detail";
+type RetentionSummary = { retained: number; pendingDeletion: number };
 export default function DataControls() {
   const { session } = useWorkspace(),
     { calls, reload } = useCalls(),
     [confirm, setConfirm] = useState(false),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [summary, setSummary] = useState<RetentionSummary | null>(null),
+    [loading, setLoading] = useState(false),
+    [summaryError, setSummaryError] = useState("");
+  const refreshSummary = useCallback(async () => {
+    setLoading(true);
+    setSummaryError("");
+    try {
+      setSummary(await api<RetentionSummary>("/api/test-data"));
+    } catch (error) {
+      setSummary(null);
+      setSummaryError(errorText(error));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    setSummary(null);
+    if (session.identity.role === "owner") void refreshSummary();
+  }, [session.identity.role, session.identity.workspaceId, refreshSummary]);
   async function remove() {
     try {
       const receipt = await api<{ deleted: number; at: string }>(
         "/api/test-data",
         { method: "DELETE", body: JSON.stringify({ confirmation: "DELETE" }) },
       );
-      await reload();
       setMessage(
         `${receipt.deleted} conversations deleted. No conversation content is retained in the deletion receipt.`,
       );
       setConfirm(false);
     } catch (e) {
       setMessage(errorText(e));
+    } finally {
+      await Promise.allSettled([refreshSummary(), reload()]);
     }
   }
   return (
@@ -111,11 +132,35 @@ export default function DataControls() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">TEST DATA RETENTION</span>
-            <h2>Retained conversations</h2>
+            <h2>
+              {session.identity.role === "owner"
+                ? "Retained conversations"
+                : "Available conversations"}
+            </h2>
           </div>
-          <span className="retained-count">{calls.length}</span>
+          <span className="retained-count">
+            {session.identity.role === "owner"
+              ? summary
+                ? summary.retained
+                : "—"
+              : calls.length}
+          </span>
         </div>
         <div className="retention-info">
+          {session.identity.role === "owner" && loading && (
+            <p role="status">Loading retained conversations…</p>
+          )}
+          {session.identity.role === "owner" && summaryError && (
+            <p className="error-text" role="alert">
+              Retained count is unavailable. {summaryError}
+            </p>
+          )}
+          {summary && summary.pendingDeletion > 0 && (
+            <p role="status">
+              {summary.pendingDeletion} conversation(s) still need deletion
+              cleanup. Retry deletion to finish.
+            </p>
+          )}
           <p>
             {session.identity.mode === "sample"
               ? "This workspace contains fictional samples only. No client recordings have been imported here."
@@ -143,11 +188,13 @@ export default function DataControls() {
             </div>
             <button
               className="button destructive"
-              disabled={!calls.length}
+              disabled={loading || summary === null || summary.retained === 0}
               onClick={() => setConfirm(true)}
             >
               <Trash2 size={16} />
-              Delete test data
+              {summary && summary.pendingDeletion > 0
+                ? "Retry deletion cleanup"
+                : "Delete test data"}
             </button>
           </div>
         )}
@@ -160,7 +207,7 @@ export default function DataControls() {
       {confirm && (
         <ConfirmDelete
           label="Delete all test conversations?"
-          detail={`This removes ${calls.length} conversations and all their application results and review history. It cannot be undone.`}
+          detail={`This removes ${summary?.retained ?? "—"} conversations and all their application results and review history. It cannot be undone.`}
           onClose={() => setConfirm(false)}
           onConfirm={remove}
         />

@@ -35,6 +35,26 @@ export class Repository {
     if (!call) throw new AppError("CALL_NOT_FOUND", 404);
     return call;
   }
+  async retentionSummary(): Promise<{
+    retained: number;
+    pendingDeletion: number;
+  }> {
+    if (this.identity.role !== "owner")
+      throw new AppError("OWNER_REQUIRED", 403);
+    const calls = await this.list(true);
+    if (this.identity.mode === "sample")
+      return { retained: calls.length, pendingDeletion: 0 };
+    const { data, error } = await adminClient()
+      .from("deletion_tombstones")
+      .select("call_id")
+      .eq("workspace_id", this.identity.workspaceId);
+    if (error) throw new AppError("DATABASE_UNAVAILABLE", 503);
+    const pending = new Set((data ?? []).map((row) => row.call_id));
+    return {
+      retained: calls.length,
+      pendingDeletion: calls.filter((call) => pending.has(call.id)).length,
+    };
+  }
   async put(call: CallRecord, expectedVersion: number | null) {
     if (
       call.workspaceId !== this.identity.workspaceId ||
@@ -104,7 +124,8 @@ export async function systemRepository(callId: string) {
     .select("workspace_id")
     .eq("id", callId)
     .maybeSingle();
-  if (error || !data) throw new AppError("CALL_NOT_FOUND", 404);
+  if (error) throw new AppError("DATABASE_UNAVAILABLE", 503);
+  if (!data) throw new AppError("CALL_NOT_FOUND", 404);
   return new Repository({
     userId: "workflow",
     workspaceId: data.workspace_id,

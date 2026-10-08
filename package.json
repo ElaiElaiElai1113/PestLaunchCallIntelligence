@@ -13,6 +13,7 @@
     "test:integration": "vitest run tests/integration",
     "test:http": "vitest run --config vitest.http.config.ts",
     "test:e2e": "playwright test",
+    "test:e2e:mocked": "playwright test --config playwright.mocked.config.ts",
     "db:start": "supabase start",
     "db:status": "supabase status",
     "db:seed": "tsx scripts/seed-local.ts"

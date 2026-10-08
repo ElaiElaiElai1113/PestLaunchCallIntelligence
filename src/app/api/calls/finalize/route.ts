@@ -13,6 +13,7 @@ import { adminClient } from "@/lib/supabase/server";
 import { validAudioHeader } from "@/lib/privacy/preflight";
 import { z } from "zod";
 import { processingDecision } from "@/lib/jobs/admission";
+import { dispatchRetry } from "@/lib/jobs/retry-dispatch";
 export async function POST(request: Request) {
   return respond(async () => {
     checkOrigin(request);
@@ -42,32 +43,29 @@ export async function POST(request: Request) {
       process.env.REAL_CALL_PROCESSING_ENABLED === "true",
       call.sourceKind === "synthetic",
     );
+    if (admission === "run") {
+      try {
+        await dispatchRetry(repo, call, async (id, attemptId) => {
+          await start(processCall, [id, attemptId]);
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === "CONFLICT")
+          throw new AppError("CONFLICT", 409);
+        if (
+          error instanceof Error &&
+          error.message === "PROCESSING_START_FAILED"
+        )
+          throw new AppError("PROCESSING_START_FAILED", 503);
+        throw error;
+      }
+      return { callId };
+    }
     call.errorCode =
-      admission === "run"
-        ? null
-        : admission === "awaiting_ai"
-          ? "AI_NOT_CONFIGURED"
-          : "PRIVACY_APPROVAL_REQUIRED";
+      admission === "awaiting_ai"
+        ? "AI_NOT_CONFIGURED"
+        : "PRIVACY_APPROVAL_REQUIRED";
     call.version++;
     if (!(await repo.put(call, expected))) return { callId };
-    if (admission !== "run") return { callId, processing: admission };
-    let run;
-    try {
-      run = await start(processCall, [callId]);
-    } catch {
-      const latest = await repo.get(callId);
-      const version = latest.version;
-      latest.errorCode = "UPLOAD_PENDING";
-      latest.version++;
-      await repo.put(latest, version);
-      throw new AppError("PROCESSING_START_FAILED", 503);
-    }
-    await adminClient()
-      .from("call_jobs")
-      .upsert(
-        { call_id: callId, workspace_id: call.workspaceId, run_id: run.runId },
-        { onConflict: "call_id" },
-      );
-    return { callId };
+    return { callId, processing: admission };
   });
 }

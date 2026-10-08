@@ -12,6 +12,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CallRecord } from "@/lib/domain/types";
 import { outcomeLabel } from "@/lib/domain/outcomes";
+import { pendingProcessing } from "@/lib/domain/processing-attempt";
 import { api, errorText, useWorkspace } from "./workspace-shell";
 export const time = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
@@ -39,17 +40,20 @@ export function StatusBadge({ call }: { call: CallRecord }) {
       className={`status ${call.status === "ready" ? "green" : call.status === "failed" ? "red" : call.status === "needs_review" || call.status === "privacy_review" ? "amber" : "blue"}`}
     >
       <span />
-      {call.errorCode === "AI_NOT_CONFIGURED"
-        ? "Awaiting AI"
-        : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
-          ? "Privacy held"
-          : call.status === "needs_review"
-            ? "Needs review"
-            : call.status === "privacy_review"
-              ? "Privacy review"
-              : call.status === "queued" && call.errorCode === "UPLOAD_PENDING"
-                ? "Awaiting upload"
-                : purposeLabel(call.status.replaceAll("_", " "))}
+      {pendingProcessing(call)
+        ? "Waiting to start"
+        : call.errorCode === "AI_NOT_CONFIGURED"
+          ? "Awaiting AI"
+          : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
+            ? "Privacy held"
+            : call.status === "needs_review"
+              ? "Needs review"
+              : call.status === "privacy_review"
+                ? "Privacy review"
+                : call.status === "queued" &&
+                    call.errorCode === "UPLOAD_PENDING"
+                  ? "Awaiting upload"
+                  : purposeLabel(call.status.replaceAll("_", " "))}
     </span>
   );
 }

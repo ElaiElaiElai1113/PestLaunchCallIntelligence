@@ -113,3 +113,51 @@ it("a supported live correction cannot clear completeness or independent quality
   );
   expect(state.call!.originalAnalysis).toEqual(original);
 });
+it("a new owner request can redispatch the same durable pending attempt", async () => {
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  state.call!.status = "analyzing";
+  state.call!.errorCode = "PROCESSING_START_PENDING";
+  state.call!.processingAttempt = {
+    id: "pending-attempt",
+    state: "pending",
+    runId: null,
+  };
+  state.start.mockResolvedValue({ runId: "fictional-run" });
+  expect(
+    (
+      await retry(
+        new Request("http://localhost/api/calls/fictional-call/retry", {
+          method: "POST",
+        }),
+        context,
+      )
+    ).status,
+  ).toBe(200);
+  expect(state.start).toHaveBeenCalledWith(expect.anything(), [
+    "fictional-call",
+    "pending-attempt",
+  ]);
+});
+it.each(["running", "untracked"] as const)(
+  "%s active work cannot be arbitrarily reopened",
+  async (kind) => {
+    vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+    state.call!.status = "analyzing";
+    state.call!.errorCode = null;
+    if (kind === "running")
+      state.call!.processingAttempt = {
+        id: "running-attempt",
+        state: "running",
+        runId: "other-run",
+      };
+    const result = await retry(
+      new Request("http://localhost/api/calls/fictional-call/retry", {
+        method: "POST",
+      }),
+      context,
+    );
+    expect(result.status).toBe(400);
+    expect(await result.json()).toEqual({ error: "RETRY_UNAVAILABLE" });
+    expect(state.start).not.toHaveBeenCalled();
+  },
+);

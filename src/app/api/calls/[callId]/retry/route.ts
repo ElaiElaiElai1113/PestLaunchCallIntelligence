@@ -9,6 +9,7 @@ import {
 } from "@/lib/server/auth";
 import { respond } from "@/lib/server/http";
 import { dispatchRetry } from "@/lib/jobs/retry-dispatch";
+import { retryAvailable } from "@/lib/domain/processing-attempt";
 export async function POST(
   request: Request,
   context: { params: Promise<{ callId: string }> },
@@ -25,16 +26,10 @@ export async function POST(
       process.env.REAL_CALL_PROCESSING_ENABLED !== "true"
     )
       throw new AppError("PRIVACY_APPROVAL_REQUIRED", 403);
-    if (
-      call.status !== "failed" &&
-      !["AI_NOT_CONFIGURED", "PRIVACY_APPROVAL_REQUIRED"].includes(
-        call.errorCode || "",
-      )
-    )
-      throw new AppError("RETRY_UNAVAILABLE");
+    if (!retryAvailable(call)) throw new AppError("RETRY_UNAVAILABLE");
     try {
-      await dispatchRetry(repo, call, async (id) => {
-        await start(processCall, [id]);
+      await dispatchRetry(repo, call, async (id, attemptId) => {
+        await start(processCall, [id, attemptId]);
       });
     } catch (error) {
       if (error instanceof Error && error.message === "CONFLICT")
