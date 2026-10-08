@@ -1,5 +1,7 @@
 # Demonstration and release checklist
 
+The latest local control repair at `772581b0c1b02e742f99801c7fe19107578df2aa` is awaiting independent review. It restores first-analysis recovery and corrects probe acceptance/round closure without making provider requests. It does not establish known Sales/General or full ASR semantic acceptance.
+
 Local keyless demonstration: sign in to the sample workspace; add an inspection sample; inspect the separate commitments; open Scorecard; review pricing with a reason; inspect original/effective history; follow evidence to the transcript; open Coaching; return to Calls and filter; inspect data controls. All examples are fictional and text-only.
 
 The three local follow-up repairs at application `3594559a70c681109e2395356ad52cb1963d0966` are independently accepted: prepared playback inside transcript review, busy-dialog cancellation and strict sample analysis shapes. This closes those local findings; it does not certify the deployed recording demonstration or submission deliverables.

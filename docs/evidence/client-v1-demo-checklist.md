@@ -1,5 +1,7 @@
 # External client V1 acceptance — prepared, not executed
 
+Latest local control repair restores guarded owner initiation after first-analysis/source-review failures and replaces loose probe markers with required assertions plus source/result-bound manual audit. The current round is closed at three requests; this repair made zero provider requests. Independent local repair review and all known-source/deployed acceptance gates remain pending.
+
 Current status: local Tasks 1–7 completed/verified. On 9 October the human supplied a Groq test key and authorized fictional provider testing. The key is configured server-side in ignored `.env.local`; real customer processing remains disabled. Direct transcription passed. The new reference contract produced one safe partial ASR analysis, but known Sales/General acceptance and semantic completeness remain blocked. The first round's discarded schema experiment exceeded Free TPM; the new round stayed within the request budget and stopped after three initial cases. Full hosted/deployed acceptance remains pending. See progress for exact results; no client-demo-ready claim.
 
 - [ ] Replace the previously exposed server key before hosted access. Keep secrets server-only; verify configuration without printing values.

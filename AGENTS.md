@@ -2,6 +2,8 @@
 
 ## Scope and execution
 
+- Current 9 October control repair is local only: restore guarded first-analysis recovery and correct probe audit/gating. Do not run the Groq probe CLI or make any provider request. The initial reference round is explicitly closed at three requests; preserve its ledger count and immutable artifacts, and do not reset it or start a fourth AI strategy. Return this repair for independent review under the existing human-authorized loop.
+
 - Latest user direction: the frontend/backend/AI adapter implementation is authorized, and the human supplied a server-only Groq test key and authorized bounded direct real-provider testing with explicitly fictional inputs. Follow the 2026-10-09 reference-contract repair plan and its persistent six-request cap; the initial three cases did not establish known-source acceptance, so no optional provider probes are authorized in this pass. Ordinary sample/HTTP/browser QA still forces empty keys. Real customer processing remains disabled and hosted/deployment/customer-data acceptance stays pending; never simulate results for an uploaded real recording. Return implementation/testing passes to the existing planning/review chat under the human's standing instruction.
 
 - This is a standalone repository at `C:/Users/Admin/Desktop/Projects/Portfolio/PestLaunchCallIntelligence`. Do not edit the sibling Portfolio app or any other existing client project.
