@@ -1,0 +1,350 @@
+<div id="pestlaunch-plan-preview">
+  <div class="pl-preview-label">Design preview · Fictional examples · Simulated playback</div>
+  <div class="viz-carousel" aria-label="PestLaunch interface directions">
+    <section data-variant="Calm workspace" aria-label="Calm workspace, recommended PestLaunch direction">
+      <div class="pl-app pl-calm" data-direction="calm"><div class="pl-mount"></div></div>
+    </section>
+    <section data-variant="Review desk" aria-label="Review desk, queue and evidence together" hidden>
+      <div class="pl-app pl-desk" data-direction="desk"><div class="pl-mount"></div></div>
+    </section>
+    <section data-variant="Coaching brief" aria-label="Coaching brief, outcome and next practice" hidden>
+      <div class="pl-app pl-brief" data-direction="brief"><div class="pl-mount"></div></div>
+    </section>
+  </div>
+</div>
+<style>
+#pestlaunch-plan-preview { color-scheme:light; font-family:"Segoe UI",Arial,sans-serif; }
+#pestlaunch-plan-preview * { box-sizing:border-box; }
+#pestlaunch-plan-preview .pl-preview-label { color:light-dark(#526174,#bec8d4); font-size:12px; margin:0 0 12px; }
+#pestlaunch-plan-preview .pl-app { --pl-bg:#f5f7fa; --pl-surface:#fff; --pl-ink:#182332; --pl-muted:#526174; --pl-line:#e2e7ef; --pl-blue:#2563eb; --pl-soft:#eef4ff; --pl-green:#157347; --pl-amber:#885209; --pl-red:#a62b39; background:var(--pl-bg); color:var(--pl-ink); font-size:14px; min-height:940px; border:1px solid var(--pl-line); border-radius:14px; overflow:clip; }
+#pestlaunch-plan-preview .pl-app button,#pestlaunch-plan-preview .pl-app input,#pestlaunch-plan-preview .pl-app select,#pestlaunch-plan-preview .pl-app textarea { font:inherit; }
+#pestlaunch-plan-preview .pl-app button { color:inherit; }
+#pestlaunch-plan-preview .pl-app button:focus-visible,#pestlaunch-plan-preview .pl-app input:focus-visible,#pestlaunch-plan-preview .pl-app select:focus-visible,#pestlaunch-plan-preview .pl-app textarea:focus-visible { outline:3px solid #8db3ff; outline-offset:2px; }
+#pestlaunch-plan-preview .pl-app h1 { font-size:26px; line-height:1.2; font-weight:600; margin:0; letter-spacing:-.6px; }
+#pestlaunch-plan-preview .pl-app h2 { font-size:17px; font-weight:600; margin:0 0 12px; letter-spacing:-.2px; }
+#pestlaunch-plan-preview .pl-app h3 { font-size:14px; font-weight:600; margin:0 0 8px; }
+#pestlaunch-plan-preview .pl-app p { margin:0; line-height:1.6; }
+#pestlaunch-plan-preview .pl-app svg { width:16px; height:16px; flex-shrink:0; }
+#pestlaunch-plan-preview .pl-shell { display:grid; grid-template-columns:180px minmax(0,1fr); min-height:938px; }
+#pestlaunch-plan-preview .pl-sidebar { padding:22px 14px; background:#f0f3f8; border-right:1px solid var(--pl-line); display:flex; flex-direction:column; gap:24px; }
+#pestlaunch-plan-preview .pl-brand { display:flex; gap:9px; align-items:center; padding:0 4px; font-size:17px; font-weight:600; letter-spacing:-.5px; }
+#pestlaunch-plan-preview .pl-brand-mark { display:grid; place-items:center; width:28px; height:28px; background:var(--pl-blue); color:#fff; border-radius:8px; }
+#pestlaunch-plan-preview .pl-workspace { padding:12px; background:var(--pl-surface); border:1px solid var(--pl-line); border-radius:9px; font-size:12px; line-height:1.7; }
+#pestlaunch-plan-preview .pl-nav { display:grid; gap:5px; }
+#pestlaunch-plan-preview .pl-nav button { border:0; border-radius:8px; background:transparent; padding:11px 10px; display:flex; align-items:center; gap:10px; text-align:left; color:var(--pl-muted); font-size:13px; }
+#pestlaunch-plan-preview .pl-nav button[aria-current=page] { background:#e3ebfa; color:#174fb5; font-weight:600; }
+#pestlaunch-plan-preview .pl-count { margin-left:auto; font-size:11px; padding:1px 6px; background:#fff; border-radius:5px; }
+#pestlaunch-plan-preview .pl-sidebar-foot { margin-top:auto; color:var(--pl-muted); font-size:12px; line-height:1.6; }
+#pestlaunch-plan-preview .pl-body { min-width:0; }
+#pestlaunch-plan-preview .pl-topbar { min-height:62px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; padding:14px 24px; background:var(--pl-surface); border-bottom:1px solid var(--pl-line); font-size:12px; color:var(--pl-muted); }
+#pestlaunch-plan-preview .pl-topbar-left { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+#pestlaunch-plan-preview .pl-avatar { width:26px; height:26px; border-radius:50%; background:#e6ecf5; display:grid; place-items:center; font-size:11px; color:#33445d; }
+#pestlaunch-plan-preview .pl-content { padding:24px; }
+#pestlaunch-plan-preview .pl-page-head { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px; margin-bottom:22px; }
+#pestlaunch-plan-preview .pl-subtitle { color:var(--pl-muted); font-size:12px; margin-top:7px; line-height:1.6; }
+#pestlaunch-plan-preview .pl-kicker { color:var(--pl-muted); font-size:11px; text-transform:uppercase; letter-spacing:1.1px; margin-bottom:8px; }
+#pestlaunch-plan-preview .pl-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+#pestlaunch-plan-preview .pl-button { border:1px solid var(--pl-line); padding:9px 12px; border-radius:8px; background:var(--pl-surface); display:inline-flex; justify-content:center; align-items:center; gap:7px; font-size:12px; min-height:36px; }
+#pestlaunch-plan-preview .pl-primary { background:var(--pl-blue); color:#fff!important; border-color:var(--pl-blue); }
+#pestlaunch-plan-preview .pl-text-button { background:transparent; border:0; padding:5px 0; color:#174fb5!important; text-align:left; font-size:12px; display:inline-flex; gap:6px; align-items:center; }
+#pestlaunch-plan-preview .pl-muted { color:var(--pl-muted); }
+#pestlaunch-plan-preview .pl-pill { display:inline-flex; align-items:center; gap:5px; font-size:11px; line-height:1.5; padding:3px 7px; border-radius:5px; background:#edf1f6; color:#43536a; white-space:normal; }
+#pestlaunch-plan-preview .pl-pill.green { background:#e9f5ed; color:var(--pl-green); }
+#pestlaunch-plan-preview .pl-pill.amber { background:#fff2d9; color:var(--pl-amber); }
+#pestlaunch-plan-preview .pl-pill.blue { background:#eaf1ff; color:#174fb5; }
+#pestlaunch-plan-preview .pl-pill.red { background:#fcebed; color:var(--pl-red); }
+#pestlaunch-plan-preview .pl-panel { background:var(--pl-surface); border:1px solid var(--pl-line); border-radius:12px; padding:20px; min-width:0; }
+#pestlaunch-plan-preview .pl-panel + .pl-panel { margin-top:14px; }
+#pestlaunch-plan-preview .pl-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
+#pestlaunch-plan-preview .pl-metric { padding:17px; border:1px solid var(--pl-line); border-radius:12px; background:#fff; text-align:left; }
+#pestlaunch-plan-preview .pl-metric-label { color:var(--pl-muted); font-size:11px; display:block; }
+#pestlaunch-plan-preview .pl-metric-value { font-size:28px; font-weight:600; display:block; margin:12px 0 4px; letter-spacing:-1px; font-variant-numeric:tabular-nums; }
+#pestlaunch-plan-preview .pl-metric-note { font-size:11px; color:var(--pl-muted); }
+#pestlaunch-plan-preview .pl-overview-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:16px; }
+#pestlaunch-plan-preview .pl-attention { display:flex; align-items:flex-start; gap:10px; padding:15px 0; border-top:1px solid var(--pl-line); }
+#pestlaunch-plan-preview .pl-attention:first-of-type { border-top:0; }
+#pestlaunch-plan-preview .pl-attention p { font-size:12px; }
+#pestlaunch-plan-preview .pl-attention-icon { color:var(--pl-amber); margin-top:2px; }
+#pestlaunch-plan-preview .pl-filters { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+#pestlaunch-plan-preview .pl-input-wrap { flex:1 1 220px; display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--pl-line); border-radius:8px; padding:0 10px; color:var(--pl-muted); }
+#pestlaunch-plan-preview .pl-input-wrap input { border:0; background:transparent; color:var(--pl-ink); width:100%; padding:10px 0; min-width:0; font-size:12px; }
+#pestlaunch-plan-preview .pl-select { padding:9px 10px; background:#fff; border:1px solid var(--pl-line); border-radius:8px; color:var(--pl-ink); max-width:100%; font-size:12px; }
+#pestlaunch-plan-preview .pl-table-head { display:grid; grid-template-columns:minmax(0,2.1fr) 1fr 1fr 90px; gap:12px; padding:10px 14px; color:var(--pl-muted); font-size:11px; }
+#pestlaunch-plan-preview .pl-call-row { display:grid; grid-template-columns:minmax(0,2.1fr) 1fr 1fr 90px; gap:12px; align-items:center; text-align:left; width:100%; background:#fff; border:0; border-top:1px solid var(--pl-line); padding:16px 14px; }
+#pestlaunch-plan-preview .pl-call-row:hover { background:#f8faff; }
+#pestlaunch-plan-preview .pl-call-title { font-size:13px; font-weight:600; display:block; margin-bottom:5px; }
+#pestlaunch-plan-preview .pl-call-meta { color:var(--pl-muted); font-size:11px; line-height:1.6; }
+#pestlaunch-plan-preview .pl-row-cell { font-size:12px; line-height:1.6; min-width:0; }
+#pestlaunch-plan-preview .pl-list-frame { background:#fff; border:1px solid var(--pl-line); border-radius:12px; overflow:clip; }
+#pestlaunch-plan-preview .pl-note { color:var(--pl-muted); font-size:11px; margin-top:12px; line-height:1.6; }
+#pestlaunch-plan-preview .pl-detail-head { margin-bottom:16px; }
+#pestlaunch-plan-preview .pl-detail-title { font-size:23px!important; margin-top:12px!important; }
+#pestlaunch-plan-preview .pl-meta-line { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; font-size:11px; color:var(--pl-muted); }
+#pestlaunch-plan-preview .pl-player { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--pl-line); border-radius:10px; padding:14px; margin-bottom:18px; }
+#pestlaunch-plan-preview .pl-play { width:36px; height:36px; background:#eaf1ff; color:#174fb5!important; border:0; border-radius:50%; display:grid; place-items:center; }
+#pestlaunch-plan-preview .pl-wave { display:flex; flex:1; align-items:center; gap:3px; height:28px; min-width:20px; }
+#pestlaunch-plan-preview .pl-wave span { flex:1; background:#dce4f0; border-radius:2px; min-width:1px; }
+#pestlaunch-plan-preview .pl-wave span.heard { background:var(--pl-blue); }
+#pestlaunch-plan-preview .pl-time { font-size:11px; font-variant-numeric:tabular-nums; color:var(--pl-muted); white-space:nowrap; }
+#pestlaunch-plan-preview .pl-tabs { display:flex; gap:18px; border-bottom:1px solid var(--pl-line); margin-bottom:18px; flex-wrap:wrap; }
+#pestlaunch-plan-preview .pl-tab { padding:10px 0; border:0; border-bottom:2px solid transparent; background:transparent; color:var(--pl-muted)!important; font-size:12px; }
+#pestlaunch-plan-preview .pl-tab[aria-selected=true] { color:#174fb5!important; border-bottom-color:var(--pl-blue); font-weight:600; }
+#pestlaunch-plan-preview .pl-detail-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:18px; align-items:start; }
+#pestlaunch-plan-preview .pl-story p { font-size:13px; }
+#pestlaunch-plan-preview .pl-story-block + .pl-story-block { padding-top:18px; margin-top:18px; border-top:1px solid var(--pl-line); }
+#pestlaunch-plan-preview .pl-evidence-link { display:inline-flex; margin-top:9px; font-size:11px; color:#174fb5!important; background:#eef4ff; border:0; border-radius:5px; padding:4px 7px; align-items:center; gap:4px; }
+#pestlaunch-plan-preview .pl-fact-row { display:flex; justify-content:space-between; gap:14px; font-size:12px; padding:8px 0; }
+#pestlaunch-plan-preview .pl-transcript-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+#pestlaunch-plan-preview .pl-transcript-head h2 { margin:0; }
+#pestlaunch-plan-preview .pl-turn { border:0; width:100%; text-align:left; background:transparent; padding:12px 10px; border-radius:8px; }
+#pestlaunch-plan-preview .pl-turn.selected { background:#edf4ff; }
+#pestlaunch-plan-preview .pl-turn-head { display:flex; gap:9px; margin-bottom:6px; font-size:11px; color:var(--pl-muted); }
+#pestlaunch-plan-preview .pl-turn p { font-size:12px; line-height:1.65; }
+#pestlaunch-plan-preview .pl-turn-head strong { color:#33445d; font-weight:600; }
+#pestlaunch-plan-preview .pl-score-top { display:flex; align-items:center; gap:15px; margin-bottom:18px; }
+#pestlaunch-plan-preview .pl-score-value { font-size:32px; letter-spacing:-1px; font-weight:600; font-variant-numeric:tabular-nums; }
+#pestlaunch-plan-preview .pl-score-value span { font-size:16px; color:var(--pl-muted); font-weight:400; }
+#pestlaunch-plan-preview .pl-check-group { margin-top:18px; }
+#pestlaunch-plan-preview .pl-check-group h3 { color:var(--pl-muted); font-size:11px; text-transform:uppercase; letter-spacing:.8px; }
+#pestlaunch-plan-preview .pl-check { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--pl-line); font-size:12px; }
+#pestlaunch-plan-preview .pl-check button { border:0; background:transparent; text-align:left; display:flex; align-items:center; gap:7px; padding:0; font-size:12px; }
+#pestlaunch-plan-preview .pl-check svg { color:var(--pl-green); }
+#pestlaunch-plan-preview .pl-check.missed svg { color:var(--pl-amber); }
+#pestlaunch-plan-preview .pl-coach-block { padding:16px; border-radius:10px; background:#f6f8fb; margin-top:12px; }
+#pestlaunch-plan-preview .pl-coach-block.strength { background:#edf7f1; }
+#pestlaunch-plan-preview .pl-coach-block p { font-size:12px; }
+#pestlaunch-plan-preview .pl-quote { border-left:3px solid #bad0fb; padding-left:12px; margin-top:12px; font-size:13px; line-height:1.65; }
+#pestlaunch-plan-preview .pl-review-banner { background:#fff6e6; color:#754607; border-radius:9px; padding:12px 14px; margin-bottom:16px; font-size:12px; line-height:1.6; display:flex; gap:8px; align-items:flex-start; }
+#pestlaunch-plan-preview .pl-desk .pl-shell { grid-template-columns:64px minmax(0,1fr); }
+#pestlaunch-plan-preview .pl-desk .pl-sidebar { padding:20px 10px; gap:22px; align-items:center; }
+#pestlaunch-plan-preview .pl-desk .pl-brand-label,#pestlaunch-plan-preview .pl-desk .pl-workspace,#pestlaunch-plan-preview .pl-desk .pl-nav-label,#pestlaunch-plan-preview .pl-desk .pl-count,#pestlaunch-plan-preview .pl-desk .pl-sidebar-foot { display:none; }
+#pestlaunch-plan-preview .pl-desk .pl-brand { padding:0; }
+#pestlaunch-plan-preview .pl-desk .pl-content { padding:18px; }
+#pestlaunch-plan-preview .pl-desk-layout { display:grid; grid-template-columns:180px minmax(0,1fr); gap:18px; }
+#pestlaunch-plan-preview .pl-queue { background:#fff; border:1px solid var(--pl-line); border-radius:10px; padding:14px; }
+#pestlaunch-plan-preview .pl-queue-item { display:block; text-align:left; border:0; background:transparent; padding:13px 8px; border-radius:7px; width:100%; }
+#pestlaunch-plan-preview .pl-queue-item.active { background:#eef4ff; }
+#pestlaunch-plan-preview .pl-queue-item strong { font-size:12px; display:block; margin-bottom:5px; }
+#pestlaunch-plan-preview .pl-queue-item span { font-size:11px; color:var(--pl-muted); line-height:1.6; display:block; }
+#pestlaunch-plan-preview .pl-desk .pl-detail-grid { grid-template-columns:1fr; }
+#pestlaunch-plan-preview .pl-desk .pl-transcript { order:-1; }
+#pestlaunch-plan-preview .pl-brief .pl-story { padding:26px; }
+#pestlaunch-plan-preview .pl-brief .pl-detail-grid { grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); }
+#pestlaunch-plan-preview .pl-brief .pl-detail-title { font-size:27px!important; }
+#pestlaunch-plan-preview .pl-modal-wrap { background:#edf2fa; border:1px solid #d5dfef; border-radius:12px; padding:24px; margin-bottom:20px; }
+#pestlaunch-plan-preview .pl-modal-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+#pestlaunch-plan-preview .pl-modal-head h2 { margin:0; }
+#pestlaunch-plan-preview .pl-upload-area { border:1px dashed #b6c8e5; border-radius:10px; text-align:center; background:#fff; padding:24px 16px; margin-bottom:16px; }
+#pestlaunch-plan-preview .pl-upload-area p { font-size:12px; color:var(--pl-muted); margin:8px 0 16px; }
+#pestlaunch-plan-preview .pl-steps { display:grid; gap:14px; margin:18px 0; }
+#pestlaunch-plan-preview .pl-step { display:flex; gap:10px; align-items:center; font-size:12px; }
+#pestlaunch-plan-preview .pl-step-icon { width:24px; height:24px; border-radius:50%; background:#e7edf6; display:grid; place-items:center; font-size:11px; color:var(--pl-muted); }
+#pestlaunch-plan-preview .pl-step.active .pl-step-icon { background:#2563eb; color:#fff; }
+#pestlaunch-plan-preview .pl-step.complete .pl-step-icon { background:#e7f4ed; color:#157347; }
+#pestlaunch-plan-preview .pl-empty { text-align:center; padding:34px 18px; color:var(--pl-muted); font-size:12px; }
+#pestlaunch-plan-preview .pl-decision-form { display:grid; gap:12px; }
+#pestlaunch-plan-preview .pl-decision-form label { font-size:12px; display:grid; gap:6px; }
+#pestlaunch-plan-preview .pl-decision-form textarea { width:100%; min-height:75px; padding:10px; border:1px solid #c7d5ea; border-radius:8px; resize:vertical; }
+#pestlaunch-plan-preview .pl-live { min-height:18px; color:#174fb5; font-size:12px; margin:10px 0; }
+#pestlaunch-plan-preview .pl-compact .pl-check { padding:7px 0; }
+@media(max-width:900px) {
+  #pestlaunch-plan-preview .pl-shell { grid-template-columns:144px minmax(0,1fr); }
+  #pestlaunch-plan-preview .pl-content { padding:18px; }
+  #pestlaunch-plan-preview .pl-detail-grid,#pestlaunch-plan-preview .pl-brief .pl-detail-grid { grid-template-columns:1fr; }
+  #pestlaunch-plan-preview .pl-transcript { display:none; }
+  #pestlaunch-plan-preview .pl-detail-grid.show-evidence .pl-transcript { display:block; }
+  #pestlaunch-plan-preview .pl-desk-layout { grid-template-columns:150px minmax(0,1fr); }
+  #pestlaunch-plan-preview .pl-overview-grid { grid-template-columns:1fr; }
+  #pestlaunch-plan-preview .pl-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:650px) {
+  #pestlaunch-plan-preview .pl-app { min-height:1000px; }
+  #pestlaunch-plan-preview .pl-shell,#pestlaunch-plan-preview .pl-desk .pl-shell { display:block; min-height:998px; }
+  #pestlaunch-plan-preview .pl-sidebar,#pestlaunch-plan-preview .pl-desk .pl-sidebar { display:block; padding:15px; border-right:0; border-bottom:1px solid var(--pl-line); }
+  #pestlaunch-plan-preview .pl-brand { margin-bottom:12px; }
+  #pestlaunch-plan-preview .pl-desk .pl-brand-label,#pestlaunch-plan-preview .pl-desk .pl-nav-label { display:block; }
+  #pestlaunch-plan-preview .pl-workspace,#pestlaunch-plan-preview .pl-sidebar-foot { display:none; }
+  #pestlaunch-plan-preview .pl-nav { display:flex; flex-wrap:wrap; gap:4px; }
+  #pestlaunch-plan-preview .pl-nav button { flex:1 1 auto; justify-content:center; padding:10px 7px; min-height:44px; font-size:11px; }
+  #pestlaunch-plan-preview .pl-count { display:none; }
+  #pestlaunch-plan-preview .pl-topbar { padding:12px 16px; }
+  #pestlaunch-plan-preview .pl-content,#pestlaunch-plan-preview .pl-desk .pl-content { padding:16px; }
+  #pestlaunch-plan-preview .pl-app h1 { font-size:23px; }
+  #pestlaunch-plan-preview .pl-panel,#pestlaunch-plan-preview .pl-brief .pl-story { padding:16px; }
+  #pestlaunch-plan-preview .pl-table-head { display:none; }
+  #pestlaunch-plan-preview .pl-call-row { grid-template-columns:minmax(0,1fr) 1fr; gap:10px; }
+  #pestlaunch-plan-preview .pl-call-row>span:first-child { grid-column:1/-1; }
+  #pestlaunch-plan-preview .pl-call-row>span:last-child { grid-column:1/-1; }
+  #pestlaunch-plan-preview .pl-desk-layout { display:block; }
+  #pestlaunch-plan-preview .pl-queue { margin-bottom:16px; }
+  #pestlaunch-plan-preview .pl-queue-item { display:inline-block; width:48%; vertical-align:top; }
+  #pestlaunch-plan-preview .pl-button,#pestlaunch-plan-preview .pl-tab,#pestlaunch-plan-preview .pl-evidence-link { min-height:44px; }
+  #pestlaunch-plan-preview .pl-tabs { gap:15px; }
+  #pestlaunch-plan-preview .pl-player { gap:8px; }
+  #pestlaunch-plan-preview .pl-wave span:nth-child(n+21) { display:none; }
+  #pestlaunch-plan-preview .pl-time { white-space:normal; max-width:66px; }
+  #pestlaunch-plan-preview .pl-modal-wrap { padding:16px; }
+  #pestlaunch-plan-preview .pl-input-wrap input,#pestlaunch-plan-preview .pl-select,#pestlaunch-plan-preview textarea { font-size:16px!important; }
+}
+@media(prefers-reduced-motion:no-preference) { #pestlaunch-plan-preview .pl-call-row,#pestlaunch-plan-preview .pl-turn { transition:background 140ms ease; } }
+</style>
+<script>
+(() => {
+  const root = document.getElementById('pestlaunch-plan-preview');
+  const revision = 'plci-plan-v1';
+  const demoCalls = [
+    {id:'SYN-101',title:'Rodent inspection inquiry',purpose:'Sales',outcome:'Inspection booked',status:'Needs review',duration:'5:18',rep:'Not provided',grade:null,reason:'Treatment pricing was deferred until inspection.'},
+    {id:'SYN-102',title:'One-time ant treatment',purpose:'Sales',outcome:'Treatment accepted',status:'Ready',duration:'4:36',rep:'Rep A · fictional',grade:'16/17',reason:''},
+    {id:'SYN-103',title:'Service cancellation request',purpose:'Retention',outcome:'Cancellation requested',status:'Needs review',duration:'2:42',rep:'Not provided',grade:null,reason:'Final account cancellation is not established.'},
+    {id:'SYN-104',title:'Return-visit scheduling',purpose:'General',outcome:'Appointment agreed',status:'Ready',duration:'1:53',rep:'Rep B · fictional',grade:null,reason:''},
+    {id:'SYN-105',title:'Commercial pest inquiry',purpose:'Sales',outcome:'Not available yet',status:'Processing',duration:'6:10',rep:'Not provided',grade:null,reason:''},
+    {id:'SYN-106',title:'Service question',purpose:'General',outcome:'Not available yet',status:'Failed',duration:'0:51',rep:'Not provided',grade:null,reason:'Audio could not be decoded.'}
+  ];
+  const segments = [
+    {id:'s1',time:'0:16',speaker:'Rep A',text:'I understand why ants in the kitchen would be frustrating. We can help you get this taken care of.'},
+    {id:'s2',time:'0:42',speaker:'Rep A',text:'I’ll ask a few questions first so we can choose the right service. Where are you seeing the most activity, and when did it start?'},
+    {id:'s3',time:'0:58',speaker:'Customer',text:'Mostly around the kitchen window. I want a one-time visit that works around my schedule.'},
+    {id:'s4',time:'1:18',speaker:'Rep A',text:'I’ll explain the treatment, then we can look at a time that works for you.'},
+    {id:'s5',time:'1:34',speaker:'Rep A',text:'We’ll inspect the entry points and treat the affected areas inside and outside. That helps address the activity you’re seeing.'},
+    {id:'s6',time:'2:12',speaker:'Rep A',text:'The one-time service is $199. Does that sound good, and would a morning or afternoon visit work better?'},
+    {id:'s7',time:'2:40',speaker:'Customer',text:'That works. A morning visit would be best.'},
+    {id:'s8',time:'3:48',speaker:'Rep A',text:'We’ll plan for Tuesday morning. Your preparation instructions will arrive before the visit. Payment will be collected at service.'},
+    {id:'s9',time:'4:12',speaker:'Rep A',text:'Thank you for choosing us. Please call if anything changes or if you have another pest concern. We also offer a referral reward; ask us for the details if you recommend us to someone.'}
+  ];
+  const checkpoints = [
+    ['Validate','s1','passed','Validate'],['Confidence statement','s1','passed','Validate'],['Expectation statement','s2','passed','Validate'],
+    ['Investigate','s2','passed','Understand'],['Summarize customer needs','s3','missed','Understand'],['Expectation statement','s4','passed','Understand'],
+    ['Present solution','s5','passed','Solve'],['Consensus','s7','passed','Solve'],['Close','s6','passed','Solve'],['Pricing','s6','passed','Solve'],
+    ['Agree with objection',null,'policy','Solve'],['Restate objection',null,'policy','Solve'],['Resolve objection',null,'policy','Solve'],['Re-close',null,'policy','Solve'],
+    ['Provide conclusion','s8','passed','Verify'],['Offer final information','s9','passed','Verify'],['Thank the customer','s9','passed','Verify']
+  ];
+  const states = {};
+  ['calm','desk','brief'].forEach(key => states[key] = {page:'detail',call:'SYN-102',tab:key==='brief'?'Coaching':'Summary',selected:null,query:'',filter:'All calls',transcriptQuery:'',upload:false,stage:-1,playing:false,review:false,notice:'',compact:false});
+  let updatedAt = 0;
+  const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
+  const esc = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const button = (text,attrs='',primary=false) => `<button type="button" class="pl-button ${primary?'pl-primary':''} cursor-interaction" ${attrs}>${text}</button>`;
+  const tag = (text,type='') => `<span class="pl-pill ${type}">${esc(text)}</span>`;
+  const evidence = id => `<button type="button" class="pl-evidence-link cursor-interaction" data-segment="${id}">${icon('audio-lines')}${segments.find(x=>x.id===id)?.time||'Full call'} · View evidence</button>`;
+  const findCall = s => demoCalls.find(c=>c.id===s.call)||demoCalls[1];
+  const statusTag = c => tag(c.status,c.status==='Needs review'?'amber':c.status==='Ready'?'green':c.status==='Failed'?'red':'blue');
+  function save() {
+    updatedAt=Date.now();
+    if(window.openai?.setWidgetState) window.openai.setWidgetState({modelContent:{prototype:'PestLaunch Call Intelligence',recommended:'Calm workspace',fictional:true,views:Object.fromEntries(Object.entries(states).map(([k,s])=>[k,{page:s.page,tab:s.tab}]))},privateContent:{revision,updatedAt,states}}).catch(()=>{});
+  }
+  function restore(value) {
+    const p=value?.privateContent;
+    if(p?.revision!==revision||!(p.updatedAt>updatedAt)||!p.states) return;
+    for(const key of Object.keys(states)) if(p.states[key]) Object.assign(states[key],p.states[key]);
+    updatedAt=p.updatedAt;
+  }
+  function rows(s,reviewOnly=false,short=false) {
+    const data=demoCalls.filter(c=>(!reviewOnly||c.status==='Needs review')&&(s.filter==='All calls'||c.purpose===s.filter||c.status===s.filter)&&(`${c.id} ${c.title} ${c.outcome}`.toLowerCase().includes(s.query.toLowerCase())));
+    if(!data.length) return `<div class="pl-empty">No calls match these filters.<br>${button('Clear filters','data-action="clear"')}</div>`;
+    return data.slice(0,short?3:6).map(c=>`<button type="button" class="pl-call-row cursor-interaction" data-call="${c.id}"><span><span class="pl-call-title">${esc(c.title)}</span><span class="pl-call-meta">${c.id} · ${c.duration} · ${c.rep}</span></span><span class="pl-row-cell">${tag(c.purpose)}<br><span class="pl-call-meta">${esc(c.outcome)}</span></span><span class="pl-row-cell">${statusTag(c)}</span><span class="pl-row-cell">${c.grade?`${c.grade}<br>${tag('Green','green')}`:'<span class="pl-muted">Not graded</span>'}</span></button>`).join('');
+  }
+  function filters(s) { return `<div class="pl-filters"><label class="pl-input-wrap">${icon('search')}<input data-input="query" aria-label="Search calls" placeholder="Search calls, concerns, outcomes" value="${esc(s.query)}"></label><select class="pl-select" data-input="filter" aria-label="Filter calls">${['All calls','Sales','General','Retention','Needs review','Failed'].map(v=>`<option ${s.filter===v?'selected':''}>${v}</option>`).join('')}</select></div>`; }
+  function overview(s) {
+    return `<div class="pl-page-head"><div><div class="pl-kicker">Call Intelligence</div><h1>A clearer picture of every call.</h1><div class="pl-subtitle">Know what happened. See what needs attention.</div></div>${button(icon('upload')+'Upload call','data-action="upload"',true)}</div>
+    <div class="pl-metrics">${[['Analyzed calls','4','of 6 uploaded','calls'],['Inspections booked','1','Call-level outcome','calls'],['Treatments accepted','1','Payment separate','calls'],['Needs review','2','Open assessments','review']].map(m=>`<button type="button" class="pl-metric cursor-interaction" data-page="${m[3]}"><span class="pl-metric-label">${m[0]}</span><span class="pl-metric-value">${m[1]}</span><span class="pl-metric-note">${m[2]}</span></button>`).join('')}</div>
+    <div class="pl-overview-grid"><section class="pl-panel"><h2>Needs your attention</h2><div class="pl-attention"><span class="pl-attention-icon">${icon('circle-alert')}</span><div><h3>Inspection-stage score needs review</h3><p class="pl-muted">Pricing was deferred. Review which sales checkpoints apply.</p>${button('Review call SYN-101','data-call="SYN-101"')}</div></div><div class="pl-attention"><span class="pl-attention-icon">${icon('circle-alert')}</span><div><h3>Cancellation outcome is unclear</h3><p class="pl-muted">The request is clear. Final account action is not confirmed.</p>${button('Review call SYN-103','data-call="SYN-103"')}</div></div></section>
+    <section class="pl-panel"><h2>A useful next practice</h2>${tag('Understand · Sales','blue')}<h3 style="margin-top:16px">Reflect the need before explaining the service.</h3><p class="pl-muted">One scored example missed a summary of the customer’s needs. Make the next coaching conversation specific.</p><div style="margin-top:16px">${button('See coaching '+icon('arrow-up-right'),'data-action="coach"')}</div><p class="pl-note">Based on the available scored example. Not a team performance trend.</p></section></div>
+    <section style="margin-top:22px"><div class="pl-page-head" style="margin-bottom:10px"><h2>Recent calls</h2><button class="pl-text-button cursor-interaction" type="button" data-page="calls">All calls ${icon('arrow-right')}</button></div><div class="pl-list-frame">${rows({...s,query:'',filter:'All calls'},false,true)}</div><p class="pl-note">1 processing · 1 failed · Source dates are not provided.</p></section>`;
+  }
+  function callLog(s,reviewOnly=false) {
+    return `<div class="pl-page-head"><div><div class="pl-kicker">Call Intelligence</div><h1>${reviewOnly?'Needs review':'Calls'}</h1><div class="pl-subtitle">${reviewOnly?'Resolve uncertainty before relying on the result.':'Every conversation, with its context and next step.'}</div></div>${button(icon('upload')+'Upload call','data-action="upload"',true)}</div>${filters(s)}<div class="pl-list-frame"><div class="pl-table-head"><span>Call & concern</span><span>Type & outcome</span><span>Status</span><span>Grade</span></div>${rows(s,reviewOnly)}</div><p class="pl-note">Recording dates and some rep identities are not provided. Upload dates do not substitute for call dates.</p>`;
+  }
+  function transcript(s) {
+    const matching=segments.filter(x=>`${x.speaker} ${x.text}`.toLowerCase().includes(s.transcriptQuery.toLowerCase()));
+    return `<section class="pl-panel pl-transcript" aria-label="Transcript evidence"><div class="pl-transcript-head"><h2>Transcript</h2>${tag('Sanitized','blue')}</div><label class="pl-input-wrap" style="margin-bottom:10px">${icon('search')}<input data-input="transcriptQuery" aria-label="Search transcript" placeholder="Find a moment" value="${esc(s.transcriptQuery)}"></label>${matching.map(t=>`<button type="button" class="pl-turn ${s.selected===t.id?'selected':''} cursor-interaction" data-segment="${t.id}"><span class="pl-turn-head"><span>${t.time}</span><strong>${t.speaker}</strong></span><p>${esc(t.text)}</p></button>`).join('')||'<div class="pl-empty">No matching moments.</div>'}</section>`;
+  }
+  function summary(s,c) {
+    const known=c.id==='SYN-102';
+    return `<section class="pl-panel pl-story"><div class="pl-story-block"><div class="pl-kicker">Customer need</div><h2>${known?'A one-time solution for kitchen ants.':esc(c.title)}</h2><p>${known?'The customer wants the ant activity addressed without starting a recurring plan, with a visit that fits their schedule.':c.id==='SYN-101'?'The customer wants a professional assessment before choosing treatment.':c.id==='SYN-103'?'The customer asks to end the service. The final account action remains uncertain.':'The customer wants to arrange a return visit.'}</p>${known?evidence('s3'):''}</div>
+    <div class="pl-story-block"><div class="pl-kicker">What was agreed</div><h3>${esc(c.outcome)}</h3><p>${known?'A one-time inside/outside treatment and a Tuesday morning appointment. Payment is due at the visit.':c.id==='SYN-101'?'An inspection was accepted. Treatment, final pricing and payment remain undecided.':c.id==='SYN-103'?'The cancellation request is recorded. Account closure needs confirmation.':'A return-visit appointment was agreed verbally.'}</p>${known?evidence('s7'):''}</div>
+    <div class="pl-story-block"><h3>Important details</h3>${known?'<div class="pl-fact-row"><span class="pl-muted">Service</span><span>One-time treatment</span></div><div class="pl-fact-row"><span class="pl-muted">Quoted price</span><span>$199</span></div><div class="pl-fact-row"><span class="pl-muted">Payment</span><span>Due at service</span></div>':'<div class="pl-fact-row"><span class="pl-muted">Verified payment</span><span>Not established</span></div><div class="pl-fact-row"><span class="pl-muted">Original call date</span><span>Not provided</span></div>'}</div>
+    <div class="pl-story-block"><h3>Follow-up</h3>${tag('Promised','blue')}<p style="margin-top:8px">${known?'Send preparation instructions before the visit.':c.id==='SYN-101'?'Provide findings and a treatment quote after inspection.':'Confirm the agreed account or scheduling action.'}</p>${known?evidence('s8'):''}</div></section>`;
+  }
+  function scorecard(s,c) {
+    if(c.id!=='SYN-102') return `<section class="pl-panel"><h2>Assessment needs review</h2>${tag('No official grade','amber')}<p style="margin-top:14px">${esc(c.reason||'Checkpoint evidence is not yet complete.')}</p><div class="pl-check"><span>Applicable checkpoints</span>${tag('Unclear','amber')}</div><p class="pl-note">The original denominator and thresholds are preserved. A partial assessment is not a final grade.</p><div style="margin-top:16px">${button('Review assessment','data-action="review"')}</div></section>`;
+    return `<section class="pl-panel"><div class="pl-score-top"><div class="pl-score-value">16<span> / 17</span></div><div>${tag('Green standard','green')}<div class="pl-note">Sales scorecard · 1 missed checkpoint</div></div></div><p class="pl-note" style="margin-top:0">4 objection points awarded by policy: no objections in this fictional call.</p>${['Validate','Understand','Solve','Verify'].map(group=>`<div class="pl-check-group"><h3>${group}</h3>${checkpoints.filter(x=>x[3]===group).map(x=>`<div class="pl-check ${x[2]==='missed'?'missed':''}"><button type="button" class="cursor-interaction" ${x[1]?`data-segment="${x[1]}"`:'data-action="policy"'}>${icon(x[2]==='missed'?'circle-minus':x[2]==='policy'?'sparkles':'circle-check')}<span>${x[0]}</span></button>${tag(x[2]==='missed'?'Missed':x[2]==='policy'?'Policy +1':'Passed',x[2]==='missed'?'amber':x[2]==='policy'?'blue':'green')}</div>`).join('')}</div>`).join('')}<div style="margin-top:16px">${button('Review assessment','data-action="review"')}</div></section>`;
+  }
+  function coaching(s,c) {
+    if(c.id!=='SYN-102') return `<section class="pl-panel"><h2>Review first, then coach.</h2><p>Resolve the uncertain assessment before giving rep-specific feedback.</p><div style="margin-top:16px">${button('Review assessment','data-action="review"',true)}</div></section>`;
+    return `<section class="pl-panel pl-story"><div class="pl-kicker">Next practice · Understand</div><h2>Make the customer feel understood before the pitch.</h2><div class="pl-coach-block strength"><h3>Keep doing this</h3><p>The service choice followed the customer’s preference for a one-time visit.</p>${evidence('s7')}</div><div class="pl-coach-block"><h3>Improve this moment</h3><p>The rep moved from discovery into the treatment explanation without summarizing the customer’s needs.</p>${evidence('s3')}<div class="pl-quote">“So you want those kitchen ants handled with a one-time visit that fits your schedule. Have I got that right?”</div></div><p class="pl-note">Practice one brief summary before explaining the service. Feedback is tied to the missed Summary checkpoint.</p></section>`;
+  }
+  function detail(s,key) {
+    const c=findCall(s);
+    if(c.status==='Failed'||c.status==='Processing') return `<div class="pl-page-head"><div><h1>${esc(c.title)}</h1><p class="pl-subtitle">${c.id}</p></div>${button('Back to calls','data-page="calls"')}</div><section class="pl-panel"><h2>${c.status==='Failed'?'Recording could not be processed':'Processing recording'}</h2><p>${c.status==='Failed'?'This fictional example demonstrates a decode failure. A retry preserves the existing call entry.':'The call stays in your log while analysis is in progress.'}</p><div style="margin-top:18px">${button(c.status==='Failed'?'Preview retry':'View processing','data-action="sample"',true)}</div></section>`;
+    const time=segments.find(t=>t.id===s.selected)?.time||'0:00';
+    const player=`<div class="pl-player"><button type="button" class="pl-play cursor-interaction" data-action="play" aria-label="${s.playing?'Pause':'Preview'} simulated playback">${icon(s.playing?'pause':'play')}</button><div class="pl-wave" aria-label="Illustrative recording timeline">${Array.from({length:42},(_,i)=>`<span class="${i<(s.selected?18:0)?'heard':''}" style="height:${7+(i*13%20)}px"></span>`).join('')}</div><span class="pl-time">${time} / ${c.duration}<br>Preview only</span></div>`;
+    let content=s.tab==='Scorecard'?scorecard(s,c):s.tab==='Coaching'?coaching(s,c):s.tab==='Transcript'?`<section class="pl-panel"><h2>Recording context</h2><p>Choose a transcript moment to inspect the supporting evidence.</p>${tag(c.outcome,'blue')}</section>`:summary(s,c);
+    if(c.id!=='SYN-102') content+=`<p class="pl-note">The detailed fictional transcript is shown only for SYN-102.${button('Open complete example','data-call="SYN-102"')}</p>`;
+    const transcriptContent=c.id==='SYN-102'?transcript(s):`<section class="pl-panel pl-transcript"><h2>Review context</h2><p class="pl-muted">${esc(c.reason||'No detailed fictional transcript supplied for this preview entry.')}</p></section>`;
+    const main=`<div class="pl-detail-head"><div class="pl-actions"><button type="button" class="pl-text-button cursor-interaction" data-page="calls">${icon('arrow-left')}Calls</button><span class="pl-muted" style="font-size:11px">/ ${c.id}</span></div><h1 class="pl-detail-title">${esc(c.title)}</h1><div class="pl-meta-line">${tag(c.purpose)}${tag(c.outcome,'blue')}${statusTag(c)}<span>${c.duration}</span><span>${esc(c.rep)}</span></div></div>${c.status==='Needs review'?`<div class="pl-review-banner">${icon('circle-alert')}<span>${esc(c.reason)} A final grade is withheld.</span></div>`:''}${player}<div class="pl-tabs" role="tablist" aria-label="Call detail sections">${['Summary','Scorecard','Coaching','Transcript'].map(t=>`<button type="button" role="tab" aria-selected="${s.tab===t}" class="pl-tab cursor-interaction" data-tab="${t}">${t}</button>`).join('')}</div><div class="pl-detail-grid ${s.selected||s.tab==='Transcript'?'show-evidence':''}"><div>${content}</div>${transcriptContent}</div>`;
+    if(key!=='desk') return main;
+    return `<div class="pl-desk-layout"><aside class="pl-queue"><div class="pl-kicker">Review queue</div><h3>Keep your place</h3>${demoCalls.slice(0,4).map(x=>`<button type="button" class="pl-queue-item ${s.call===x.id?'active':''} cursor-interaction" data-call="${x.id}"><strong>${x.id}</strong><span>${esc(x.title)}</span><span>${x.status}</span></button>`).join('')}</aside><div>${main}</div></div>`;
+  }
+  function upload(s) {
+    if(!s.upload) return '';
+    const stages=['Queued','Transcribing','Privacy check','Analyzing','Scoring','Ready'];
+    return `<section class="pl-modal-wrap" aria-label="Upload and processing preview"><div class="pl-modal-head"><h2>${s.stage<0?'Upload a call':'Processing fictional sample'}</h2>${button(icon('x')+'Close','data-action="close-upload"')}</div>${s.stage<0?`<div class="pl-upload-area">${icon('upload')}<h3 style="margin-top:8px">Add a recording</h3><p>MP3, WAV or M4A · up to 100 MiB and 60 minutes</p>${button('Use fictional sample','data-action="sample"',true)}</div><p class="pl-note">Preview uses a sample button. No file is read or uploaded.</p>`:`<div class="pl-steps">${stages.map((v,i)=>`<div class="pl-step ${i<s.stage?'complete':i===s.stage?'active':''}"><span class="pl-step-icon">${i<s.stage?'✓':i+1}</span><span>${v}</span>${i===2?tag('Sanitized','blue'):''}</div>`).join('')}</div><div class="pl-actions">${s.stage<5?button('Preview next stage '+icon('arrow-right'),'data-action="stage"',true):button('Open sample result','data-call="SYN-102"',true)}</div><p class="pl-note">Stages are simulated. Closing this panel keeps the preview state.</p>`}</section>`;
+  }
+  function reviewForm(s) {
+    if(!s.review) return '';
+    return `<section class="pl-modal-wrap" aria-label="Review assessment"><div class="pl-modal-head"><h2>Review a checkpoint</h2>${button('Close','data-action="close-review"')}</div><form class="pl-decision-form"><label>Decision<select class="pl-select"><option>Keep unresolved</option><option>Passed with evidence</option><option>Missed</option><option>Not applicable</option></select></label><label>Reason<textarea required placeholder="Explain the evidence or applicability decision."></textarea></label><div>${button('Save preview decision','data-action="save-review"',true)}</div></form><p class="pl-note">A reviewer decision is kept separate from the original model assessment.</p></section>`;
+  }
+  function settings() {
+    return `<div class="pl-page-head"><div><div class="pl-kicker">Private workspace</div><h1>Data controls</h1><p class="pl-subtitle">Keep access and test-data retention clear.</p></div></div><section class="pl-panel"><h2>Test-data lifecycle</h2><div class="pl-fact-row"><span class="pl-muted">Workspace</span><span>Private</span></div><div class="pl-fact-row"><span class="pl-muted">Playback</span><span>Sanitized recordings</span></div><div class="pl-fact-row"><span class="pl-muted">Customer-data retention</span><span>Delete after test</span></div><p class="pl-note">The production design includes owner-only deletion and a verification receipt.</p><div style="margin-top:18px">${button('Preview deletion confirmation','data-action="delete-preview"')}</div></section>`;
+  }
+  function render(key) {
+    const host=root.querySelector(`[data-direction="${key}"]`),s=states[key];
+    host.classList.toggle('pl-compact',s.compact);
+    const body=s.page==='overview'?overview(s):s.page==='calls'?callLog(s):s.page==='review'?callLog(s,true):s.page==='settings'?settings():detail(s,key);
+    host.querySelector('.pl-mount').innerHTML=`<div class="pl-shell"><aside class="pl-sidebar"><div class="pl-brand"><span class="pl-brand-mark">${icon('bug')}</span><span class="pl-brand-label">PestLaunch</span></div><div class="pl-workspace"><strong>Demo workspace</strong><br><span class="pl-muted">Private build test</span></div><nav class="pl-nav" aria-label="Call Intelligence navigation">${[['overview','layout-dashboard','Overview'],['calls','phone','Calls'],['review','list-checks','Needs review'],['settings','settings-2','Data controls']].map(n=>`<button type="button" class="cursor-interaction" data-page="${n[0]}" ${s.page===n[0]?'aria-current="page"':''} aria-label="${n[2]}">${icon(n[1])}<span class="pl-nav-label">${n[2]}</span>${n[0]==='review'?'<span class="pl-count">2</span>':''}</button>`).join('')}</nav><div class="pl-sidebar-foot">Call Intelligence<br><span>Every call, in context.</span></div></aside><div class="pl-body"><header class="pl-topbar"><div class="pl-topbar-left"><span>Workspace</span><span>/</span><strong>Call Intelligence</strong></div><div class="pl-actions">${tag('Private')}<span class="pl-avatar" aria-label="Owner account">OW</span></div></header><main class="pl-content">${upload(s)}${reviewForm(s)}<div class="pl-live" aria-live="polite">${esc(s.notice)}</div>${body}</main></div></div>`;
+    if(window.lucide) lucide.createIcons({attrs:{width:16,height:16}});
+  }
+  function renderAll() { Object.keys(states).forEach(render); }
+  root.addEventListener('click',event=>{
+    const target=event.target.closest('button');
+    const host=target?.closest('[data-direction]');
+    if(!target||!host) return;
+    const key=host.dataset.direction,s=states[key];
+    s.notice='';
+    if(target.dataset.page) {s.page=target.dataset.page;s.selected=null;s.review=false;}
+    if(target.dataset.call) {s.call=target.dataset.call;s.page='detail';s.tab='Summary';s.selected=null;s.upload=false;s.review=false;}
+    if(target.dataset.tab) s.tab=target.dataset.tab;
+    if(target.dataset.segment) {s.selected=target.dataset.segment;s.transcriptQuery='';s.notice=`Evidence selected at ${segments.find(t=>t.id===s.selected)?.time}. Playback is simulated.`;}
+    const action=target.dataset.action;
+    if(action==='upload') {s.upload=true;s.stage=-1;}
+    if(action==='close-upload') s.upload=false;
+    if(action==='sample') {s.upload=true;s.stage=0;}
+    if(action==='stage') s.stage=Math.min(5,s.stage+1);
+    if(action==='clear') {s.query='';s.filter='All calls';}
+    if(action==='coach') {s.page='detail';s.call='SYN-102';s.tab='Coaching';}
+    if(action==='play') {s.playing=!s.playing;s.notice=s.playing?'Playback simulation selected. No audio is present in this design preview.':'Playback simulation paused.';}
+    if(action==='policy') s.notice='Policy award: all four objection points are awarded when a complete call has no objections.';
+    if(action==='review') s.review=true;
+    if(action==='close-review') s.review=false;
+    if(action==='save-review') {const form=target.closest('form');if(!form.reportValidity()) return;s.review=false;s.notice='Preview decision recorded separately. Unresolved applicability still requires review.';}
+    if(action==='delete-preview') s.notice='Deletion would stop jobs and remove all created test-data copies after owner confirmation. This preview deletes no files.';
+    render(key);save();
+    if(target.dataset.segment) host.querySelector('.pl-turn.selected')?.scrollIntoView({behavior:'auto',block:'nearest'});
+  });
+  root.addEventListener('input',event=>{
+    const input=event.target,kind=input.dataset.input,host=input.closest('[data-direction]');
+    if(!kind||!host) return;
+    const key=host.dataset.direction,s=states[key],cursor=input.selectionStart;
+    s[kind]=input.value;render(key);
+    const replacement=host.querySelector(`[data-input="${kind}"]`);
+    replacement?.focus();if(replacement?.setSelectionRange&&cursor!==null) replacement.setSelectionRange(cursor,cursor);
+    save();
+  });
+  restore(window.openai?.widgetState);renderAll();
+  window.addEventListener('openai:set_globals',event=>{const prior=updatedAt;restore(event.detail?.globals?.widgetState);if(updatedAt!==prior) renderAll();});
+  if(typeof Tweak!=='undefined') for(const key of Object.keys(states)) {
+    const host=root.querySelector(`[data-direction="${key}"]`);
+    new Tweak({container:host,onChange:()=>{render(key);save();}}).addToggle(states[key],'compact',{label:'Compact checkpoint spacing'});
+  }
+})();
+</script>
