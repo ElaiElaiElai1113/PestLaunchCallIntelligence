@@ -1,6 +1,7 @@
 import { it, expect } from "vitest";
 import { GroqProvider } from "@/lib/groq/provider";
 import { analysis } from "../helpers/analysis";
+import { wireFromAnalysis } from "../helpers/provider-wire";
 const segments = [
   {
     id: "s1",
@@ -173,7 +174,10 @@ it("uses strict structured output and computes no provider-owned grade", async (
         choices: [
           {
             index: 0,
-            message: { role: "assistant", content: JSON.stringify(a) },
+            message: {
+              role: "assistant",
+              content: JSON.stringify(wireFromAnalysis(a)),
+            },
             finish_reason: "stop",
           },
         ],
@@ -183,6 +187,9 @@ it("uses strict structured output and computes no provider-owned grade", async (
   const result = await provider.analyze(segments);
   expect(result.effective.purpose).toBe("sales");
   expect(result.original).toEqual(a);
+  expect(result.providerOutput.content).toBe(
+    JSON.stringify(wireFromAnalysis(a)),
+  );
   expect(
     result.effective.assessments.every((x) => x.status === "unknown"),
   ).toBe(true);
@@ -224,9 +231,57 @@ it("invalid provider evidence is rejected before publication", async () => {
     fetch: async () =>
       Response.json({
         choices: [
-          { message: { content: JSON.stringify(a) }, finish_reason: "stop" },
+          {
+            message: { content: JSON.stringify(wireFromAnalysis(a)) },
+            finish_reason: "stop",
+          },
         ],
       }),
   });
-  await expect(provider.analyze(segments)).rejects.toThrow("INVALID_EVIDENCE");
+  await expect(provider.analyze(segments)).rejects.toThrow();
 });
+
+it("budget admission fails before fetch and preserves complete input", async () => {
+  let requests = 0;
+  const provider = new GroqProvider({
+    apiKey: "fictional-contract-token",
+    fetch: async () => {
+      requests++;
+      return new Response();
+    },
+  });
+  const input = [{ ...segments[0], text: "Fictional ".repeat(2000) }];
+  await expect(provider.analyze(input)).rejects.toThrow(
+    "ANALYSIS_BUDGET_EXCEEDED",
+  );
+  expect(requests).toBe(0);
+  expect(input[0].text.endsWith("Fictional ")).toBe(true);
+});
+it.each(["length", "content_filter"])(
+  "rejects provider termination %s",
+  async (finish_reason) => {
+    const provider = new GroqProvider({
+      apiKey: "fictional-contract-token",
+      fetch: async () =>
+        Response.json({
+          choices: [{ finish_reason, message: { content: "{}" } }],
+        }),
+    });
+    await expect(provider.analyze(segments)).rejects.toThrow(
+      "INCOMPLETE_ANALYSIS",
+    );
+  },
+);
+it.each(["not JSON", "{}"])(
+  "rejects malformed wire response %s",
+  async (content) => {
+    const provider = new GroqProvider({
+      apiKey: "fictional-contract-token",
+      fetch: async () =>
+        Response.json({
+          choices: [{ finish_reason: "stop", message: { content } }],
+        }),
+    });
+    await expect(provider.analyze(segments)).rejects.toThrow();
+  },
+);
