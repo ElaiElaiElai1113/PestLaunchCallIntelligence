@@ -1,4 +1,9 @@
-import { FatalError, RetryableError, getWorkflowMetadata } from "workflow";
+import {
+  FatalError,
+  RetryableError,
+  getWorkflowMetadata,
+  getStepMetadata,
+} from "workflow";
 import { systemRepository } from "@/lib/server/repository";
 import { adminClient } from "@/lib/supabase/server";
 import { GroqProvider } from "@/lib/groq/provider";
@@ -9,6 +14,9 @@ import { claimProcessingAttempt } from "@/lib/jobs/processing-claim";
 import type { CallRecord } from "@/lib/domain/types";
 import { analysisCurrent } from "@/lib/domain/source-review";
 import { assessmentContext } from "@/lib/domain/assessment-guards";
+import { createHash } from "node:crypto";
+import { STAGED_CONTRACT } from "@/lib/groq/staged-contract";
+const PROVIDER_RETRIES = 3;
 const provider = () => new GroqProvider({ apiKey: process.env.GROQ_API_KEY });
 const missing = (error: unknown) =>
   error instanceof Error && error.message === "CALL_NOT_FOUND";
@@ -176,8 +184,47 @@ async function analysisStep(
     )
       throw new Error("PRIVACY_APPROVAL_REQUIRED");
     const sourceRevision = call.sourceRevision ?? 0;
+    const context = assessmentContext(call);
+    const inputHash = createHash("sha256")
+      .update(JSON.stringify({ segments: call.segments, context }))
+      .digest("hex");
+    const pending = call.pendingExtraction;
+    const reusable =
+      pending &&
+      pending.inputHash === inputHash &&
+      pending.sourceRevision === sourceRevision &&
+      pending.expectedVersion === call.version &&
+      pending.attemptId === (attemptId ?? null) &&
+      pending.runId === (runId ?? null) &&
+      pending.output.contract === STAGED_CONTRACT &&
+      pending.output.model === "openai/gpt-oss-120b";
     const stagedProvider = new GroqProvider({
       apiKey: process.env.GROQ_API_KEY,
+      cachedExtraction: reusable ? pending.output : undefined,
+      saveExtraction: async (output) => {
+        const active = await ownedCall(callId, attemptId, runId);
+        if (
+          !active ||
+          active.call.version !== call.version ||
+          (active.call.sourceRevision ?? 0) !== sourceRevision ||
+          active.call.status === "privacy_review" ||
+          (active.call.sourceKind !== "synthetic" &&
+            process.env.REAL_CALL_PROCESSING_ENABLED !== "true")
+        )
+          throw new Error("PROCESSING_SUPERSEDED");
+        const previous = call.version;
+        call.version++;
+        call.pendingExtraction = {
+          inputHash,
+          sourceRevision,
+          expectedVersion: call.version,
+          attemptId: attemptId ?? null,
+          runId: runId ?? null,
+          output,
+        };
+        if (!(await repo.put(call, previous)))
+          throw new Error("PROCESSING_SUPERSEDED");
+      },
       beforeScoring: async () => {
         const active = await ownedCall(callId, attemptId, runId);
         if (
@@ -192,7 +239,7 @@ async function analysisStep(
       },
     });
     const { original, effective, providerOutput } =
-      await stagedProvider.analyze(call.segments, assessmentContext(call));
+      await stagedProvider.analyze(call.segments, context);
     const latest = await ownedCall(callId, attemptId, runId);
     if (
       !latest ||
@@ -215,6 +262,7 @@ async function analysisStep(
     }
     call.originalAnalysis ??= structuredClone(original);
     call.latestModelAnalysis = structuredClone(original);
+    call.pendingExtraction = null;
     call.analysisSourceRevision = sourceRevision;
     call.score = computeScore(effective);
     call.status =
@@ -243,7 +291,14 @@ async function safeFailure(
   if (error instanceof RetryableError) throw error;
   if (unavailable(error))
     throw new RetryableError("DATABASE_UNAVAILABLE", { retryAfter: "10s" });
-  if (status === 429 || (status && status >= 500))
+  const providerTransient = status === 429 || !!(status && status >= 500);
+  let stepAttempt = 1;
+  try {
+    stepAttempt = getStepMetadata().attempt;
+  } catch {
+    /* Offline direct invocations have no step context. */
+  }
+  if (providerTransient && stepAttempt <= PROVIDER_RETRIES)
     throw new RetryableError("PROVIDER_TEMPORARILY_UNAVAILABLE", {
       retryAfter: "1m",
     });
@@ -260,8 +315,9 @@ async function safeFailure(
     "RECORDING_TOO_LONG",
     "SANITIZED_MEDIA_FAILED",
   ];
-  const code =
-    error instanceof Error && codes.includes(error.message)
+  const code = providerTransient
+    ? "PROVIDER_TEMPORARILY_UNAVAILABLE"
+    : error instanceof Error && codes.includes(error.message)
       ? error.message
       : "ANALYSIS_FAILED";
   const loaded = await ownedCall(callId, attemptId, runId);
@@ -278,3 +334,5 @@ async function safeFailure(
   call.version++;
   await repo.put(call, previous);
 }
+analysisStep.maxRetries = PROVIDER_RETRIES;
+transcriptionStep.maxRetries = PROVIDER_RETRIES;

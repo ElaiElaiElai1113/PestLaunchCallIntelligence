@@ -69,6 +69,14 @@ export type ProviderOutput = {
   content: string;
 };
 export type CallRecord = {
+  pendingExtraction?: {
+    inputHash: string;
+    sourceRevision: number;
+    expectedVersion: number;
+    attemptId: string | null;
+    runId: string | null;
+    output: ProviderOutput & { requestHash: string };
+  } | null;
   originalProviderOutput?: ProviderOutput | null;
   latestProviderOutput?: ProviderOutput | null;
   sourceRevision?: number;

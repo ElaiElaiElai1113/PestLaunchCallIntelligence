@@ -1,6 +1,7 @@
-import type { Segment } from "../domain/types";
+import type { Segment, ProviderOutput } from "../domain/types";
 import Groq, { toFile } from "groq-sdk";
 import { z } from "zod";
+import { createHash } from "node:crypto";
 import { buildAnalysisRequest, buildScoringRequest } from "./analysis-request";
 import {
   STAGED_CONTRACT,
@@ -13,6 +14,10 @@ export class GroqProvider {
       apiKey?: string;
       fetch?: typeof fetch;
       beforeScoring?: () => Promise<void>;
+      cachedExtraction?: ProviderOutput & { requestHash: string };
+      saveExtraction?: (
+        output: ProviderOutput & { requestHash: string },
+      ) => Promise<void>;
     },
   ) {}
   private client() {
@@ -97,12 +102,32 @@ export class GroqProvider {
     if (JSON.stringify(segments).length > 150000)
       throw new Error("TRANSCRIPT_TOO_LONG");
     const { request } = buildAnalysisRequest(segments, context);
-    const response = await client.chat.completions.create(request);
-    if (response.choices[0]?.finish_reason !== "stop")
+    const requestHash = createHash("sha256")
+      .update(JSON.stringify(request))
+      .digest("hex");
+    const candidate = this.config.cachedExtraction;
+    const cached =
+      candidate &&
+      candidate.contract === STAGED_CONTRACT &&
+      candidate.model === request.model &&
+      candidate.requestHash === requestHash
+        ? candidate
+        : undefined;
+    const response = cached
+      ? null
+      : await client.chat.completions.create(request);
+    if (response && response.choices[0]?.finish_reason !== "stop")
       throw new Error("INCOMPLETE_ANALYSIS");
-    const content = response.choices[0]?.message.content;
+    const content = cached?.content ?? response?.choices[0]?.message.content;
     if (typeof content !== "string") throw new Error("INCOMPLETE_ANALYSIS");
     const extracted = validateExtraction(JSON.parse(content), segments);
+    if (!cached)
+      await this.config.saveExtraction?.({
+        contract: STAGED_CONTRACT,
+        model: request.model,
+        content,
+        requestHash,
+      });
     let scoringContent: string | null = null;
     let scoring: unknown = {
       noObjections: false,

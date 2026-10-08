@@ -47,6 +47,8 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   return data;
 }
 export const ERRORS: Record<string, string> = {
+  PROVIDER_TEMPORARILY_UNAVAILABLE:
+    "The analysis service is busy or unavailable. Your recording and transcript are preserved. Try again later.",
   ANALYSIS_BUDGET_EXCEEDED:
     "This transcript exceeds the current analysis limit. The transcript and previous results are preserved; analysis needs a reviewed processing plan.",
   STALE_SOURCE_REVIEW:
