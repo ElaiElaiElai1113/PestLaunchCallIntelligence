@@ -4,6 +4,34 @@ import { RUBRICS } from "@/lib/scoring/rubrics";
 import { scoringSchema } from "@/lib/groq/staged-contract";
 import { buildScoringRequest } from "@/lib/groq/analysis-request";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
+it("avoids Groq object unions with overlapping checkpoint status discriminators", () => {
+  const source = sampleCall("one-time", "fictional-discriminator");
+  const request = buildScoringRequest(
+    source.segments,
+    { transcriptComplete: true },
+    "sales",
+  ).request;
+  const schema =
+    request.response_format!.type === "json_schema"
+      ? request.response_format!.json_schema.schema
+      : {};
+  let overlap = false;
+  function walk(value: unknown) {
+    if (!value || typeof value !== "object") return;
+    const node = value as Record<string, unknown>;
+    if (Array.isArray(node.anyOf)) {
+      const discriminators = node.anyOf
+        .map((branch) => branch?.properties?.status)
+        .filter(Boolean)
+        .map((v) => JSON.stringify(v));
+      if (new Set(discriminators).size !== discriminators.length)
+        overlap = true;
+    }
+    for (const child of Object.values(node)) walk(child);
+  }
+  walk(schema);
+  expect(overlap).toBe(false);
+});
 it("includes an explicit array type beside bounded array references for Groq", () => {
   const source = sampleCall("one-time", "fictional-array-reference");
   const request = buildScoringRequest(

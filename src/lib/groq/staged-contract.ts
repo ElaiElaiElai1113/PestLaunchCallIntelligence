@@ -17,19 +17,17 @@ export function scoringSchema(segments: Segment[], purpose: Purpose) {
   const item = contractSchema(segments).shape.assessments.element.omit({
     id: true,
   });
-  const coached = item.shape.coaching;
-  const validatedItem =
-    coached instanceof z.ZodNullable
-      ? z.union([
-          item.extend({ coaching: z.null() }),
-          item.extend({
-            coaching: coached.unwrap(),
-            evidence: item.shape.evidence.extend({
-              segmentIds: item.shape.evidence.shape.segmentIds.min(1),
-            }),
-          }),
-        ])
-      : item;
+  // Groq cannot disambiguate two checkpoint-object union branches with the
+  // same status enum. Require source context for every attributed checkpoint,
+  // including an unknown/missing step, instead of a conditional object union.
+  // Unattributed sources retain nullable-free coaching and may use empty refs.
+  const validatedItem = segments.some((s) => s.speaker === "employee")
+    ? item.extend({
+        evidence: item.shape.evidence.extend({
+          segmentIds: item.shape.evidence.shape.segmentIds.min(1),
+        }),
+      })
+    : item;
   return z.strictObject({
     noObjections: z.boolean(),
     checkpoints: z.strictObject(

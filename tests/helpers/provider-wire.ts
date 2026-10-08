@@ -50,7 +50,20 @@ export function stagedFromAnalysis(analysis: Analysis) {
     scoring: {
       noObjections,
       checkpoints: Object.fromEntries(
-        assessments.map(({ id, ...item }) => [id, item]),
+        assessments.map(({ id, ...item }) => [
+          id,
+          {
+            ...item,
+            evidence: item.evidence.segmentIds.length
+              ? item.evidence
+              : {
+                  segmentIds: [
+                    ...(assessments.find((a) => a.id === "thank")?.evidence
+                      .segmentIds ?? []),
+                  ],
+                },
+          },
+        ]),
       ),
     },
   };
