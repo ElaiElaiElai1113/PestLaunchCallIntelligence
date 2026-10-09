@@ -16,6 +16,7 @@ import { analysisCurrent } from "@/lib/domain/source-review";
 import { assessmentContext } from "@/lib/domain/assessment-guards";
 import { createHash } from "node:crypto";
 import { STAGED_CONTRACT } from "@/lib/groq/staged-contract";
+import { providerRetryLimit } from "@/lib/groq/retry-limit";
 const PROVIDER_RETRIES = 3;
 const provider = () => new GroqProvider({ apiKey: process.env.GROQ_API_KEY });
 const missing = (error: unknown) =>
@@ -299,7 +300,10 @@ async function safeFailure(
   } catch {
     /* Offline direct invocations have no step context. */
   }
-  if (providerTransient && stepAttempt <= PROVIDER_RETRIES)
+  if (
+    providerTransient &&
+    stepAttempt <= providerRetryLimit(process.env.GROQ_WORKFLOW_RETRIES)
+  )
     throw new RetryableError("PROVIDER_TEMPORARILY_UNAVAILABLE", {
       retryAfter: "1m",
     });

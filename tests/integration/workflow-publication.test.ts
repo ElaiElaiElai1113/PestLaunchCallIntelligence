@@ -471,6 +471,22 @@ it("terminal provider failure finishes the owner but temporary failure retains i
   expect(state.call!.processingAttempt!.state).toBe("finished");
   expect(state.call!.status).toBe("failed");
 });
+it("a bounded zero-retry test finishes a transient provider failure without another effect", async () => {
+  vi.stubEnv("GROQ_WORKFLOW_RETRIES", "0");
+  state.call!.processingAttempt = {
+    id: "fictional-attempt",
+    state: "pending",
+    runId: null,
+  };
+  state.analyze.mockRejectedValueOnce(
+    Object.assign(new Error("fictional unavailable"), { status: 429 }),
+  );
+  await processCall("fictional-call", "fictional-attempt");
+  expect(state.analyze).toHaveBeenCalledTimes(1);
+  expect(state.call!.processingAttempt!.state).toBe("finished");
+  expect(state.call!.status).toBe("failed");
+  expect(state.call!.errorCode).toBe("PROVIDER_TEMPORARILY_UNAVAILABLE");
+});
 it("deletion during source download prevents the subsequent transcription request", async () => {
   vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
   state.call!.segments = [];
