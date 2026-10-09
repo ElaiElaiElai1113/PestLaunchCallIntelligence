@@ -8,6 +8,7 @@ import type {
 import { computeScore } from "../scoring/engine";
 import { guardAssessment } from "../domain/assessment-guards";
 import { sampleAssessments, sampleCoaching } from "./assessments";
+import { materializeRecap } from "../groq/source-recap";
 export const OUTCOME_LABELS: Record<OutcomeKey, string> = {
   quoteProvided: "Quote provided",
   inspectionBooked: "Inspection booked",
@@ -251,6 +252,25 @@ export function sampleCall(key: string, id: string): CallRecord {
     noObjections: key === "inspection",
     reviewReasons: unresolved.map((x) => `Checkpoint needs review: ${x}`),
   };
+  if (key === "service")
+    Object.assign(
+      analysis,
+      materializeRecap(
+        {
+          recap: {
+            segmentIds: [
+              segments[1].id,
+              segments[4].id,
+              segments[5].id,
+              segments[8].id,
+            ],
+          },
+          facts: [],
+        },
+        segments,
+      ),
+      { facts: analysis.facts },
+    );
   const effective = guardAssessment(analysis, segments, {
     transcriptComplete: true,
   });

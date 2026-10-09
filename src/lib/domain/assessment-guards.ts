@@ -13,10 +13,36 @@ export function assessmentContext(call: CallRecord) {
   };
 }
 
+export function reviewedAssessmentContext(call: CallRecord) {
+  const checkpoint = call.analysis?.assessments.find(
+    (x) => x.id === "expectation_solve",
+  );
+  const latest = [...call.decisions]
+    .reverse()
+    .find(
+      (d) =>
+        d.checkpointId === "expectation_solve" &&
+        d.sourceRevision === (call.sourceRevision ?? 0) &&
+        d.analysisGeneration === (call.analysisGeneration ?? 0),
+    );
+  return {
+    ...assessmentContext(call),
+    roadmapOrderReviewed: !!(
+      checkpoint &&
+      latest?.chronologyVerified &&
+      latest.status === "passed" &&
+      latest.evidence &&
+      JSON.stringify(latest.evidence.segmentIds) ===
+        JSON.stringify(checkpoint.evidence.segmentIds) &&
+      latest.evidence.quote === checkpoint.evidence.quote
+    ),
+  };
+}
+
 export function guardAssessment(
   original: Analysis,
   segments: Segment[],
-  context: { transcriptComplete: boolean },
+  context: { transcriptComplete: boolean; roadmapOrderReviewed?: boolean },
 ): Analysis {
   const effective = structuredClone(original);
   const lookup = new Map(segments.map((x) => [x.id, x]));
@@ -38,7 +64,17 @@ export function guardAssessment(
   };
   let attributionUnresolved = false;
   let coachingPolicyUnresolved = false;
-  for (const outcome of Object.values(effective.outcomes)) {
+  const issue = (
+    id: string,
+    kind: "outcome" | "coaching" | "chronology",
+    target: string,
+    message: string,
+  ) => {
+    effective.reviewIssues ??= [];
+    if (!effective.reviewIssues.some((x) => x.id === id))
+      effective.reviewIssues.push({ id, kind, target, message });
+  };
+  for (const [key, outcome] of Object.entries(effective.outcomes)) {
     if (outcome.value === null) continue;
     const { segmentIds, quote } = outcome.evidence;
     const supported =
@@ -51,6 +87,7 @@ export function guardAssessment(
     if (!supported) {
       outcome.value = null;
       effective.reviewReasons.push("Outcome evidence needs review.");
+      issue("outcome:" + key, "outcome", key, "Outcome evidence needs review.");
     }
   }
   for (const item of effective.assessments) {
@@ -68,6 +105,39 @@ export function guardAssessment(
     }
   }
   effective.complete = original.complete && context.transcriptComplete;
+  if (effective.purpose === "sales" || effective.purpose === "general") {
+    const roadmap = effective.assessments.find(
+      (x) => x.id === "expectation_solve",
+    );
+    if (roadmap?.status === "passed" && !context.roadmapOrderReviewed) {
+      const positions = (ids: string[]) =>
+        ids
+          .map((id) => segments.findIndex((s) => s.id === id))
+          .filter((i) => i >= 0);
+      const anchors = effective.assessments
+        .filter(
+          (x) =>
+            ["solution", "pricing"].includes(x.id) && x.status === "passed",
+        )
+        .flatMap((x) => positions(x.evidence.segmentIds));
+      const selected = positions(roadmap.evidence.segmentIds);
+      if (
+        !anchors.length ||
+        !selected.length ||
+        Math.max(...selected) >= Math.min(...anchors)
+      ) {
+        roadmap.status = "unknown";
+        roadmap.reason = "Pre-solution roadmap order needs review.";
+        effective.reviewReasons.push("Roadmap chronology needs review.");
+        issue(
+          "chronology:expectation_solve",
+          "chronology",
+          "expectation_solve",
+          "Roadmap chronology needs review.",
+        );
+      }
+    }
+  }
   const attributableComplete =
     effective.complete &&
     segments.length > 0 &&
@@ -92,8 +162,23 @@ export function guardAssessment(
       numbers.every((number) =>
         new RegExp(`\\b${number.replace(".", "\\.")}\\b`).test(source),
       );
-    if (!policySupported) coachingPolicyUnresolved = true;
-    return supported && policySupported;
+    const assurances =
+      text.match(
+        /\b(?:no (?:extra|additional|hidden) (?:charges?|fees?|costs?|taxes?)|all[- ]inclusive|(?:that(?:['’]s| is)(?: the)?|this is(?: the)?|the) total|(?:fees?|taxes?) (?:are )?included)\b/g,
+      ) ?? [];
+    const assuranceSupported = assurances.every((phrase) =>
+      source.includes(phrase),
+    );
+    if (!policySupported || !assuranceSupported)
+      coachingPolicyUnresolved = true;
+    if (!policySupported || !assuranceSupported)
+      issue(
+        "coaching:" + item.checkpointId,
+        "coaching",
+        item.checkpointId,
+        "Coaching policy details need review.",
+      );
+    return supported && policySupported && assuranceSupported;
   });
   if (!effective.complete)
     effective.reviewReasons.push("Transcription completeness needs review.");

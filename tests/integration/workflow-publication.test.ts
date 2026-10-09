@@ -446,7 +446,9 @@ it("an already guarded result finishes its owned attempt and restores result sta
   };
   const original = structuredClone(state.call!.originalAnalysis);
   await processCall("fictional-call", "fictional-attempt");
-  expect(state.call!.status).toBe("ready");
+  expect(state.call!.status).toBe(
+    fixture.score?.grade === null ? "needs_review" : "ready",
+  );
   expect(state.call!.processingAttempt!.state).toBe("finished");
   expect(state.call!.originalAnalysis).toEqual(original);
   expect(state.analyze).not.toHaveBeenCalled();

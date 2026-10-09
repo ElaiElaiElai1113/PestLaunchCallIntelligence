@@ -7,6 +7,7 @@ const source = () => sampleCall("service", "fictional-contract");
 export function wireFixture() {
   const call = source(),
     a = call.originalAnalysis!;
+  delete a.sourceRecap;
   const refs = (e: { segmentIds: string[] }) => ({
     segmentIds: [...e.segmentIds],
   });

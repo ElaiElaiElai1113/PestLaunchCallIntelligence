@@ -62,7 +62,7 @@ it("extracts details before scoring every purpose-specific checkpoint", async ()
   expect(result.original.assessments).toHaveLength(17);
   expect(result.original.followups).toEqual(source.originalAnalysis!.followups);
   expect(source.segments).toEqual(before);
-  expect(result.providerOutput.contract).toBe("call_analysis_staged_v2");
+  expect(result.providerOutput.contract).toBe("call_analysis_source_refs_v3");
   const raw = JSON.parse(result.providerOutput.content);
   expect(raw.extraction).toBe(JSON.stringify(extraction));
   expect(raw.scoring).toBe(JSON.stringify(scoring));

@@ -1,6 +1,61 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdir } from "node:fs/promises";
+test("source recap navigates exact evidence and preserves historical speaker labels", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Open sample workspace" }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Good conversations start with listening.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const created = await page.request.post("/api/calls", {
+    headers: { Origin: "http://127.0.0.1:3002" },
+    data: { sample: "service" },
+  });
+  const call = (await created.json()).call;
+  try {
+    await page.goto("/calls/" + call.id);
+    const recap = page.locator(".source-recap");
+    await expect(recap.getByText("SELECTED SOURCE EXCERPTS")).toBeVisible();
+    await expect(recap.getByText("Customer · 0:14")).toBeVisible();
+    await recap.getByRole("button").first().click();
+    await expect(page.locator("#seg-2")).toHaveClass(/highlighted/);
+    const revised = await page.request.post(
+      `/api/calls/${call.id}/source-review`,
+      {
+        headers: { Origin: "http://127.0.0.1:3002" },
+        data: {
+          version: call.version,
+          roles: [{ segmentId: "seg-2", speaker: "unknown" }],
+          completenessVerified: true,
+          qualityVerified: true,
+          reason:
+            "Fictional test keeps this speaker uncertain after source inspection.",
+        },
+      },
+    );
+    expect(revised.status()).toBe(200);
+    await page.reload();
+    await expect(
+      page.locator(".source-recap").getByText("Customer · 0:14"),
+    ).toBeVisible();
+    const restored = (
+      await (await page.request.get("/api/calls/" + call.id)).json()
+    ).call;
+    expect(restored.originalAnalysis.sourceRecap.segments[0].speaker).toBe(
+      "customer",
+    );
+    expect(restored.segments[1].speaker).toBe("unknown");
+  } finally {
+    await page.request.delete("/api/calls/" + call.id, {
+      headers: { Origin: "http://127.0.0.1:3002" },
+    });
+  }
+});
 test("actual next/previous navigation stays inside the outcome filter", async ({
   page,
 }) => {
@@ -57,7 +112,9 @@ test("actual isolated app audits text-only source review, reloads history and wi
   await page
     .getByRole("button", { name: "Add fictional call", exact: true })
     .click();
-  await expect(page.getByText("Green · 11/12", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Partial · 10/12", { exact: true }).first(),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Review transcript", exact: true })
     .click();

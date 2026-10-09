@@ -25,7 +25,7 @@ it("builds a reference-only strict request inside the Free heuristic budget", ()
     include_reasoning: false,
     response_format: {
       type: "json_schema",
-      json_schema: { strict: true, name: "call_analysis_staged_v2_extraction" },
+      json_schema: { strict: true, name: "call_analysis_source_refs_v3_extraction" },
     },
   });
   expect(built.request).not.toHaveProperty("reasoning_format");

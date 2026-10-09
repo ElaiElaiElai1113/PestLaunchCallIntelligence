@@ -3016,3 +3016,18 @@ textarea:focus {
 .evidence-picker { border:1px solid var(--border); border-radius:8px; max-height:240px; overflow:auto; padding:12px; margin:12px 0; }
 .evidence-choice span { line-height:1.5; }
 @media(max-width:600px) { .source-toolbar { align-items:flex-start; flex-direction:column; } .source-role-row { grid-template-columns:minmax(0,1fr); } }
+
+.source-recap {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+  min-width: 0;
+}
+.source-recap > div {
+  border-left: 2px solid var(--border);
+  padding-left: 12px;
+}
+.source-recap p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

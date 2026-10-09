@@ -1,9 +1,29 @@
 import { expect, it } from "vitest";
 import { sampleCall } from "@/lib/samples/fixtures";
 import { RUBRICS } from "@/lib/scoring/rubrics";
-import { scoringSchema } from "@/lib/groq/staged-contract";
+import { scoringSchema, extractionSchema } from "@/lib/groq/staged-contract";
 import { buildScoringRequest } from "@/lib/groq/analysis-request";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
+it("requires source evidence for every v3 non-null outcome with disjoint null branches", () => {
+  const call = sampleCall("one-time", "fictional-outcome-evidence");
+  const raw = stagedFromAnalysis(call.originalAnalysis!).extraction;
+  const schema = extractionSchema(call.segments);
+  for (const value of [true, false]) {
+    const changed = structuredClone(raw);
+    changed.outcomes.inspectionBooked = { value, evidence: { segmentIds: [] } };
+    expect(schema.safeParse(changed).success).toBe(false);
+    changed.outcomes.inspectionBooked.evidence.segmentIds = [
+      call.segments[0].id,
+    ];
+    expect(schema.safeParse(changed).success).toBe(true);
+  }
+  const missing = structuredClone(raw);
+  missing.outcomes.inspectionBooked = {
+    value: null,
+    evidence: { segmentIds: [] },
+  };
+  expect(schema.safeParse(missing).success).toBe(true);
+});
 it("keeps unknown-source coaching null and excludes unknown turns from partial employee attribution", () => {
   const call = sampleCall("one-time", "fictional-unknown-roles");
   const wire = stagedFromAnalysis(call.originalAnalysis!).scoring;

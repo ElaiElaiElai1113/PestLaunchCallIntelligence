@@ -192,7 +192,11 @@ it("uses strict structured output and computes no provider-owned grade", async (
   });
   const result = await provider.analyze(segments);
   expect(result.effective.purpose).toBe("sales");
-  expect(result.original).toEqual(a);
+  expect(result.original).toMatchObject({
+    ...a,
+    summary: "Unknown speaker · 0:00 — Hello",
+  });
+  expect(result.original.sourceRecap?.segments).toEqual(segments);
   expect(count).toBe(2);
   expect(JSON.parse(result.providerOutput.content)).toEqual({
     extraction: JSON.stringify(stagedFromAnalysis(a).extraction),

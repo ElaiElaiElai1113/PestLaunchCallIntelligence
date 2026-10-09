@@ -39,9 +39,9 @@ it("actual source review is audited, persists after reload, and never creates ke
   const id = initial.id;
   try {
     expect(initial.score).toMatchObject({
-      points: 11,
+      points: 10,
       denominator: 12,
-      grade: "green",
+      grade: null,
     });
     const response = await request(`/api/calls/${id}/source-review`, "POST", {
       version: 1,

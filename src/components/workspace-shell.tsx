@@ -72,6 +72,10 @@ export const ERRORS: Record<string, string> = {
   PRIVACY_APPROVAL_REQUIRED:
     "Real recordings are held until privacy settings have been verified.",
   EVIDENCE_REQUIRED: "A passed checkpoint needs transcript evidence.",
+  SOURCE_EXCERPT_LIMIT:
+    "The selected source excerpts exceed display limits. The full transcript is retained; review it and request a more focused analysis.",
+  INVALID_ISSUE_RESOLUTION:
+    "This issue changed or cannot be resolved by this action. Review the current analysis and retain the unresolved result.",
   ATTRIBUTION_REVIEW_REQUIRED:
     "This checkpoint needs verified employee evidence before it can pass.",
   PROCESSING_START_FAILED: "Processing could not start. Try again.",

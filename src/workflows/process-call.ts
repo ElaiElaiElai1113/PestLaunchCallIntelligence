@@ -255,6 +255,7 @@ async function analysisStep(
     ];
     const previous = call.version;
     call.analysis = effective;
+    call.analysisGeneration = (call.analysisGeneration ?? 0) + 1;
     if (providerOutput) {
       if (!call.originalAnalysis)
         call.originalProviderOutput ??= structuredClone(providerOutput);
@@ -314,6 +315,7 @@ async function safeFailure(
     "SOURCE_UNAVAILABLE",
     "RECORDING_TOO_LONG",
     "SANITIZED_MEDIA_FAILED",
+    "SOURCE_EXCERPT_LIMIT",
   ];
   const code = providerTransient
     ? "PROVIDER_TEMPORARILY_UNAVAILABLE"

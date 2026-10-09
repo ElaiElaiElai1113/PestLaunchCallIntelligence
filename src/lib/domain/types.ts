@@ -26,6 +26,13 @@ export type OutcomeKey =
   | "retentionSaved";
 export type Fact = { label: string; text: string; evidence: Evidence };
 export type Analysis = {
+  reviewIssues?: {
+    id: string;
+    kind: "outcome" | "coaching" | "chronology";
+    target: string;
+    message: string;
+  }[];
+  sourceRecap?: { version: "source_refs_v3"; segments: Segment[] };
   purpose: Purpose;
   secondaryIntents: string[];
   title: string;
@@ -64,11 +71,25 @@ export type ProcessingAttempt = {
   runId: string | null;
 };
 export type ProviderOutput = {
-  contract: "call_analysis_refs_v1" | "call_analysis_staged_v2";
+  contract:
+    | "call_analysis_refs_v1"
+    | "call_analysis_staged_v2"
+    | "call_analysis_source_refs_v3";
   model: string;
   content: string;
 };
 export type CallRecord = {
+  analysisGeneration?: number;
+  issueDecisions?: {
+    id: string;
+    issueId: string;
+    reason: string;
+    userId: string;
+    at: string;
+    previousVersion: number;
+    sourceRevision: number;
+    analysisGeneration: number;
+  }[];
   pendingExtraction?: {
     inputHash: string;
     sourceRevision: number;
@@ -147,6 +168,8 @@ export type CallRecord = {
     previousVersion: number;
     sourceRevision?: number;
     evidence?: Evidence;
+    chronologyVerified?: boolean;
+    analysisGeneration?: number;
   }[];
 };
 export type Identity = {

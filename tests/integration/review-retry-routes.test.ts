@@ -34,6 +34,7 @@ vi.mock("@/lib/server/auth", () => ({
 }));
 import { POST as retry } from "@/app/api/calls/[callId]/retry/route";
 import { POST as review } from "@/app/api/calls/[callId]/review/route";
+import { POST as issueReview } from "@/app/api/calls/[callId]/issues/route";
 const context = { params: Promise.resolve({ callId: "fictional-call" }) };
 beforeEach(() => {
   vi.resetAllMocks();
@@ -53,6 +54,104 @@ beforeEach(() => {
   });
 });
 afterEach(() => vi.unstubAllEnvs());
+it("keeps issue decisions scoped to current versions and source warnings", async () => {
+  state.call!.mode = "sample";
+  state.call!.status = "needs_review";
+  state.call!.analysis!.reviewIssues = [
+    {
+      id: "outcome:inspectionBooked",
+      kind: "outcome",
+      target: "inspectionBooked",
+      message: "Outcome evidence needs review.",
+    },
+  ];
+  state.call!.analysis!.outcomes.inspectionBooked = {
+    value: null,
+    evidence: { segmentIds: [], quote: "" },
+  };
+  state.call!.analysis!.reviewReasons.push(
+    "Outcome evidence needs review.",
+    "Recording coverage needs review.",
+  );
+  const original = structuredClone(state.call!.originalAnalysis);
+  const request = (version: number, issueId = "outcome:inspectionBooked") =>
+    new Request("http://localhost/api/calls/fictional-call/issues", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version,
+        issueId,
+        reason: "Confirmed this outcome remains unknown without evidence.",
+      }),
+    });
+  expect((await issueReview(request(99), context)).status).toBe(409);
+  expect(
+    (await issueReview(request(state.call!.version, "privacy:all"), context))
+      .status,
+  ).toBe(400);
+  expect(
+    (await issueReview(request(state.call!.version), context)).status,
+  ).toBe(200);
+  expect(state.call!.analysis!.outcomes.inspectionBooked.value).toBeNull();
+  expect(state.call!.analysis!.reviewReasons).toContain(
+    "Recording coverage needs review.",
+  );
+  expect(state.call!.originalAnalysis).toEqual(original);
+  expect(state.call!.issueDecisions).toHaveLength(1);
+});
+it("reasoned roadmap verification resolves only its current chronology issue", async () => {
+  state.call!.mode = "sample";
+  state.call!.status = "needs_review";
+  state.call!.transcriptCompleteness = "verified";
+  state.call!.transcriptReviewReasons = [];
+  const old = structuredClone(state.call!.originalAnalysis);
+  const checkpoint = state.call!.analysis!.assessments.find(
+    (x) => x.id === "expectation_solve",
+  )!;
+  const staff = state.call!.segments.find(
+    (s) => s.id === checkpoint.evidence.segmentIds[0],
+  )!;
+  state.call!.analysis!.reviewIssues = [
+    {
+      id: "chronology:expectation_solve",
+      kind: "chronology",
+      target: "expectation_solve",
+      message: "Roadmap chronology needs review.",
+    },
+  ];
+  state.call!.analysis!.reviewReasons.push(
+    "Roadmap chronology needs review.",
+    "Unrelated source uncertainty.",
+  );
+  const result = await review(
+    new Request("http://localhost/api/calls/fictional-call/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version: state.call!.version,
+        checkpointId: "expectation_solve",
+        status: "passed",
+        chronologyVerified: true,
+        reason:
+          "Verified the actual roadmap precedes the solution within this source segment.",
+        evidence: { segmentIds: [staff.id], quote: staff.text },
+      }),
+    }),
+    context,
+  );
+  expect(result.status).toBe(200);
+  expect(state.call!.analysis!.reviewReasons).not.toContain(
+    "Roadmap chronology needs review.",
+  );
+  expect(state.call!.analysis!.reviewReasons).toContain(
+    "Unrelated source uncertainty.",
+  );
+  expect(state.call!.originalAnalysis).toEqual(old);
+  expect(state.call!.decisions.at(-1)).toMatchObject({
+    chronologyVerified: true,
+    analysisGeneration: 0,
+  });
+});
 it("dispatch failure returns a safe 503 and leaves retryable persisted state", async () => {
   vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
   state.start.mockRejectedValue(new Error("fictional private workflow detail"));

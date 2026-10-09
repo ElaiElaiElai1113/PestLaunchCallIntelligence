@@ -37,29 +37,35 @@ export function contractSchema(segments: Segment[]) {
       ? coaching.nullable()
       : z.null(),
   });
-  return analysisSchema.omit({ coaching: true }).extend({
-    summary: z.string().max(800),
-    outcomes: z.strictObject(
-      Object.fromEntries(
-        Object.keys(analysisSchema.shape.outcomes.shape).map((id) => [
-          id,
-          outcome,
-        ]),
-      ) as Record<keyof Analysis["outcomes"], typeof outcome>,
-    ),
-    facts: z
-      .array(analysisSchema.shape.facts.element.extend({ evidence: refs }))
-      .max(6),
-    followups: z
-      .array(analysisSchema.shape.followups.element.extend({ evidence: refs }))
-      .max(8),
-    assessments: z.array(checkpoint).max(17),
-  });
+  return analysisSchema
+    .omit({ coaching: true, sourceRecap: true, reviewIssues: true })
+    .extend({
+      summary: z.string().max(800),
+      outcomes: z.strictObject(
+        Object.fromEntries(
+          Object.keys(analysisSchema.shape.outcomes.shape).map((id) => [
+            id,
+            outcome,
+          ]),
+        ) as Record<keyof Analysis["outcomes"], typeof outcome>,
+      ),
+      facts: z
+        .array(analysisSchema.shape.facts.element.extend({ evidence: refs }))
+        .max(6),
+      followups: z
+        .array(
+          analysisSchema.shape.followups.element.extend({ evidence: refs }),
+        )
+        .max(8),
+      assessments: z.array(checkpoint).max(17),
+    });
 }
 export type WireAnalysis = z.infer<ReturnType<typeof contractSchema>>;
 export function resolveRefs(
   refs: { segmentIds: string[] },
   segments: Segment[],
+  maxChars = 2000,
+  oversizedCode = "INVALID_EVIDENCE",
 ): Evidence {
   const seen = new Set<string>();
   let previous = -1;
@@ -73,15 +79,19 @@ export function resolveRefs(
       return segments[index].text;
     })
     .join(" ");
-  if (text.length > 2000) throw new Error("INVALID_EVIDENCE");
+  if (text.length > maxChars) throw new Error(oversizedCode);
   return { segmentIds: [...refs.segmentIds], quote: text };
 }
 export function resolveAnalysis(
   wire: unknown,
   segments: Segment[],
   context: { transcriptComplete: boolean },
+  sourceDerived = false,
 ) {
-  const parsed = contractSchema(segments).parse(wire);
+  const schema = contractSchema(segments);
+  const parsed = (
+    sourceDerived ? schema.extend({ summary: z.string().max(1800) }) : schema
+  ).parse(wire);
   if (parsed.purpose === "unknown" && parsed.assessments.length)
     throw new Error("INVALID_COACHING");
   const coaching: Analysis["coaching"] = [];

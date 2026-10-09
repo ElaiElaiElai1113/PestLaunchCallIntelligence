@@ -26,6 +26,7 @@ import { RUBRICS, OBJECTION_IDS } from "@/lib/scoring/rubrics";
 import { OUTCOME_LABELS } from "@/lib/samples/fixtures";
 import { analysisCurrent, activeProcessing } from "@/lib/domain/source-review";
 import { TranscriptSourceReview } from "./transcript-source-review";
+import { AnalysisIssueReview } from "./analysis-issue-review";
 import {
   analysisRecovery,
   providerInputAdmission,
@@ -544,7 +545,28 @@ export function CallDetail({ id }: { id: string }) {
                     <div>
                       <span className="eyebrow">WHAT WAS AGREED</span>
                       <h2>{outcome(call)}</h2>
-                      <p>{a.summary}</p>
+                      {a.sourceRecap ? (
+                        <div className="source-recap">
+                          <span className="eyebrow">
+                            SELECTED SOURCE EXCERPTS
+                          </span>
+                          {a.sourceRecap.segments.map((segment) => (
+                            <div key={segment.id}>
+                              <strong>
+                                {purposeLabel(segment.speaker)} ·{" "}
+                                {time(segment.startMs)}
+                              </strong>
+                              <p>{segment.text}</p>
+                              {evidenceButton({
+                                segmentIds: [segment.id],
+                                quote: segment.text,
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p>{a.summary}</p>
+                      )}
                     </div>
                   </div>
                   <section className="detail-section">
@@ -562,6 +584,9 @@ export function CallDetail({ id }: { id: string }) {
                       </div>
                     ))}
                   </section>
+                  {!!a.reviewIssues?.length && (
+                    <AnalysisIssueReview call={call} onSave={setCall} />
+                  )}
                   <section className="detail-section">
                     <div className="section-title">
                       <CheckCircle2 size={18} />
@@ -682,6 +707,18 @@ export function CallDetail({ id }: { id: string }) {
                         ))}
                       </div>
                     </div>
+                  )}
+                  {!!a.reviewIssues?.length && (
+                    <button
+                      className="text-link"
+                      onClick={() =>
+                        router.replace(
+                          `/calls/${id}?tab=summary&back=${encodeURIComponent(back)}`,
+                        )
+                      }
+                    >
+                      Review withheld advice and outcomes in Summary
+                    </button>
                   )}
                   {a.purpose !== "unknown" &&
                     ["Validate", "Understand", "Solve", "Verify"].map(
@@ -1034,6 +1071,7 @@ function ReviewDialog({
     [call, setReviewedCall] = useState(initialCall),
     [latest, setLatest] = useState<CallRecord | null>(null),
     [evidenceIds, setEvidenceIds] = useState(item.evidence.segmentIds);
+  const [chronologyVerified, setChronologyVerified] = useState(false);
   const selectedSegments = call.segments.filter((segment) =>
     evidenceIds.includes(segment.id),
   );
@@ -1063,6 +1101,7 @@ function ReviewDialog({
             checkpointId: item.id,
             status,
             reason,
+            chronologyVerified,
             evidence: {
               segmentIds: selectedSegments.map((segment) => segment.id),
               quote: selectedQuote,
@@ -1179,6 +1218,18 @@ function ReviewDialog({
             placeholder="Explain what the evidence establishes…"
           />
         </label>
+        {item.id === "expectation_solve" && status === "passed" && (
+          <label>
+            <input
+              type="checkbox"
+              checked={chronologyVerified}
+              disabled={busy}
+              onChange={(e) => setChronologyVerified(e.target.checked)}
+            />
+            I checked the cited source and verified the roadmap occurs before
+            solving, including any ordering within the same segment.
+          </label>
+        )}
         <p className="fine">
           The original assessment is preserved. Unknown or unresolved
           applicability withholds a final grade.
@@ -1200,6 +1251,7 @@ function ReviewDialog({
               onClick={() => {
                 setReviewedCall(latest);
                 setEvidenceIds([]);
+                setChronologyVerified(false);
                 setLatest(null);
                 setError("");
               }}

@@ -21,6 +21,68 @@ const customer: Segment = {
   text: "Yes please",
   speaker: "customer",
 };
+it("withholds unverified all-inclusive price assurances but preserves explicit source terms", () => {
+  const original = analysis();
+  original.coaching = [
+    {
+      kind: "improvement",
+      title: "Pricing",
+      detail: "Clarify the price",
+      suggestedResponse: "That is the total, with no extra charges.",
+      checkpointId: "pricing",
+      evidence: {
+        segmentIds: ["s1"],
+        quote: "The treatment costs two hundred dollars.",
+      },
+    },
+  ];
+  const quoted = {
+    ...employee,
+    text: "The treatment costs two hundred dollars.",
+  };
+  expect(
+    guardAssessment(original, [quoted, customer], { transcriptComplete: true })
+      .coaching,
+  ).toEqual([]);
+  const explicit = {
+    ...quoted,
+    text: "That is the total, with no extra charges.",
+  };
+  original.coaching[0].evidence.quote = explicit.text;
+  expect(
+    guardAssessment(original, [explicit, customer], {
+      transcriptComplete: true,
+    }).coaching,
+  ).toHaveLength(1);
+});
+it.each(["later", "same", "earlier"])(
+  "reviews ambiguous/later roadmap evidence: %s",
+  (kind) => {
+    const c = sampleCall("one-time", "fictional-roadmap");
+    const a = structuredClone(c.originalAnalysis!);
+    const roadmap = a.assessments.find((x) => x.id === "expectation_solve")!;
+    const solution = a.assessments.find((x) => x.id === "solution")!;
+    const pricing = a.assessments.find((x) => x.id === "pricing")!;
+    roadmap.status = "passed";
+    solution.status = "passed";
+    pricing.status = "unknown";
+    const staff = c.segments.filter((s) => s.speaker === "employee");
+    const first = staff[0],
+      last = staff.at(-1)!;
+    const anchor = kind === "later" ? staff[1] : last;
+    solution.evidence = { segmentIds: [anchor.id], quote: anchor.text };
+    const chosen = kind === "earlier" ? first : last;
+    roadmap.evidence = { segmentIds: [chosen.id], quote: chosen.text };
+    const before = structuredClone(a);
+    const effective = guardAssessment(a, c.segments, {
+      transcriptComplete: true,
+    });
+    expect(
+      effective.assessments.find((x) => x.id === "expectation_solve")!.status,
+    ).toBe(kind === "earlier" ? "passed" : "unknown");
+    expect(a).toEqual(before);
+  },
+);
 it.each([true, false])(
   "keeps unsupported %s outcomes unknown without rewriting the original",
   (value) => {
@@ -147,7 +209,7 @@ it("unknown attribution cannot obtain the no-objection policy points", () => {
     grade: null,
   });
 });
-it("explicitly complete fictional attributed speech preserves eligible points and policy awards", () => {
+it("complete coarse evidence keeps policy awards but withholds unproven roadmap order", () => {
   const original = analysis();
   original.noObjections = true;
   original.assessments
@@ -157,9 +219,9 @@ it("explicitly complete fictional attributed speech preserves eligible points an
     transcriptComplete: true,
   });
   expect(computeScore(effective)).toMatchObject({
-    points: 17,
+    points: 16,
     denominator: 17,
-    grade: "gold",
+    grade: null,
   });
 });
 it("unverified completeness overrides model complete and absence-based misses", () => {

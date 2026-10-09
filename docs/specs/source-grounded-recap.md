@@ -1,10 +1,10 @@
 # Source-grounded recap and details proposal
 
-Status: proposed for review, **not active**. The current extraction contract is unchanged. This addresses repeated actor attribution and uncited compound amounts without another provider, a redesign or a fabricated correction of existing output.
+Status: implemented locally as source-refs-v3, pending final independent code review and real-provider/hosted acceptance. Historical v1/v2 prose remains unchanged. This addresses repeated actor attribution and uncited compound amounts without another provider, a redesign or a fabricated correction of existing output.
 
 ## Provider-only contract
 
-Introduce `call_analysis_source_refs_v3`. Retain the existing primary purpose, secondary intents, bounded title, independent outcomes, followups, completeness and review reasons. Replace the generated `summary` string with required `recap: { segmentIds }`, selecting one to six actual source IDs. Replace each generated fact label/text with `{ kind, evidence: { segmentIds } }` (maximum six facts). `kind` is one of `pest_report`, `service_preference`, `price_quote`, `appointment`, `payment_terms`, `other`. Every detail selects one to six source IDs. All IDs use the exact finite source enum; objects remain closed/fully required. Scoring stays a separate purpose-specific stage with employee-selectable evidence and complete conversational context.
+Introduce `call_analysis_source_refs_v3`. Retain the existing primary purpose, secondary intents, bounded title, independent outcomes, followups, completeness and review reasons. Replace the generated `summary` string with required `recap: { segmentIds }`, selecting one to six actual source IDs. Replace each generated fact label/text with `{ kind, evidence: { segmentIds } }` (maximum six facts). `kind` is one of `pest_report`, `service_preference`, `price_quote`, `appointment`, `payment_terms`, `cancellation`, `account`, `service`, `other`. Every detail selects one to six source IDs. All IDs use the exact finite source enum; objects remain closed/fully required. Scoring stays a separate purpose-specific stage with employee-selectable evidence and complete conversational context.
 
 Example producer shape, with explicitly fictional IDs:
 

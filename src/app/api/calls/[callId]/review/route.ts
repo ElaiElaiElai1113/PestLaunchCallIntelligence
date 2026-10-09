@@ -13,6 +13,7 @@ import {
 import {
   guardAssessment,
   assessmentContext,
+  reviewedAssessmentContext,
 } from "@/lib/domain/assessment-guards";
 export async function POST(
   request: Request,
@@ -47,11 +48,58 @@ export async function POST(
       (x) => x !== `Checkpoint needs review: ${decision.checkpointId}`,
     );
     {
-      const guarded = guardAssessment(
-        call.analysis,
-        call.segments,
-        assessmentContext(call),
-      );
+      const guarded = guardAssessment(call.analysis, call.segments, {
+        ...reviewedAssessmentContext(call),
+        roadmapOrderReviewed:
+          decision.chronologyVerified &&
+          decision.checkpointId === "expectation_solve"
+            ? true
+            : reviewedAssessmentContext(call).roadmapOrderReviewed,
+      });
+      if (decision.chronologyVerified) {
+        if (
+          decision.checkpointId !== "expectation_solve" ||
+          decision.status !== "passed" ||
+          !(
+            call.analysis.reviewIssues?.some(
+              (x) => x.id === "chronology:expectation_solve",
+            ) ||
+            call.issueDecisions?.some(
+              (d) =>
+                d.issueId === "chronology:expectation_solve" &&
+                d.sourceRevision === (call.sourceRevision ?? 0) &&
+                d.analysisGeneration === (call.analysisGeneration ?? 0),
+            )
+          )
+        )
+          throw new AppError("INVALID_ISSUE_RESOLUTION", 400);
+        guarded.reviewIssues = guarded.reviewIssues?.filter(
+          (x) => x.id !== "chronology:expectation_solve",
+        );
+        const raw = call.latestModelAnalysis ?? call.originalAnalysis;
+        if (!raw?.reviewReasons.includes("Roadmap chronology needs review."))
+          guarded.reviewReasons = guarded.reviewReasons.filter(
+            (x) => x !== "Roadmap chronology needs review.",
+          );
+      }
+      if (
+        decision.checkpointId === "expectation_solve" &&
+        (decision.status !== "passed" ||
+          guarded.assessments.find((x) => x.id === decision.checkpointId)
+            ?.status === "passed")
+      ) {
+        guarded.reviewIssues = guarded.reviewIssues?.filter(
+          (x) => x.id !== "chronology:expectation_solve",
+        );
+        if (
+          !(
+            call.latestModelAnalysis ?? call.originalAnalysis
+          )?.reviewReasons.includes("Roadmap chronology needs review.")
+        )
+          guarded.reviewReasons = guarded.reviewReasons.filter(
+            (x) => x !== "Roadmap chronology needs review.",
+          );
+      }
       if (
         decision.status === "passed" &&
         guarded.assessments.find((x) => x.id === decision.checkpointId)
@@ -96,6 +144,8 @@ export async function POST(
       previousVersion: call.version,
       sourceRevision: call.sourceRevision ?? 0,
       evidence: structuredClone(checkpoint.evidence),
+      chronologyVerified: decision.chronologyVerified ?? false,
+      analysisGeneration: call.analysisGeneration ?? 0,
     });
     call.version++;
     if (!(await repo.put(call, decision.version)))

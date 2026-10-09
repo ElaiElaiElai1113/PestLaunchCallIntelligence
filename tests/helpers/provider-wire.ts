@@ -2,6 +2,7 @@ import type { Analysis } from "@/lib/domain/types";
 import type { WireAnalysis } from "@/lib/groq/analysis-contract";
 export function wireFromAnalysis(analysis: Analysis): WireAnalysis {
   const { coaching, ...base } = analysis;
+  delete base.sourceRecap;
   const refs = (evidence: { segmentIds: string[] }) => ({
     segmentIds: [...evidence.segmentIds],
   });
@@ -43,8 +44,37 @@ export function wireFromAnalysis(analysis: Analysis): WireAnalysis {
 }
 
 export function stagedFromAnalysis(analysis: Analysis) {
-  const { assessments, noObjections, ...extraction } =
+  const { assessments, noObjections, ...legacyExtraction } =
     wireFromAnalysis(analysis);
+  const refs =
+    legacyExtraction.facts.find((f) => f.evidence.segmentIds.length)?.evidence
+      .segmentIds ??
+    assessments.find((a) => a.evidence.segmentIds.length)?.evidence
+      .segmentIds ??
+    [];
+  const {
+    purpose,
+    secondaryIntents,
+    title,
+    outcomes,
+    followups,
+    complete,
+    reviewReasons,
+  } = legacyExtraction;
+  const extraction = {
+    purpose,
+    secondaryIntents,
+    title,
+    outcomes,
+    followups,
+    complete,
+    reviewReasons,
+    recap: { segmentIds: [...refs] },
+    facts: legacyExtraction.facts.map((f) => ({
+      kind: "other" as const,
+      evidence: f.evidence,
+    })),
+  };
   const coach = (kind: "strength" | "improvement", index: number) => {
     const found = analysis.coaching.filter((c) => c.kind === kind)[index];
     return found

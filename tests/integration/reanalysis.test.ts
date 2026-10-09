@@ -368,9 +368,9 @@ it("unknown ASR to audited roles to provider re-analysis preserves first raw/mod
     transcriptComplete: true,
   });
   expect(state.call!.score).toMatchObject({
-    points: 11,
+    points: 10,
     denominator: 12,
-    grade: "green",
+    grade: null,
   });
   expect(state.call!.analysis!.coaching).toHaveLength(2);
   expect(state.call!.originalAnalysis).toEqual(raw);

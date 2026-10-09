@@ -8,6 +8,34 @@ const outcome = z.strictObject({
   evidence: evidenceSchema,
 });
 export const analysisSchema = z.strictObject({
+  reviewIssues: z
+    .array(
+      z.strictObject({
+        id: z.string().max(180),
+        kind: z.enum(["outcome", "coaching", "chronology"]),
+        target: z.string().max(80),
+        message: z.string().max(400),
+      }),
+    )
+    .max(32)
+    .optional(),
+  sourceRecap: z
+    .strictObject({
+      version: z.literal("source_refs_v3"),
+      segments: z
+        .array(
+          z.strictObject({
+            id: z.string().min(1).max(100),
+            startMs: z.number().nonnegative(),
+            endMs: z.number().nonnegative(),
+            speaker: z.enum(["employee", "customer", "unknown"]),
+            text: z.string().max(2000),
+          }),
+        )
+        .min(1)
+        .max(6),
+    })
+    .optional(),
   purpose: z.enum(["sales", "general", "retention", "unknown"]),
   secondaryIntents: z.array(z.string().max(80)).max(12),
   title: z.string().max(120),
@@ -78,6 +106,12 @@ export const reviewSchema = z.strictObject({
   status: z.enum(["passed", "missed", "unknown", "not_applicable"]),
   reason: z.string().trim().min(10).max(800),
   evidence: evidenceSchema.optional(),
+  chronologyVerified: z.boolean().optional(),
+});
+export const issueReviewSchema = z.strictObject({
+  version: z.number().int().positive(),
+  issueId: z.string().min(1).max(180),
+  reason: z.string().trim().min(10).max(800),
 });
 export const sourceReviewSchema = z.strictObject({
   version: z.number().int().positive(),
