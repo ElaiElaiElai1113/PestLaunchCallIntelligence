@@ -22,3 +22,5 @@ Open Review transcript to explain its text-only attestation, use Escape/Cancel t
 ## Loom preparation
 
 Use the deployed sequence only after its acceptance passes. Keep secrets, private source files, source URLs, customer identifiers and unsanitized recordings out of the recording. Use a fictional/verified sanitized case, readable zoom and a concise narration. Record the deployed revision and verify the reviewer can use the actual app/source links. No Loom recording, upload or submission was produced in the local slice.
+
+For the source-refs-v3 walkthrough, show the exact source excerpt with its recorded speaker label and call-relative timestamp, then follow its evidence action. Show one scoped unknown-outcome or withheld-coaching warning and its reasoned resolution. For roadmap review, explain that changing evidence/status resets verification. Keep original model/source history visible and describe unresolved grades honestly.

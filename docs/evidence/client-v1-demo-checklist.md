@@ -18,3 +18,5 @@ Current phase: last verified private remote application revision `449869a`; late
 - [ ] After the full test ends, perform authorized customer/source/derivative/transcript/analysis/review/local-context/provider/backup cleanup and verify counts/time-only receipts plus retention limitations. Do not delete customer test material prematurely.
 
 Acceptance: an authorized reviewer can inspect the result of a **newly uploaded recording processed by the real provider on the deployed app**, with all seven minimum client capabilities, faithful rubrics, useful evidence/coaching, private access and honest uncertainty. R01/R10 remain pending until that occurs.
+
+Final local gate: application 5c8d4c4 plus docs b611a5d accepted by independent review; 100 fresh focused tests pass with no remaining actionable finding. External acceptance boxes remain pending.
