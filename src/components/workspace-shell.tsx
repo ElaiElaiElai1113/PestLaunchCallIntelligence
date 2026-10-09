@@ -481,7 +481,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
             <input
               type="file"
               accept=".mp3,.wav,.m4a"
-              disabled={!enabled || busy}
+              disabled={!sourceKind || busy}
               onChange={(e) => {
                 setFile(e.target.files?.[0] || null);
                 setSanitized(false);
@@ -532,7 +532,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
               <AlertCircle size={17} />
               <p>
                 {sourceKind === "real" && !session.processingEnabled
-                  ? "Actual client calls remain on hold until privacy preparation and approval are complete. Client-supplied test recordings are actual calls, not fictional examples."
+                  ? "You can select a file locally; nothing is uploaded yet. Actual client calls remain on hold until privacy preparation and approval are complete. Client-supplied test recordings are actual calls, not fictional examples."
                   : !sourceKind
                     ? "Choose whether this is a made-up conversation or an actual customer call."
                     : !session.aiConfigured
