@@ -31,24 +31,11 @@ it("a failed first analysis remains owner-startable after source review without 
     "INVALID_EVIDENCE",
   );
 });
-it("budget admission is computed from the current reviewed roles, not a stale error code", () => {
+it("a stale budget error does not block an admissible reviewed source", () => {
   const call = recoveryCall();
   call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
-  let next = review(call, true),
-    found = false;
-  for (let n = 1; n < 300; n++) {
-    call.segments[0].text = "Fictional context. ".repeat(n);
-    next = review(call, true);
-    if (
-      analysisRecovery(call, false).budget === "exceeded" &&
-      analysisRecovery(next, false).budget === "admitted"
-    ) {
-      found = true;
-      break;
-    }
-  }
-  expect(found).toBe(true);
-  expect(analysisRecovery(call, false).eligible).toBe(false);
+  const next = review(call, true);
+  expect(analysisRecovery(call, false).eligible).toBe(true);
   expect(analysisRecovery(next, false).eligible).toBe(true);
   expect(next.errorCode).toBe("ANALYSIS_BUDGET_EXCEEDED");
   expect(next.analysis).toBeNull();

@@ -16,6 +16,7 @@ import { analysisCurrent } from "@/lib/domain/source-review";
 import { assessmentContext } from "@/lib/domain/assessment-guards";
 import { createHash } from "node:crypto";
 import { STAGED_CONTRACT } from "@/lib/groq/staged-contract";
+import { INDEXED_CONTRACT } from "@/lib/groq/indexed-contract";
 import { providerRetryLimit } from "@/lib/groq/retry-limit";
 import { providerFailureCode } from "@/lib/groq/failure-code";
 const PROVIDER_RETRIES = 3;
@@ -198,7 +199,10 @@ async function analysisStep(
       pending.expectedVersion === call.version &&
       pending.attemptId === (attemptId ?? null) &&
       pending.runId === (runId ?? null) &&
-      pending.output.contract === STAGED_CONTRACT &&
+      [STAGED_CONTRACT, INDEXED_CONTRACT].includes(
+        pending.output.contract as
+          typeof STAGED_CONTRACT | typeof INDEXED_CONTRACT,
+      ) &&
       pending.output.model === "openai/gpt-oss-120b";
     const stagedProvider = new GroqProvider({
       apiKey: process.env.GROQ_API_KEY,

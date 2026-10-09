@@ -2,13 +2,15 @@ import type { Segment, ProviderOutput } from "../domain/types";
 import Groq, { toFile } from "groq-sdk";
 import { z } from "zod";
 import { createHash } from "node:crypto";
-import { buildAnalysisRequest, buildScoringRequest } from "./analysis-request";
+import { buildAnalysisRequest, buildScoringRequests } from "./analysis-request";
+import { INDEXED_CONTRACT, decodeIndexedEvidence } from "./indexed-contract";
 import { scoringHeadroomWait } from "./rate-headroom";
 import { RUBRICS } from "../scoring/rubrics";
 import {
   STAGED_CONTRACT,
   resolveStaged,
   validateExtraction,
+  scoringSchema,
 } from "./staged-contract";
 export class GroqProvider {
   constructor(
@@ -119,14 +121,18 @@ export class GroqProvider {
     });
     if (JSON.stringify(segments).length > 150000)
       throw new Error("TRANSCRIPT_TOO_LONG");
-    const { request } = buildAnalysisRequest(segments, context);
+    const built = buildAnalysisRequest(segments, context);
+    const { request } = built;
+    const extractionContract = built.indexed
+      ? INDEXED_CONTRACT
+      : STAGED_CONTRACT;
     const requestHash = createHash("sha256")
-      .update(JSON.stringify(request))
+      .update(JSON.stringify(built.indexed ? { request, segments } : request))
       .digest("hex");
     const candidate = this.config.cachedExtraction;
     const cached =
       candidate &&
-      candidate.contract === STAGED_CONTRACT &&
+      candidate.contract === extractionContract &&
       candidate.model === request.model &&
       candidate.requestHash === requestHash
         ? candidate
@@ -138,10 +144,16 @@ export class GroqProvider {
       throw new Error("INCOMPLETE_ANALYSIS");
     const content = cached?.content ?? response?.choices[0]?.message.content;
     if (typeof content !== "string") throw new Error("INCOMPLETE_ANALYSIS");
-    const extracted = validateExtraction(JSON.parse(content), segments);
+    const extractionValue = JSON.parse(content);
+    const extracted = validateExtraction(
+      built.indexed
+        ? decodeIndexedEvidence(extractionValue, segments)
+        : extractionValue,
+      segments,
+    );
     if (!cached)
       await this.config.saveExtraction?.({
-        contract: STAGED_CONTRACT,
+        contract: extractionContract,
         model: request.model,
         content,
         requestHash,
@@ -150,6 +162,11 @@ export class GroqProvider {
       (s) => s.speaker === "employee",
     );
     let scoringContent: string | null = null;
+    const scoringGroups: {
+      content: string;
+      checkpointIds: string[];
+      indexed: boolean;
+    }[] = [];
     let scoring: unknown = {
       noObjections: false,
       checkpoints: Object.fromEntries(
@@ -167,37 +184,94 @@ export class GroqProvider {
       coaching: { strength: null, improvement1: null, improvement2: null },
     };
     if (extracted.purpose !== "unknown" && employeeEvidenceAvailable) {
-      const next = buildScoringRequest(segments, context, extracted.purpose);
-      const waitMs = scoringHeadroomWait(
-        headers,
-        next.budget.estimatedTotalTokens,
-        Date.now() - receivedAt,
+      const requests = buildScoringRequests(
+        segments,
+        context,
+        extracted.purpose,
       );
-      if (waitMs)
-        await (
-          this.config.waitForHeadroom ??
-          ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
-        )(waitMs);
-      // Ownership/privacy is rechecked after waiting, immediately before effects.
-      await this.config.beforeScoring?.();
-      const scored = await client.chat.completions.create(next.request);
-      if (
-        scored.choices[0]?.finish_reason !== "stop" ||
-        typeof scored.choices[0]?.message.content !== "string"
-      )
-        throw new Error("INCOMPLETE_ANALYSIS");
-      scoringContent = scored.choices[0].message.content;
-      scoring = JSON.parse(scoringContent);
+      const groups: z.infer<ReturnType<typeof scoringSchema>>[] = [];
+      for (const next of requests) {
+        const waitMs = scoringHeadroomWait(
+          headers,
+          next.budget.estimatedTotalTokens,
+          Date.now() - receivedAt,
+        );
+        if (waitMs)
+          await (
+            this.config.waitForHeadroom ??
+            ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
+          )(waitMs);
+        // Ownership/privacy is rechecked after waiting, immediately before effects.
+        await this.config.beforeScoring?.();
+        const scored = await client.chat.completions.create(next.request);
+        if (
+          scored.choices[0]?.finish_reason !== "stop" ||
+          typeof scored.choices[0]?.message.content !== "string"
+        )
+          throw new Error("INCOMPLETE_ANALYSIS");
+        scoringContent = scored.choices[0].message.content;
+        const value = JSON.parse(scoringContent);
+        const decoded = next.indexed
+          ? decodeIndexedEvidence(value, segments)
+          : value;
+        const group = scoringSchema(
+          segments,
+          extracted.purpose,
+          next.selectedIds,
+        ).parse(decoded);
+        groups.push(group);
+        scoringGroups.push({
+          content: scoringContent,
+          checkpointIds:
+            next.selectedIds ?? RUBRICS[extracted.purpose].map((c) => c.id),
+          indexed: next.indexed,
+        });
+      }
+      if (groups.some((g) => g.noObjections !== groups[0].noObjections))
+        throw new Error("INCONSISTENT_ANALYSIS");
+      const strengths = groups.flatMap((g) =>
+        g.coaching.strength ? [g.coaching.strength] : [],
+      );
+      const improvements = groups
+        .flatMap((g) => [g.coaching.improvement1, g.coaching.improvement2])
+        .filter((g) => g !== null);
+      // Preserve all group bytes below; show at most three supported suggestions
+      // in authoritative checkpoint order, without combining model prose.
+      scoring = {
+        checkpoints: Object.assign({}, ...groups.map((g) => g.checkpoints)),
+        noObjections: groups[0].noObjections,
+        coaching: {
+          strength: strengths[0] ?? null,
+          improvement1: improvements[0] ?? null,
+          improvement2: improvements[1] ?? null,
+        },
+      };
     }
     const result = resolveStaged(extracted, scoring, segments, context);
     return {
       ...result,
       providerOutput: {
-        contract: STAGED_CONTRACT,
+        contract:
+          built.indexed || scoringGroups.some((g) => g.indexed)
+            ? INDEXED_CONTRACT
+            : STAGED_CONTRACT,
         model: request.model,
         content: JSON.stringify({
           extraction: content,
-          scoring: scoringContent,
+          scoring:
+            scoringGroups.length > 1
+              ? JSON.stringify(scoringGroups.map((g) => g.content))
+              : scoringContent,
+          ...(built.indexed || scoringGroups.some((g) => g.indexed)
+            ? {
+                extractionIndexed: built.indexed,
+                referenceMap: segments.map((s) => s.id),
+                sourceHash: createHash("sha256")
+                  .update(JSON.stringify(segments))
+                  .digest("hex"),
+                scoringGroups,
+              }
+            : {}),
           scoringStatus: scoringContent
             ? "returned"
             : employeeEvidenceAvailable

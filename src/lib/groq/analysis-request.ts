@@ -7,6 +7,11 @@ import {
 } from "./schema-encoding";
 import { RUBRICS } from "../scoring/rubrics";
 import {
+  INDEXED_CONTRACT,
+  indexEvidenceSchema,
+  indexedInstructions,
+} from "./indexed-contract";
+import {
   STAGED_CONTRACT,
   extractionSchema,
   scoringSchema,
@@ -29,29 +34,98 @@ export function buildAnalysisRequest(
   segments: Segment[],
   context: { transcriptComplete: boolean },
 ) {
-  const built = requestFor(segments, context, "extraction", "unknown");
-  // Admission checks all possible second stages before spending the first call.
-  for (const purpose of ["sales", "general", "retention"] as const)
-    buildScoringRequest(segments, context, purpose);
-  return built;
+  try {
+    const built = requestFor(segments, context, "extraction", "unknown");
+    for (const purpose of ["sales", "general", "retention"] as const)
+      requestFor(segments, context, "scoring", purpose);
+    return built;
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      error.message !== "ANALYSIS_BUDGET_EXCEEDED"
+    )
+      throw error;
+    const built = requestFor(segments, context, "extraction", "unknown", true);
+    for (const purpose of ["sales", "general", "retention"] as const)
+      buildScoringRequests(segments, context, purpose);
+    return built;
+  }
 }
 export function buildScoringRequest(
   segments: Segment[],
   context: { transcriptComplete: boolean },
   purpose: Purpose,
 ) {
-  return requestFor(segments, context, "scoring", purpose);
+  try {
+    return requestFor(segments, context, "scoring", purpose);
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      error.message !== "ANALYSIS_BUDGET_EXCEEDED"
+    )
+      throw error;
+    return requestFor(segments, context, "scoring", purpose, true);
+  }
+}
+export function buildScoringRequests(
+  segments: Segment[],
+  context: { transcriptComplete: boolean },
+  purpose: Purpose,
+) {
+  try {
+    return [buildScoringRequest(segments, context, purpose)];
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      error.message !== "ANALYSIS_BUDGET_EXCEEDED" ||
+      purpose === "unknown"
+    )
+      throw error;
+    const ids = RUBRICS[purpose].map((c) => c.id),
+      requests = [];
+    for (let offset = 0; offset < ids.length;) {
+      let admitted = false;
+      for (let size = Math.min(6, ids.length - offset); size > 0; size--) {
+        try {
+          requests.push(
+            requestFor(
+              segments,
+              context,
+              "scoring",
+              purpose,
+              true,
+              ids.slice(offset, offset + size),
+            ),
+          );
+          offset += size;
+          admitted = true;
+          break;
+        } catch (groupError) {
+          if (
+            !(groupError instanceof Error) ||
+            groupError.message !== "ANALYSIS_BUDGET_EXCEEDED" ||
+            size === 1
+          )
+            throw groupError;
+        }
+      }
+      if (!admitted) throw new Error("ANALYSIS_BUDGET_EXCEEDED");
+    }
+    return requests;
+  }
 }
 function requestFor(
   segments: Segment[],
   context: { transcriptComplete: boolean },
   stage: "extraction" | "scoring",
   purpose: Purpose,
+  indexed = false,
+  selectedIds?: string[],
 ) {
   let schema = z.toJSONSchema(
     stage === "extraction"
       ? extractionSchema(segments)
-      : scoringSchema(segments, purpose),
+      : scoringSchema(segments, purpose, selectedIds),
     { reused: "ref" },
   );
   delete schema.$schema;
@@ -131,6 +205,40 @@ function requestFor(
   if (stage === "extraction")
     request.messages[0].content +=
       " Purpose follows the customer's primary business intent, not the employee's proposed administrative action. Sales is purchasing/quoting new treatment or inspection. General is existing-service support, scheduling or billing. An explicit request to stop an ongoing service/plan is retention even if the employee only submits the cancellation request, no retention offer succeeds, and account closure remains unverified. Do not label that cancellation conversation general merely because submission is an account-change action. Cancelling/rescheduling one appointment alone is general; declining a recurring upsell while purchasing a one-time treatment is sales. A return visit or existing customer alone is never retention. A generic return/service visit is not an inspection: inspectionBooked requires explicit inspection wording in its selected source evidence.";
+  if (indexed) {
+    schema = indexEvidenceSchema(schema, segments);
+    request.messages = [
+      {
+        role: "system",
+        content: indexedInstructions(stage, purpose, selectedIds),
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          originalRecordedAt: null,
+          sourceVerification: context,
+          rows: segments.map((s) => [
+            s.speaker === "employee"
+              ? "E"
+              : s.speaker === "customer"
+                ? "C"
+                : "?",
+            s.text,
+          ]),
+        }),
+      },
+    ];
+    request.response_format = {
+      type: "json_schema",
+      json_schema: {
+        name: `${INDEXED_CONTRACT}_${stage}`,
+        strict: true,
+        schema,
+      },
+    };
+    request.max_completion_tokens =
+      stage === "extraction" ? 2000 : selectedIds ? 1700 : 2600;
+  }
   const bytes = new TextEncoder().encode(
     JSON.stringify({ messages: request.messages, schema }),
   ).byteLength;
@@ -144,6 +252,14 @@ function requestFor(
       estimatedInputTokens + (request.max_completion_tokens ?? 0),
   };
   if (bytes > 12000 || budget.estimatedTotalTokens > 8000)
-    throw new Error("ANALYSIS_BUDGET_EXCEEDED");
-  return { request, budget };
+    throw new Error("ANALYSIS_BUDGET_EXCEEDED", {
+      cause: {
+        ...budget,
+        stage,
+        indexed,
+        schemaBytes: JSON.stringify(schema).length,
+        messageBytes: JSON.stringify(request.messages).length,
+      },
+    });
+  return { request, budget, indexed, selectedIds };
 }

@@ -271,7 +271,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
     [message, setMessage] = useState(""),
     [file, setFile] = useState<File | null>(null),
     [sanitized, setSanitized] = useState(false),
-    [sourceKind, setSourceKind] = useState("synthetic"),
+    [sourceKind, setSourceKind] = useState(""),
     [rep, setRep] = useState(""),
     [direction, setDirection] = useState(""),
     [recordedAt, setRecordedAt] = useState("");
@@ -370,7 +370,8 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
   }
   const enabled =
     session.backendConfigured &&
-    (sourceKind === "synthetic" || session.processingEnabled);
+    (sourceKind === "synthetic" ||
+      (sourceKind === "real" && session.processingEnabled));
   return (
     <dialog
       ref={dialog}
@@ -457,23 +458,34 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
             Recording type
             <select
               value={sourceKind}
-              onChange={(e) => setSourceKind(e.target.value)}
+              onChange={(e) => {
+                setSourceKind(e.target.value);
+                setSanitized(false);
+                setFile(null);
+              }}
             >
-              <option value="synthetic">Fictional test recording</option>
-              <option value="real" disabled={!session.processingEnabled}>
-                Client call — privacy approval required
+              <option value="" disabled>
+                Choose the recording type
+              </option>
+              <option value="synthetic">Made-up fictional conversation</option>
+              <option value="real">
+                Actual client/customer call — including test examples
               </option>
             </select>
           </label>
           <label className="file-drop">
             <FileAudio size={30} />
             <strong>{file ? file.name : "Select a recording"}</strong>
-            <span>MP3, WAV or M4A · up to 25 MB · 60 minutes</span>
+            <span>MP3, WAV or M4A · upload up to 25 MB / 60 minutes</span>
+            <span>Analysis capacity depends on transcript size.</span>
             <input
               type="file"
               accept=".mp3,.wav,.m4a"
               disabled={!enabled || busy}
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                setFile(e.target.files?.[0] || null);
+                setSanitized(false);
+              }}
             />
           </label>
           <div className="form-grid">
@@ -511,16 +523,21 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
               checked={sanitized}
               onChange={(e) => setSanitized(e.target.checked)}
             />
-            I have privately checked and redacted sensitive information from
-            this recording.
+            {sourceKind === "synthetic"
+              ? "This recording contains made-up people and details, not an actual customer call."
+              : "I have privately checked and redacted sensitive information from this recording."}
           </label>
           {(!enabled || !session.aiConfigured) && (
             <div className="notice">
               <AlertCircle size={17} />
               <p>
-                {!session.aiConfigured
-                  ? "You can upload a fictional recording privately. Analysis waits until the server AI key is added."
-                  : "Recording analysis is held until privacy settings are verified."}
+                {sourceKind === "real" && !session.processingEnabled
+                  ? "Actual client calls remain on hold until privacy preparation and approval are complete. Client-supplied test recordings are actual calls, not fictional examples."
+                  : !sourceKind
+                    ? "Choose whether this is a made-up conversation or an actual customer call."
+                    : !session.aiConfigured
+                      ? "You can upload a fictional recording privately. Analysis waits until the server AI key is added."
+                      : "Recording analysis is held until privacy settings are verified."}
               </p>
             </div>
           )}

@@ -5,24 +5,14 @@ import { applySourceReview } from "../../src/lib/domain/source-review";
 import { sourceReviewSchema } from "../../src/lib/domain/schemas";
 import { mockApi, fictionalSession, checkWidths } from "./mock-api";
 for (const budget of [false, true]) {
-  test(`first failed analysis can recover after ${budget ? "budget-changing roles" : "source verification"} without fake processing`, async ({
+  test(`first failed analysis can recover after ${budget ? "review of an admissible source with an old budget error" : "source verification"} without fake processing`, async ({
     page,
   }) => {
     let call = recoveryCall(),
       starts = 0;
     if (budget) {
       call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
-      for (let n = 100; n < 300; n++) {
-        call.segments[0].text = "Fictional context. ".repeat(n);
-        const unknown = structuredClone(call);
-        unknown.segments.forEach((s) => (s.speaker = "unknown"));
-        if (
-          analysisRecovery(call, false).budget === "exceeded" &&
-          analysisRecovery(unknown, false).budget === "admitted"
-        )
-          break;
-      }
-      expect(analysisRecovery(call, false).budget).toBe("exceeded");
+      expect(analysisRecovery(call, false).budget).toBe("admitted");
     }
     const before = structuredClone(call.segments);
     const unexpected = await mockApi(page, (path, method, input) => {

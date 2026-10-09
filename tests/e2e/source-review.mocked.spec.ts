@@ -150,7 +150,10 @@ test("mocked owner source review handles conflict, stale grade, re-analysis fail
     page.getByRole("button", { name: "Re-analyze", exact: true }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Re-analyze", exact: true }).click();
-  await expect(page.getByText("Green · 11/12", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Partial · 10/12", { exact: true }),
+  ).toBeVisible();
+  expect(call.score?.grade).toBeNull();
   expect(call.originalAnalysis).toEqual(initial);
   expect(unexpected).toEqual([]);
 });

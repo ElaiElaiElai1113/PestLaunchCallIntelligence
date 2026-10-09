@@ -192,16 +192,7 @@ it("valid transcript pending-start retry preserves its ownership intent", async 
 it("retry admission uses the revised audited transcript while preserving its pending attempt", async () => {
   state.call = recoveryCall();
   state.call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
-  for (let n = 1; n < 300; n++) {
-    state.call.segments[0].text = "Fictional context. ".repeat(n);
-    const changed = structuredClone(state.call);
-    changed.segments.forEach((s) => (s.speaker = "unknown"));
-    if (
-      analysisRecovery(state.call, false).budget === "exceeded" &&
-      analysisRecovery(changed, false).budget === "admitted"
-    )
-      break;
-  }
+  expect(analysisRecovery(state.call, false).budget).toBe("admitted");
   expect((await saveSource(true)).status).toBe(200);
   state.call!.status = "failed";
   state.call!.errorCode = "PROCESSING_START_FAILED";
@@ -263,19 +254,11 @@ it("actual source-review transition leaves first analysis startable but never au
   expect(state.call!.analysis).toBeNull();
   expect(state.call!.score).toBeNull();
 });
-it("same over-budget source cannot dispatch or mutate while a revised admissible source can", async () => {
+it("a genuinely oversized source cannot dispatch before or after role review", async () => {
   state.call = recoveryCall();
   state.call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
-  for (let n = 1; n < 300; n++) {
-    state.call.segments[0].text = "Fictional context. ".repeat(n);
-    const changed = structuredClone(state.call);
-    changed.segments.forEach((s) => (s.speaker = "unknown"));
-    if (
-      analysisRecovery(state.call, false).budget === "exceeded" &&
-      analysisRecovery(changed, false).budget === "admitted"
-    )
-      break;
-  }
+  state.call.segments[0].text = "Fictional context. ".repeat(1200);
+  expect(analysisRecovery(state.call, false).budget).toBe("exceeded");
   vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
   state.start.mockResolvedValue({ runId: "not-executed" });
   state.put.mockClear();
@@ -291,7 +274,8 @@ it("same over-budget source cannot dispatch or mutate while a revised admissible
   expect(state.call!.sourceReviews!.at(-1)?.previousErrorCode).toBe(
     "ANALYSIS_BUDGET_EXCEEDED",
   );
-  expect((await POST(request(state.call!.version), context)).status).toBe(200);
+  expect((await POST(request(state.call!.version), context)).status).toBe(400);
+  expect(state.start).not.toHaveBeenCalled();
   expect(state.model).not.toHaveBeenCalled();
   expect(state.call!.analysis).toBeNull();
 });

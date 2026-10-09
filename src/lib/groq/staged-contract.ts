@@ -72,7 +72,11 @@ export type Extraction = Omit<
 > & {
   outcomes: z.infer<ReturnType<typeof legacyExtractionSchema>>["outcomes"];
 };
-export function scoringSchema(segments: Segment[], purpose: Purpose) {
+export function scoringSchema(
+  segments: Segment[],
+  purpose: Purpose,
+  selectedIds?: string[],
+) {
   const originalItem = contractSchema(segments).shape.assessments.element.omit({
     id: true,
     coaching: true,
@@ -101,7 +105,14 @@ export function scoringSchema(segments: Segment[], purpose: Purpose) {
         }),
       })
     : item;
-  const ids = purpose === "unknown" ? [] : RUBRICS[purpose].map((c) => c.id);
+  const allIds = purpose === "unknown" ? [] : RUBRICS[purpose].map((c) => c.id);
+  if (
+    selectedIds &&
+    (new Set(selectedIds).size !== selectedIds.length ||
+      selectedIds.some((id) => !allIds.includes(id)))
+  )
+    throw new Error("INVALID_ANALYSIS_SCHEMA");
+  const ids = selectedIds ?? allIds;
   const coach =
     ids.length && segments.some((s) => s.speaker === "employee")
       ? analysisSchema.shape.coaching.element
@@ -112,10 +123,9 @@ export function scoringSchema(segments: Segment[], purpose: Purpose) {
   return z.strictObject({
     checkpoints: z.strictObject(
       Object.fromEntries(
-        (purpose === "unknown" ? [] : RUBRICS[purpose]).map((c) => [
-          c.id,
-          validatedItem,
-        ]),
+        (purpose === "unknown" ? [] : RUBRICS[purpose])
+          .filter((c) => ids.includes(c.id))
+          .map((c) => [c.id, validatedItem]),
       ),
     ),
     noObjections: z.boolean(),
