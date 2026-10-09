@@ -1,30 +1,24 @@
-# PestLaunch private deployment runbook
+# PestLaunch test-demo deployment runbook
 
-The human requested Vercel hosting and a client-testable demo on 9 October 2026. This runbook makes the remaining work concrete; it is not deployment evidence.
+## Current verified state — 9 October 2026
 
-## Verified accounts and pending handoffs
+The dedicated app is hosted at https://pestlaunch-call-intelligence.vercel.app on the user's selected personal projects scope. The human chose Hobby specifically for this testing task; no paid upgrade or Setterlun change occurred. Production deployment identifier `dpl_FhYD9jm9NKsrYXMtU8cGza6FyEeT` contains application `2b7f9fa`; the backend scoring repair was validated on `37d6cb2`, followed by a history-label copy change. Current evidence controls acceptance claims.
 
-- Vercel CLI 54.0.0 is authenticated. Read-only `/v2/teams` confirms `setterlun-ventures` active Pro; personal team is Hobby. Human selected the personal account on 9 October; Setterlun is reserved for Setterlun. Fresh `/v2/user` confirms personal Hobby. Personal commercial hosting therefore requires a separately approved Pro subscription; no purchase or deployment has occurred. Do not change unrelated team projects, billing, security settings or subscriptions.
-- Dedicated Supabase project: `qwrukdqtuhqkbrbtnekz`, Projects organization, Sydney Free, healthy. Dashboard shows no recorded migrations/backups. Both available connector links denied access. This does not mean the previously SQL-applied schema is missing.
-- The previously exposed server key must be replaced, the old key revoked, and the new value saved only in ignored `.env.local`. Browser credential creation/change requires human completion. Never reveal/copy the value to chat, source, screenshots or logs.
-- GitHub CLI is authenticated to the user's account. The [private repository](https://github.com/ElaiElaiElai1113/PestLaunchCallIntelligence) was created, reviewed candidate `449869a` pushed and private visibility read back. No collaborator was added. History audit inspected 383 blobs: no private/media/env paths except `.env.example`, and no credential-pattern matches. Pattern scanning is not proof against every possible confidential detail. Only tracked application/docs history was pushed; new unreviewed work remains local until accepted.
+Dedicated Supabase `qwrukdqtuhqkbrbtnekz` remains on Free. The exposed server key was revoked/replaced by the human and the replacement verified privately. Exact registered-path upload policy is applied. The SQL-provisioned project lacks migration history; this does not imply its schema is missing. Never blindly rerun initial migrations or backfill unverified history.
 
-Latest local source-refs-v3 candidate `5c8d4c4` awaits final independent review. The base passed 313 tests/37 files, lint/typecheck/build/privacy25, six actual isolated browser journeys and eleven HTTP checks. Final attestation repair passed nineteen focused tests and an additional browser journey. Latest provider aggregate is closed at six of six; no accepted semantic, hosted new-upload or Loom proof.
+The first deployment failed because an empty project used static-site defaults. Checked-in `vercel.json` explicitly declares Next.js and the privacy-checked build command. Private sources/media/environment files are excluded from upload and function traces.
 
-## Release sequence
+## Repeat deployment
 
-1. Confirm the selected existing commercial Vercel team, included usage and spend controls. Pro can incur on-demand usage beyond included credit: do not call hosting free or purchase upgrades/add-ons. New paid usage needs an approved concrete cap. Current primary reference: [Vercel Pro billing](https://vercel.com/docs/plans/pro-plan).
-2. After server-key replacement, reconcile exact SQL-applied schema and migration history. Review/apply only the pending `20261008114517_bind_source_upload_to_registered_path.sql`; do not blindly rerun the initial schema. Check private buckets, workspace RLS, grants and registered-path upload admission.
-3. Provision isolated authorized owner/reviewer identities without sending client mail. Confirm public signup and anonymous sign-in remain disabled. Verify foreign-workspace and anonymous access denial.
-4. Create/link only the separate PestLaunch Vercel project under the authorized scope. Keep preview protection; do not use `--public`, paid password-protection add-ons or broader source/data access. Production must use invited application authentication.
-5. Set public Supabase URL/publishable key, server-only replacement Supabase key and Groq key, pinned transcription model, exact `APP_ORIGIN`, and initially `REAL_CALL_PROCESSING_ENABLED=false`. Transfer secrets through stdin or a supported secret API; never command-line literals or echoed output. Preview and production origins must each match the environment where operations run. Add only the observed app origin to Supabase Auth redirects.
-6. Build with `npm run build`, including the privacy guard. Confirm the hosted Workflow runtime supports the installed pinned SDK. Deploy, inspect the returned URL/revision, and test invited login plus private upload while AI is disabled first.
-7. Verify current Groq Free quota and Global ZDR, then run a newly recorded fictional spoken call through actual hosted ASR/extraction/scoring. Record source/model/revision/hash metadata privately. Unknown speaker roles/completeness require audited review and owner re-analysis; never infer them automatically. Inspect all seven client capabilities and exact rubric/coaching semantics.
-8. Test reload, reviewer authorization, evidence playback, reasoned correction/history, transient failure/retry and disposable fictional deletion. Actual scheduler/concurrency/backup retention are distinct from local tests. Keep customer recordings quarantined/private until source preparation is verified.
-9. Inspect an allowlisted private source package and create/verify the intended private source remote. Record a 4–5 minute Loom using the accepted fictional hosted flow in `docs/demo-script.md`. Verify playable app/source/video links before delivery. Client messages and recruiter START remain human actions.
+1. Use only linked project `pestlaunch-call-intelligence` in scope `elaielaielai1113s-projects`. Preserve invite-only application authentication and private source access; do not use `--public` or change unrelated settings.
+2. Save production variables through stdin/sensitive environment handling: public Supabase URL/publishable key; server-only Supabase/Groq keys; exact `APP_ORIGIN`; `REAL_CALL_PROCESSING_ENABLED=false`; `GROQ_WORKFLOW_RETRIES=0`. Do not print secrets or pass them in literal command arguments.
+3. Run local checks and `npm run build`. Run browser/HTTP harnesses sequentially. Their empty keys do not constitute live AI acceptance.
+4. Deploy with `npx vercel deploy --prod --yes --scope elaielaielai1113s-projects`. Inspect the returned deployment and canonical alias before checking login or mutations.
+5. Upload a new known fictional spoken recording under an invited owner. Verify actual transcription/extraction, then source review and re-analysis for employee scoring. Unknown roles must withhold grade/coaching. Retain exact source/model/provenance metadata privately.
+6. Test protected playback/evidence seeking, reload, source/manual history, stale conflicts, foreign/anonymous denial and owned fictional deletion. Keep actual customer data private; end-of-test customer deletion remains separate.
 
-## Safe demonstration while hosting is held
+Current hosted known-source example passed all twelve General checkpoints and earned Gold before its supported manual confidence confirmation. One strength/two improvements have employee evidence. The accepted return visit does not imply inspection/payment/signature or backend account execution. The client workspace has one accepted fictional call; failed fictional test copies were removed and storage absence/tombstone verified.
 
-Run `npm run demo` and use the fresh isolated fictional text workspace on port 3003. State that these curated examples have no audio or AI execution. This is useful for rehearsing navigation, evidence, correction/history and the narration; it does not satisfy deployed recording processing.
+## Delivery boundary
 
-Do not delete confidential test materials until the full test ends. Then verify source/derivative/transcript/analysis/review/local-copy cleanup and report any provider/log/backup retention limitation.
+Use the private demo kit and Loom script. No client mail, collaborator invitation, recruiter START or recorded Loom has been sent. Review-chat messaging remains stopped. All historical provider phases/caps/locks remain preserved. This review-assisted short-call demo does not certify full customer-dataset accuracy, automatic diarization/redaction, long-call processing or production retention/concurrency acceptance.
