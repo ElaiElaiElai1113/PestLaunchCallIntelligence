@@ -9,6 +9,7 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import { browserClient } from "@/lib/supabase/browser";
+import { loginEmail } from "@/lib/domain/login-identity";
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState(""),
@@ -25,7 +26,7 @@ export default function Login() {
     setError("");
     try {
       const { error } = await browserClient().auth.signInWithPassword({
-        email,
+        email: loginEmail(email),
         password,
       });
       if (error) throw error;
@@ -92,14 +93,14 @@ export default function Login() {
           {configured ? (
             <form onSubmit={signIn}>
               <label>
-                Email address
+                Email or username
                 <input
                   autoComplete="username"
-                  type="email"
+                  type="text"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder="Email address or username"
                 />
               </label>
               <label>
