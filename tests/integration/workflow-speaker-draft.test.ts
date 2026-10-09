@@ -90,12 +90,21 @@ beforeEach(() => {
   });
   state.call!.segments.forEach((s) => (s.speaker = "unknown"));
 });
-it("prepares source-bound suggestions before extraction without attesting roles or completeness", async () => {
+it("assigns source-bound AI labels before extraction without attesting quality or completeness", async () => {
   const before = structuredClone(state.call!.segments);
   await processCall(state.call!.id);
   expect(state.drafts).toBe(1);
   expect(state.analyses).toBe(1);
-  expect(state.call!.segments).toEqual(before);
+  expect(
+    state.call!.segments.map((s) => ({ ...s, speaker: "unknown" })),
+  ).toEqual(before);
+  expect(state.call!.segments.every((s) => s.speaker === "employee")).toBe(
+    true,
+  );
+  expect(state.call!.speakerAttribution?.kind).toBe("ai");
+  expect(state.call!.transcriptReviewReasons).toContain(
+    "AI speaker labels need review.",
+  );
   expect(state.call!.transcriptCompleteness).toBe("unverified");
   expect(state.call!.speakerProposals?.roles).toHaveLength(before.length);
   expect(state.call!.providerDispatches?.[0].stage).toBe("speaker_draft");

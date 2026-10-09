@@ -24,6 +24,7 @@ import { INDEXED_CONTRACT } from "@/lib/groq/indexed-contract";
 import { providerRetryLimit } from "@/lib/groq/retry-limit";
 import { providerFailureCode } from "@/lib/groq/failure-code";
 import { GeminiProvider } from "@/lib/gemini/provider";
+import { applySpeakerSuggestions } from "@/lib/domain/speaker-proposals";
 const PROVIDER_RETRIES = 3;
 const missing = (error: unknown) =>
   error instanceof Error && error.message === "CALL_NOT_FOUND";
@@ -349,8 +350,9 @@ async function speakerDraftStep(
       model: result.model,
       roles: result.roles,
     };
-    call.version++;
-    return await repo.put(call, previous);
+    const assigned = applySpeakerSuggestions(call);
+    assigned.version++;
+    return await repo.put(assigned, previous);
   } catch (error) {
     await safeFailure(callId, error, attemptId, runId, call.version);
     return false;

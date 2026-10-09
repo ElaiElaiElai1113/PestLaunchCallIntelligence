@@ -351,11 +351,14 @@ export function CallDetail({ id }: { id: string }) {
                 ? "Transcript updated — analysis needs to run again."
                 : call.segments.some((s) => s.speaker === "unknown")
                   ? "Speaker review needed"
-                  : call.transcriptCompleteness === "unverified"
-                    ? "Transcript needs review"
-                    : call.mode === "sample"
-                      ? "Fictional text example; no recording exists."
-                      : "Source review stays with this conversation."}
+                  : call.speakerAttribution?.kind === "ai" &&
+                      !call.sourceReviews?.length
+                    ? "AI assigned Employee/Customer labels. Review transcript to correct any label."
+                    : call.transcriptCompleteness === "unverified"
+                      ? "Transcript needs review"
+                      : call.mode === "sample"
+                        ? "Fictional text example; no recording exists."
+                        : "Source review stays with this conversation."}
             </p>
           </div>
           <button
@@ -674,7 +677,9 @@ export function CallDetail({ id }: { id: string }) {
                         {purposeLabel(a.purpose)} SCORECARD
                       </span>
                       <div className="score-number">
-                        {score?.points}
+                        {score && score.unresolved === score.denominator
+                          ? "—"
+                          : score?.points}
                         <span>/ {score?.denominator}</span>
                       </div>
                       <GradeBadge call={call} />

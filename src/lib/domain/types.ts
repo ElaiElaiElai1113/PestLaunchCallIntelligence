@@ -82,6 +82,12 @@ export type ProviderOutput = {
   content: string;
 };
 export type CallRecord = {
+  speakerAttribution?: {
+    kind: "ai";
+    model: string;
+    sourceChecksum: string;
+    sourceRevision: number;
+  };
   speakerProposals?: {
     sourceChecksum: string;
     sourceRevision: number;

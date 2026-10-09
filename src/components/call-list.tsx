@@ -33,7 +33,9 @@ export function GradeBadge({ call }: { call: CallRecord }) {
       {call.score?.grade
         ? `${purposeLabel(call.score.grade)} · ${call.score.points}/${call.score.denominator}`
         : call.analysis
-          ? `Partial · ${call.score?.points}/${call.score?.denominator}`
+          ? call.score && call.score.unresolved === call.score.denominator
+            ? "Not scored yet"
+            : `Partial · ${call.score?.points}/${call.score?.denominator}`
           : "Pending"}
     </span>
   );

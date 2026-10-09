@@ -53,6 +53,7 @@ export function preparedTranscriptBlock(
   return null;
 }
 const sourceReasons = new Set([
+  "AI speaker labels need review.",
   "Transcription completeness needs review.",
   "Transcription quality needs review.",
   "Speaker attribution needs review.",

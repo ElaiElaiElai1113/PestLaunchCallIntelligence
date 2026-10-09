@@ -24,3 +24,33 @@ export function speakerSuggestions(call: CallRecord) {
     ]),
   );
 }
+// Operator-requested AI defaults. Preserve ASR and never overwrite a review.
+export function applySpeakerSuggestions(call: CallRecord): CallRecord {
+  if (
+    call.sourceReviews?.length ||
+    call.segments.some((s) => s.speaker !== "unknown")
+  )
+    return call;
+  const suggestions = speakerSuggestions(call);
+  if (!suggestions || !Object.values(suggestions).some((s) => s !== "unknown"))
+    return call;
+  const next = structuredClone(call);
+  next.originalSegments ??= structuredClone(call.segments);
+  next.originalSegmentsProvenance ??= "legacy_snapshot";
+  next.segments.forEach((s) => (s.speaker = suggestions[s.id]));
+  next.sourceRevision = (call.sourceRevision ?? 0) + 1;
+  next.pendingExtraction = null;
+  next.speakerAttribution = {
+    kind: "ai",
+    model: call.speakerProposals!.model,
+    sourceChecksum: call.checksum!,
+    sourceRevision: next.sourceRevision,
+  };
+  next.transcriptReviewReasons = [
+    ...new Set([
+      ...(call.transcriptReviewReasons ?? []),
+      "AI speaker labels need review.",
+    ]),
+  ];
+  return next;
+}

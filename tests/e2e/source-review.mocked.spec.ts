@@ -72,6 +72,8 @@ test("speaker suggestions change draft labels without verifying or saving source
     return null;
   });
   await page.goto(`/calls/${call.id}`);
+  await expect(page.getByText("Not scored yet", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Partial · 0/12", { exact: true })).toHaveCount(0);
   await page
     .getByRole("button", { name: "Review transcript", exact: true })
     .click();
