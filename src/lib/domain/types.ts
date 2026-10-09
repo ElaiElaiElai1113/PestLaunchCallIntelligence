@@ -93,7 +93,7 @@ export type CallRecord = {
     }[];
   };
   providerDispatches?: {
-    stage: "transcription" | "analysis";
+    stage: "transcription" | "speaker_draft" | "analysis";
     model: string;
     requestHash: string;
     sourceHash: string;

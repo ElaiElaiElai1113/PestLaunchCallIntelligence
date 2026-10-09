@@ -35,7 +35,7 @@ export class GroqProvider {
       ) => Promise<void>;
     },
   ) {}
-  private client(onResponse?: (response: Response) => void) {
+  protected client(onResponse?: (response: Response) => void) {
     if (!this.config.apiKey?.trim()) throw new Error("AI_NOT_CONFIGURED");
     return new Groq({
       apiKey: this.config.apiKey,

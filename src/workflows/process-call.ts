@@ -23,6 +23,7 @@ import { STAGED_CONTRACT } from "@/lib/groq/staged-contract";
 import { INDEXED_CONTRACT } from "@/lib/groq/indexed-contract";
 import { providerRetryLimit } from "@/lib/groq/retry-limit";
 import { providerFailureCode } from "@/lib/groq/failure-code";
+import { GeminiProvider } from "@/lib/gemini/provider";
 const PROVIDER_RETRIES = 3;
 const missing = (error: unknown) =>
   error instanceof Error && error.message === "CALL_NOT_FOUND";
@@ -34,7 +35,8 @@ export async function processCall(callId: string, attemptId?: string) {
   if (attemptId && !(await claimAttemptStep(callId, attemptId, runId)))
     return { callId };
   const allowed = await transcriptionStep(callId, attemptId, runId);
-  if (allowed) await analysisStep(callId, attemptId, runId);
+  if (allowed && (await speakerDraftStep(callId, attemptId, runId)))
+    await analysisStep(callId, attemptId, runId);
   return { callId };
 }
 async function claimAttemptStep(
@@ -75,7 +77,7 @@ function finishAttempt(call: CallRecord, attemptId?: string, runId?: string) {
 }
 function reserveDispatch(
   call: CallRecord,
-  stage: "transcription" | "analysis",
+  stage: "transcription" | "speaker_draft" | "analysis",
   attemptId?: string,
   runId?: string,
 ) {
@@ -315,6 +317,46 @@ async function analysisStep(
   }
   return { callId };
 }
+async function speakerDraftStep(
+  callId: string,
+  attemptId?: string,
+  runId?: string,
+) {
+  "use step";
+  const loaded = await ownedCall(callId, attemptId, runId);
+  if (!loaded) return false;
+  const { call, repo } = loaded;
+  if (
+    selectedProvider() !== "gemini" ||
+    !call.segments.length ||
+    call.segments.some((s) => s.speaker !== "unknown") ||
+    (call.speakerProposals?.sourceChecksum === call.checksum &&
+      call.speakerProposals?.sourceRevision === (call.sourceRevision ?? 0))
+  )
+    return true;
+  try {
+    const provider = createProvider({
+      beforeDispatch: reserveDispatch(call, "speaker_draft", attemptId, runId),
+    });
+    if (!(provider instanceof GeminiProvider)) return true;
+    const result = await provider.suggestSpeakers(call.segments);
+    const active = await ownedCall(callId, attemptId, runId);
+    if (!active || active.call.version !== call.version) return false;
+    const previous = call.version;
+    call.speakerProposals = {
+      sourceChecksum: call.checksum!,
+      sourceRevision: call.sourceRevision ?? 0,
+      model: result.model,
+      roles: result.roles,
+    };
+    call.version++;
+    return await repo.put(call, previous);
+  } catch (error) {
+    await safeFailure(callId, error, attemptId, runId, call.version);
+    return false;
+  }
+}
+speakerDraftStep.maxRetries = 0;
 async function safeFailure(
   callId: string,
   error: unknown,

@@ -21,6 +21,50 @@ const customer: Segment = {
   text: "Yes please",
   speaker: "customer",
 };
+it("does not turn an inspection agreement and conditional treatment offer into treatment acceptance", () => {
+  const staff = {
+    ...employee,
+    text: "If the inspection identifies termites, we could offer treatment that afternoon.",
+  };
+  const caller = { ...customer, text: "Please book the inspection." };
+  const original = analysis();
+  original.outcomes.treatmentAccepted = {
+    value: true,
+    evidence: {
+      segmentIds: [staff.id, caller.id],
+      quote: staff.text + " " + caller.text,
+    },
+  };
+  const effective = guardAssessment(original, [staff, caller], {
+    transcriptComplete: true,
+  });
+  expect(effective.outcomes.treatmentAccepted.value).toBeNull();
+  expect(original.outcomes.treatmentAccepted.value).toBe(true);
+  expect(
+    effective.reviewIssues?.some(
+      (issue) => issue.target === "treatmentAccepted",
+    ),
+  ).toBe(true);
+});
+it("preserves explicit customer treatment acceptance alongside a conditional offer", () => {
+  const staff = {
+    ...employee,
+    text: "If termites are present we can treat this afternoon.",
+  };
+  const caller = { ...customer, text: "I accept the termite treatment." };
+  const original = analysis();
+  original.outcomes.treatmentAccepted = {
+    value: true,
+    evidence: {
+      segmentIds: [staff.id, caller.id],
+      quote: staff.text + " " + caller.text,
+    },
+  };
+  expect(
+    guardAssessment(original, [staff, caller], { transcriptComplete: true })
+      .outcomes.treatmentAccepted.value,
+  ).toBe(true);
+});
 it.each([
   "Have you seen any ants since the last visit?",
   "I will check your account notes next.",

@@ -133,6 +133,34 @@ export function guardAssessment(
       message,
     );
   }
+  const treatment = effective.outcomes.treatmentAccepted;
+  const treatmentSource = (treatment?.evidence.segmentIds ?? [])
+    .map((id) => lookup.get(id)?.text ?? "")
+    .join(" ");
+  const explicitCustomerAcceptance = (
+    treatment?.evidence.segmentIds ?? []
+  ).some((id) => {
+    const segment = lookup.get(id);
+    return (
+      segment?.speaker === "customer" &&
+      /\b(?:i|we)\s+(?:accept|agree to|authorize|want)\b.{0,50}\btreat(?:ment)?\b/i.test(
+        segment.text,
+      )
+    );
+  });
+  if (
+    treatment?.value === true &&
+    /\bif\b.{0,100}\b(?:can|could|may)\b.{0,70}\btreat(?:ment)?\b/i.test(
+      treatmentSource,
+    ) &&
+    !explicitCustomerAcceptance
+  ) {
+    treatment.value = null;
+    const message =
+      "Conditional treatment availability does not establish treatment acceptance.";
+    effective.reviewReasons.push(message);
+    issue("outcome:treatmentAccepted", "outcome", "treatmentAccepted", message);
+  }
   const inspection = effective.outcomes.inspectionBooked;
   if (
     inspection?.value === true &&

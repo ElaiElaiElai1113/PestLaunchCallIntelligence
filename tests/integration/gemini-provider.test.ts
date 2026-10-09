@@ -8,6 +8,78 @@ import {
 import { sampleCall } from "@/lib/samples/fixtures";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
 afterEach(() => vi.unstubAllEnvs());
+it("speaker hypotheses preserve source rows and remain separate from actual roles", async () => {
+  const source = [
+      {
+        id: "s1",
+        startMs: 0,
+        endMs: 1000,
+        text: "Fictional mixed greeting and reply.",
+        speaker: "unknown" as const,
+      },
+      {
+        id: "s2",
+        startMs: 1000,
+        endMs: 2000,
+        text: "Fictional service offer.",
+        speaker: "unknown" as const,
+      },
+    ],
+    before = structuredClone(source);
+  const provider = new GeminiProvider({
+    apiKey: "fictional",
+    fetch: async () =>
+      Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: {
+              content: JSON.stringify({
+                roles: [
+                  { rowIndex: 0, speaker: "unknown", confidence: 0.2 },
+                  { rowIndex: 1, speaker: "employee", confidence: 0.95 },
+                ],
+              }),
+            },
+          },
+        ],
+      }),
+  });
+  const result = await provider.suggestSpeakers(source);
+  expect(result.roles.map((r) => r.segmentId)).toEqual(["s1", "s2"]);
+  expect(result.roles[0].speaker).toBe("unknown");
+  expect(source).toEqual(before);
+});
+it("rejects reordered speaker rows without salvaging or transmitting another request", async () => {
+  let requests = 0;
+  const source = sampleCall("service", "speaker-order").segments;
+  const provider = new GeminiProvider({
+    apiKey: "fictional",
+    fetch: async () => {
+      requests++;
+      return Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: {
+              content: JSON.stringify({
+                roles: source.map((_, index) => ({
+                  rowIndex: source.length - index - 1,
+                  speaker: "employee",
+                  confidence: 0.95,
+                })),
+              }),
+            },
+          },
+        ],
+      });
+    },
+  });
+  await expect(provider.suggestSpeakers(source)).rejects.toThrow(
+    "INVALID_EVIDENCE",
+  );
+  expect(requests).toBe(1);
+});
 it("selects Gemini only with its own key and never falls back to Groq", () => {
   vi.stubEnv("AI_PROVIDER", "gemini");
   vi.stubEnv("GEMINI_API_KEY", "");
