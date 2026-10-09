@@ -5,12 +5,16 @@ import {
   preparedTranscriptBlock,
 } from "../domain/source-review";
 import { assessmentContext } from "../domain/assessment-guards";
-import { buildAnalysisRequest } from "./analysis-request";
+import {
+  buildAnalysisRequest,
+  GROQ_REQUEST_LIMITS,
+  type RequestLimits,
+} from "./analysis-request";
 // Pure admission only: no provider/client is constructed and no source is changed.
-function transcriptAdmission(call: CallRecord) {
+function transcriptAdmission(call: CallRecord, limits: RequestLimits) {
   let budget: "admitted" | "exceeded" | "invalid" = "invalid";
   try {
-    buildAnalysisRequest(call.segments, assessmentContext(call));
+    buildAnalysisRequest(call.segments, assessmentContext(call), limits);
     budget = "admitted";
   } catch (error) {
     if (error instanceof Error && error.message === "ANALYSIS_BUDGET_EXCEEDED")
@@ -27,10 +31,11 @@ function transcriptAdmission(call: CallRecord) {
 }
 export function analysisRecovery(
   call: CallRecord,
-  ...legacyArguments: boolean[]
+  legacyArgument?: boolean,
+  limits: RequestLimits = GROQ_REQUEST_LIMITS,
 ) {
-  void legacyArguments;
-  const input = transcriptAdmission(call);
+  void legacyArgument;
+  const input = transcriptAdmission(call, limits);
   const blockedReason = activeProcessing(call)
     ? "PROCESSING_ACTIVE"
     : analysisCurrent(call)
@@ -40,9 +45,10 @@ export function analysisRecovery(
 }
 export function providerInputAdmission(
   call: CallRecord,
-  ...legacyArguments: boolean[]
+  legacyArgument?: boolean,
+  limits: RequestLimits = GROQ_REQUEST_LIMITS,
 ) {
-  void legacyArguments;
+  void legacyArgument;
   const held = call.errorCode === "UPLOAD_PENDING";
   if (held)
     return {
@@ -67,5 +73,5 @@ export function providerInputAdmission(
       blockedReason: null,
       restoreOnly: false,
     };
-  return { ...transcriptAdmission(call), restoreOnly: false };
+  return { ...transcriptAdmission(call, limits), restoreOnly: false };
 }

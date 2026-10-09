@@ -1,4 +1,5 @@
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
+import { createHash } from "node:crypto";
 import type { CallRecord } from "@/lib/domain/types";
 import { sampleCall } from "@/lib/samples/fixtures";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
@@ -72,7 +73,9 @@ it("resumes scoring after429 without retransmitting extraction or returning cont
   let extraction = 0,
     scoring = 0;
   state.fetch.mockImplementation(async (_url, init) => {
-    const body = JSON.parse(String(init?.body));
+    const body = JSON.parse(
+      _url instanceof Request ? await _url.clone().text() : String(init?.body),
+    );
     const stage = body.response_format.json_schema.name;
     if (stage.endsWith("extraction")) {
       extraction++;
@@ -124,7 +127,11 @@ it.each(["source", "attempt", "version", "request"])(
     let extraction = 0,
       scoring = 0;
     state.fetch.mockImplementation(async (_url, init) => {
-      const body = JSON.parse(String(init?.body));
+      const body = JSON.parse(
+        _url instanceof Request
+          ? await _url.clone().text()
+          : String(init?.body),
+      );
       if (body.response_format.json_schema.name.endsWith("extraction")) {
         extraction++;
         return Response.json({
@@ -186,7 +193,15 @@ it("deletion during extraction prevents cache storage and scoring", async () => 
   const reply = stagedFromAnalysis(
     sampleCall("service", "fictional-cache").originalAnalysis!,
   );
-  state.fetch.mockImplementation(async () => {
+  state.fetch.mockImplementation(async (wire: Request) => {
+    const receipt = state.call!.providerDispatches?.at(-1);
+    expect(receipt?.requestHash).toBe(
+      createHash("sha256")
+        .update(Buffer.from(await wire.clone().arrayBuffer()))
+        .digest("hex"),
+    );
+    expect(receipt?.sourceHash).toBe(state.call!.checksum);
+    expect(receipt?.stage).toBe("analysis");
     state.call = null;
     return Response.json({
       choices: [
@@ -201,7 +216,8 @@ it("deletion during extraction prevents cache storage and scoring", async () => 
     callId: "fictional-cache",
   });
   expect(state.fetch).toHaveBeenCalledTimes(1);
-  expect(state.puts).toBe(0);
+  // Only the before-send metadata reservation exists; no cache/result save.
+  expect(state.puts).toBe(1);
 });
 it("exhausted provider retries finish the attempt with a truthful recoverable failure", async () => {
   const reply = stagedFromAnalysis(
@@ -210,7 +226,9 @@ it("exhausted provider retries finish the attempt with a truthful recoverable fa
   let extraction = 0,
     scoring = 0;
   state.fetch.mockImplementation(async (_url, init) => {
-    const body = JSON.parse(String(init?.body));
+    const body = JSON.parse(
+      _url instanceof Request ? await _url.clone().text() : String(init?.body),
+    );
     if (body.response_format.json_schema.name.endsWith("extraction")) {
       extraction++;
       return Response.json({

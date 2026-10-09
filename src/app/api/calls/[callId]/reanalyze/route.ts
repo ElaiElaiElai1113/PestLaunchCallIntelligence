@@ -1,3 +1,4 @@
+import { aiConfigured, selectedRequestLimits } from "@/lib/server/ai-provider";
 import { start } from "workflow/api";
 import { processCall } from "@/workflows/process-call";
 import { Repository } from "@/lib/server/repository";
@@ -24,14 +25,14 @@ export async function POST(
       call = await repo.get((await context.params).callId);
     const input = reanalysisSchema.parse(await request.json());
     if (call.version !== input.version) throw new AppError("STALE_REVIEW", 409);
-    if (!process.env.GROQ_API_KEY) throw new AppError("AI_NOT_CONFIGURED", 503);
+    if (!aiConfigured()) throw new AppError("AI_NOT_CONFIGURED", 503);
     if (call.mode !== "live") throw new AppError("BACKEND_NOT_CONFIGURED", 503);
     const blocked = sourceReviewBlock(call);
     if (blocked)
       throw new AppError(blocked, blocked === "PROCESSING_ACTIVE" ? 409 : 400);
     if (analysisCurrent(call))
       throw new AppError("REANALYSIS_UNAVAILABLE", 400);
-    const recovery = analysisRecovery(call);
+    const recovery = analysisRecovery(call, undefined, selectedRequestLimits());
     if (!recovery.eligible)
       throw new AppError(
         recovery.blockedReason ?? "REANALYSIS_UNAVAILABLE",

@@ -22,6 +22,7 @@ import type { Identity } from "@/lib/domain/types";
 import { SAMPLE_OPTIONS } from "@/lib/samples/fixtures";
 import { browserClient } from "@/lib/supabase/browser";
 type Session = {
+  analysisProvider?: "groq" | "gemini";
   identity: Identity;
   aiConfigured: boolean;
   processingEnabled: boolean;

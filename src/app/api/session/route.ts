@@ -1,3 +1,4 @@
+import { aiConfigured, selectedProvider } from "@/lib/server/ai-provider";
 import { cookies } from "next/headers";
 import {
   requireIdentity,
@@ -13,7 +14,8 @@ export async function GET() {
     const identity = await requireIdentity();
     return {
       identity,
-      aiConfigured: Boolean(process.env.GROQ_API_KEY),
+      aiConfigured: aiConfigured(),
+      analysisProvider: selectedProvider(),
       processingEnabled: true,
       backendConfigured: hasSupabase(),
     };

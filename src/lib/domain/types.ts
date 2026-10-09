@@ -82,6 +82,15 @@ export type ProviderOutput = {
   content: string;
 };
 export type CallRecord = {
+  providerDispatches?: {
+    stage: "transcription" | "analysis";
+    model: string;
+    requestHash: string;
+    sourceHash: string;
+    sourceRevision: number;
+    at: string;
+    deploymentRevision: string | null;
+  }[];
   analysisGeneration?: number;
   issueDecisions?: {
     id: string;

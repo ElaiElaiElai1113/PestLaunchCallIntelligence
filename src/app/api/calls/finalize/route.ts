@@ -1,3 +1,4 @@
+import { aiConfigured } from "@/lib/server/ai-provider";
 import { createHash } from "node:crypto";
 import { start } from "workflow/api";
 import { processCall } from "@/workflows/process-call";
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
     if (createHash("sha256").update(bytes).digest("hex") !== call.checksum)
       throw new AppError("UPLOAD_CHECKSUM_MISMATCH");
     const expected = call.version;
-    const admission = processingDecision(Boolean(process.env.GROQ_API_KEY));
+    const admission = processingDecision(aiConfigured());
     if (admission === "run") {
       try {
         await dispatchRetry(repo, call, async (id, attemptId) => {

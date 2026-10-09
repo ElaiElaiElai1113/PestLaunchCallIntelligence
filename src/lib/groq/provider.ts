@@ -2,7 +2,11 @@ import type { Segment, ProviderOutput } from "../domain/types";
 import Groq, { toFile } from "groq-sdk";
 import { z } from "zod";
 import { createHash } from "node:crypto";
-import { buildAnalysisRequest, buildScoringRequests } from "./analysis-request";
+import {
+  buildAnalysisRequest,
+  buildScoringRequests,
+  type RequestLimits,
+} from "./analysis-request";
 import { INDEXED_CONTRACT, decodeIndexedEvidence } from "./indexed-contract";
 import { scoringHeadroomWait } from "./rate-headroom";
 import { RUBRICS } from "../scoring/rubrics";
@@ -16,6 +20,12 @@ export class GroqProvider {
   constructor(
     readonly config: {
       apiKey?: string;
+      analysisLimits?: RequestLimits;
+      beforeDispatch?: (request: Request) => Promise<void>;
+      baseURL?: string;
+      prepareAnalysisRequest?: (
+        request: ReturnType<typeof buildAnalysisRequest>["request"],
+      ) => ReturnType<typeof buildAnalysisRequest>["request"];
       fetch?: typeof fetch;
       beforeScoring?: () => Promise<void>;
       waitForHeadroom?: (ms: number) => Promise<void>;
@@ -29,13 +39,21 @@ export class GroqProvider {
     if (!this.config.apiKey?.trim()) throw new Error("AI_NOT_CONFIGURED");
     return new Groq({
       apiKey: this.config.apiKey,
-      fetch: onResponse
-        ? async (input, init) => {
-            const response = await (this.config.fetch ?? fetch)(input, init);
-            onResponse(response);
-            return response;
-          }
-        : this.config.fetch,
+      baseURL: this.config.baseURL,
+      fetch:
+        onResponse || this.config.beforeDispatch
+          ? async (input, init) => {
+              const wire = this.config.beforeDispatch
+                ? new Request(input, init)
+                : null;
+              if (wire) await this.config.beforeDispatch!(wire.clone());
+              const response = wire
+                ? await (this.config.fetch ?? fetch)(wire)
+                : await (this.config.fetch ?? fetch)(input, init);
+              onResponse?.(response);
+              return response;
+            }
+          : this.config.fetch,
       maxRetries: 0,
       timeout: 120000,
     });
@@ -43,12 +61,14 @@ export class GroqProvider {
   async transcribe(
     bytes: Buffer,
     extension: string,
+    sourceDurationMs?: number,
   ): Promise<{
     segments: Segment[];
     durationMs: number;
     complete: boolean;
     reviewReasons: string[];
   }> {
+    void sourceDurationMs;
     const response = await this.client().audio.transcriptions.create({
       file: await toFile(bytes, `recording.${extension}`),
       model: process.env.GROQ_TRANSCRIPTION_MODEL || "whisper-large-v3",
@@ -121,8 +141,13 @@ export class GroqProvider {
     });
     if (JSON.stringify(segments).length > 150000)
       throw new Error("TRANSCRIPT_TOO_LONG");
-    const built = buildAnalysisRequest(segments, context);
-    const { request } = built;
+    const built = buildAnalysisRequest(
+      segments,
+      context,
+      this.config.analysisLimits,
+    );
+    const request =
+      this.config.prepareAnalysisRequest?.(built.request) ?? built.request;
     const extractionContract = built.indexed
       ? INDEXED_CONTRACT
       : STAGED_CONTRACT;
@@ -188,6 +213,7 @@ export class GroqProvider {
         segments,
         context,
         extracted.purpose,
+        this.config.analysisLimits,
       );
       const groups: z.infer<ReturnType<typeof scoringSchema>>[] = [];
       for (const next of requests) {
@@ -203,7 +229,9 @@ export class GroqProvider {
           )(waitMs);
         // Ownership/source is rechecked after waiting, immediately before effects.
         await this.config.beforeScoring?.();
-        const scored = await client.chat.completions.create(next.request);
+        const scoringRequest =
+          this.config.prepareAnalysisRequest?.(next.request) ?? next.request;
+        const scored = await client.chat.completions.create(scoringRequest);
         if (
           scored.choices[0]?.finish_reason !== "stop" ||
           typeof scored.choices[0]?.message.content !== "string"

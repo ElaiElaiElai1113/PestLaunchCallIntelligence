@@ -6,7 +6,12 @@ import {
 } from "workflow";
 import { systemRepository } from "@/lib/server/repository";
 import { adminClient } from "@/lib/supabase/server";
-import { GroqProvider } from "@/lib/groq/provider";
+import {
+  aiConfigured,
+  createProvider,
+  analysisModel,
+  selectedProvider,
+} from "@/lib/server/ai-provider";
 import { computeScore } from "@/lib/scoring/engine";
 import { ownsProcessing } from "@/lib/domain/processing-attempt";
 import { claimProcessingAttempt } from "@/lib/jobs/processing-claim";
@@ -19,7 +24,6 @@ import { INDEXED_CONTRACT } from "@/lib/groq/indexed-contract";
 import { providerRetryLimit } from "@/lib/groq/retry-limit";
 import { providerFailureCode } from "@/lib/groq/failure-code";
 const PROVIDER_RETRIES = 3;
-const provider = () => new GroqProvider({ apiKey: process.env.GROQ_API_KEY });
 const missing = (error: unknown) =>
   error instanceof Error && error.message === "CALL_NOT_FOUND";
 const unavailable = (error: unknown) =>
@@ -69,6 +73,55 @@ function finishAttempt(call: CallRecord, attemptId?: string, runId?: string) {
   if (attemptId && ownsProcessing(call, attemptId, runId))
     call.processingAttempt = { ...call.processingAttempt!, state: "finished" };
 }
+function reserveDispatch(
+  call: CallRecord,
+  stage: "transcription" | "analysis",
+  attemptId?: string,
+  runId?: string,
+) {
+  return async (request: Request) => {
+    const active = await ownedCall(call.id, attemptId, runId);
+    if (
+      !active ||
+      active.call.version !== call.version ||
+      active.call.checksum !== call.checksum ||
+      (active.call.sourceRevision ?? 0) !== (call.sourceRevision ?? 0)
+    )
+      throw new Error("PROCESSING_SUPERSEDED");
+    const body = Buffer.from(await request.clone().arrayBuffer());
+    let model = analysisModel();
+    if (stage === "transcription") {
+      const form = await request.clone().formData(),
+        file = form.get("file");
+      if (
+        !(file instanceof File) ||
+        createHash("sha256")
+          .update(Buffer.from(await file.arrayBuffer()))
+          .digest("hex") !== call.checksum
+      )
+        throw new Error("UPLOAD_CHECKSUM_MISMATCH");
+      model = String(form.get("model"));
+    }
+    const previous = call.version;
+    call.providerDispatches = [
+      ...(call.providerDispatches ?? []),
+      {
+        stage,
+        model,
+        requestHash: createHash("sha256").update(body).digest("hex"),
+        sourceHash: call.checksum!,
+        sourceRevision: call.sourceRevision ?? 0,
+        at: new Date().toISOString(),
+        deploymentRevision: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+      },
+    ];
+    call.version++;
+    if (call.pendingExtraction?.expectedVersion === previous)
+      call.pendingExtraction.expectedVersion = call.version;
+    if (!(await active.repo.put(call, previous)))
+      throw new Error("PROCESSING_SUPERSEDED");
+  };
+}
 async function transcriptionStep(
   callId: string,
   attemptId?: string,
@@ -81,7 +134,7 @@ async function transcriptionStep(
   if (call.errorCode === "UPLOAD_PENDING") return false;
   if (call.segments.length) return true;
   try {
-    if (!process.env.GROQ_API_KEY) throw new Error("AI_NOT_CONFIGURED");
+    if (!aiConfigured()) throw new Error("AI_NOT_CONFIGURED");
     const previous = call.version;
     call.status = "transcribing";
     call.version++;
@@ -98,10 +151,9 @@ async function transcriptionStep(
     const beforeProvider = await ownedCall(callId, attemptId, runId);
     if (!beforeProvider || beforeProvider.call.version !== call.version)
       return false;
-    const transcript = await provider().transcribe(
-      bytes,
-      call.sourcePath!.split(".").at(-1)!,
-    );
+    const transcript = await createProvider({
+      beforeDispatch: reserveDispatch(call, "transcription", attemptId, runId),
+    }).transcribe(bytes, call.sourcePath!.split(".").at(-1)!, call.durationMs);
     if (transcript.durationMs > 3_600_000)
       throw new Error("RECORDING_TOO_LONG");
     call.transcriptCompleteness = "unverified";
@@ -125,7 +177,7 @@ async function transcriptionStep(
     call.status = "analyzing";
     call.errorCode = transcript.complete ? null : "TRANSCRIPT_UNCERTAIN";
     call.version++;
-    const saved = await repo.put(call, previous + 1);
+    const saved = await repo.put(call, call.version - 1);
     if (!saved) {
       const { data: deleted } = await client
         .from("deletion_tombstones")
@@ -183,9 +235,9 @@ async function analysisStep(
         pending.output.contract as
           typeof STAGED_CONTRACT | typeof INDEXED_CONTRACT,
       ) &&
-      pending.output.model === "openai/gpt-oss-120b";
-    const stagedProvider = new GroqProvider({
-      apiKey: process.env.GROQ_API_KEY,
+      pending.output.model === analysisModel();
+    const stagedProvider = createProvider({
+      beforeDispatch: reserveDispatch(call, "analysis", attemptId, runId),
       cachedExtraction: reusable ? pending.output : undefined,
       saveExtraction: async (output) => {
         const active = await ownedCall(callId, attemptId, runId);
@@ -283,7 +335,10 @@ async function safeFailure(
   }
   if (
     providerTransient &&
-    stepAttempt <= providerRetryLimit(process.env.GROQ_WORKFLOW_RETRIES)
+    stepAttempt <=
+      (selectedProvider() === "gemini"
+        ? 0
+        : providerRetryLimit(process.env.GROQ_WORKFLOW_RETRIES))
   )
     throw new RetryableError("PROVIDER_TEMPORARILY_UNAVAILABLE", {
       retryAfter: "1m",
@@ -301,6 +356,7 @@ async function safeFailure(
     "RECORDING_TOO_LONG",
     "SANITIZED_MEDIA_FAILED",
     "SOURCE_EXCERPT_LIMIT",
+    "AUDIO_REQUEST_TOO_LARGE",
   ];
   const code = providerTransient
     ? "PROVIDER_TEMPORARILY_UNAVAILABLE"

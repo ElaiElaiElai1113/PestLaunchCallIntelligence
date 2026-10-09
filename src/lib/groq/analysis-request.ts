@@ -16,6 +16,18 @@ import {
   extractionSchema,
   scoringSchema,
 } from "./staged-contract";
+export type RequestLimits = {
+  maxBytes: number;
+  maxEstimatedTotalTokens: number;
+};
+export const GROQ_REQUEST_LIMITS: RequestLimits = {
+  maxBytes: 12000,
+  maxEstimatedTotalTokens: 8000,
+};
+export const GEMINI_REQUEST_LIMITS: RequestLimits = {
+  maxBytes: 35000,
+  maxEstimatedTotalTokens: 20000,
+};
 export function rubricGuide() {
   const purposes: Record<string, string[]> = {},
     guidance: Record<string, string> = {},
@@ -33,11 +45,28 @@ export function rubricGuide() {
 export function buildAnalysisRequest(
   segments: Segment[],
   context: { transcriptComplete: boolean },
+  limits: RequestLimits = GROQ_REQUEST_LIMITS,
 ) {
   try {
-    const built = requestFor(segments, context, "extraction", "unknown");
+    const built = requestFor(
+      segments,
+      context,
+      "extraction",
+      "unknown",
+      false,
+      undefined,
+      limits,
+    );
     for (const purpose of ["sales", "general", "retention"] as const)
-      requestFor(segments, context, "scoring", purpose);
+      requestFor(
+        segments,
+        context,
+        "scoring",
+        purpose,
+        false,
+        undefined,
+        limits,
+      );
     return built;
   } catch (error) {
     if (
@@ -45,9 +74,17 @@ export function buildAnalysisRequest(
       error.message !== "ANALYSIS_BUDGET_EXCEEDED"
     )
       throw error;
-    const built = requestFor(segments, context, "extraction", "unknown", true);
+    const built = requestFor(
+      segments,
+      context,
+      "extraction",
+      "unknown",
+      true,
+      undefined,
+      limits,
+    );
     for (const purpose of ["sales", "general", "retention"] as const)
-      buildScoringRequests(segments, context, purpose);
+      buildScoringRequests(segments, context, purpose, limits);
     return built;
   }
 }
@@ -55,25 +92,43 @@ export function buildScoringRequest(
   segments: Segment[],
   context: { transcriptComplete: boolean },
   purpose: Purpose,
+  limits: RequestLimits = GROQ_REQUEST_LIMITS,
 ) {
   try {
-    return requestFor(segments, context, "scoring", purpose);
+    return requestFor(
+      segments,
+      context,
+      "scoring",
+      purpose,
+      false,
+      undefined,
+      limits,
+    );
   } catch (error) {
     if (
       !(error instanceof Error) ||
       error.message !== "ANALYSIS_BUDGET_EXCEEDED"
     )
       throw error;
-    return requestFor(segments, context, "scoring", purpose, true);
+    return requestFor(
+      segments,
+      context,
+      "scoring",
+      purpose,
+      true,
+      undefined,
+      limits,
+    );
   }
 }
 export function buildScoringRequests(
   segments: Segment[],
   context: { transcriptComplete: boolean },
   purpose: Purpose,
+  limits: RequestLimits = GROQ_REQUEST_LIMITS,
 ) {
   try {
-    return [buildScoringRequest(segments, context, purpose)];
+    return [buildScoringRequest(segments, context, purpose, limits)];
   } catch (error) {
     if (
       !(error instanceof Error) ||
@@ -95,6 +150,7 @@ export function buildScoringRequests(
               purpose,
               true,
               ids.slice(offset, offset + size),
+              limits,
             ),
           );
           offset += size;
@@ -121,6 +177,7 @@ function requestFor(
   purpose: Purpose,
   indexed = false,
   selectedIds?: string[],
+  limits: RequestLimits = GROQ_REQUEST_LIMITS,
 ) {
   let schema = z.toJSONSchema(
     stage === "extraction"
@@ -251,7 +308,10 @@ function requestFor(
     estimatedTotalTokens:
       estimatedInputTokens + (request.max_completion_tokens ?? 0),
   };
-  if (bytes > 12000 || budget.estimatedTotalTokens > 8000)
+  if (
+    bytes > limits.maxBytes ||
+    budget.estimatedTotalTokens > limits.maxEstimatedTotalTokens
+  )
     throw new Error("ANALYSIS_BUDGET_EXCEEDED", {
       cause: {
         ...budget,

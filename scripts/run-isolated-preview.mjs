@@ -21,6 +21,8 @@ const child = spawn(
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",
       SUPABASE_SECRET_KEY: "",
       GROQ_API_KEY: "",
+      GEMINI_API_KEY: "",
+      AI_PROVIDER: "groq",
       REAL_CALL_PROCESSING_ENABLED: "false",
       APP_ORIGIN: "http://127.0.0.1:3001",
       PESTLAUNCH_QA_DIST_DIR: ".private/qa/next",

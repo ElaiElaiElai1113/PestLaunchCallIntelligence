@@ -39,6 +39,10 @@ import {
 } from "@/lib/domain/processing-attempt";
 import { api, errorText, useWorkspace } from "./workspace-shell";
 import {
+  GEMINI_REQUEST_LIMITS,
+  GROQ_REQUEST_LIMITS,
+} from "@/lib/groq/analysis-request";
+import {
   GradeBadge,
   StatusBadge,
   time,
@@ -150,8 +154,16 @@ export function CallDetail({ id }: { id: string }) {
     score = call.score;
   const current = analysisCurrent(call);
   const pending = pendingProcessing(call);
-  const recovery = analysisRecovery(call, session.processingEnabled);
-  const retryInput = providerInputAdmission(call, session.processingEnabled);
+  const limits =
+    session.analysisProvider === "gemini"
+      ? GEMINI_REQUEST_LIMITS
+      : GROQ_REQUEST_LIMITS;
+  const recovery = analysisRecovery(call, session.processingEnabled, limits);
+  const retryInput = providerInputAdmission(
+    call,
+    session.processingEnabled,
+    limits,
+  );
   const waitingForAnalysis =
     !current &&
     call.segments.length > 0 &&

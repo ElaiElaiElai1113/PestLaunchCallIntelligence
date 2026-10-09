@@ -1,3 +1,4 @@
+import { aiConfigured, selectedRequestLimits } from "@/lib/server/ai-provider";
 import { start } from "workflow/api";
 import { processCall } from "@/workflows/process-call";
 import { Repository } from "@/lib/server/repository";
@@ -19,11 +20,11 @@ export async function POST(
     checkOrigin(request);
     const identity = await requireIdentity();
     requireOwner(identity);
-    if (!process.env.GROQ_API_KEY) throw new AppError("AI_NOT_CONFIGURED", 503);
+    if (!aiConfigured()) throw new AppError("AI_NOT_CONFIGURED", 503);
     const repo = new Repository(identity),
       call = await repo.get((await context.params).callId);
     if (!retryAvailable(call)) throw new AppError("RETRY_UNAVAILABLE");
-    const input = providerInputAdmission(call, true);
+    const input = providerInputAdmission(call, true, selectedRequestLimits());
     if (!input.eligible)
       throw new AppError(input.blockedReason ?? "RETRY_UNAVAILABLE", 400);
     try {
