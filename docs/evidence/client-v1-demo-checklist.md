@@ -24,6 +24,6 @@ Reconciled on 9 October against the original assignment and dated evidence. Chec
 
 ## Additional limits
 
-Automatic diarization/redaction, full twenty-call benchmarking, long-call chunking, physical-device acceptance, deeper hosted concurrency and production-scale retention remain unverified. These are not invented minimum assignment requirements. Manual review can resolve uncertainty; the demo is still reviewer-assisted and hosted customer uploads remain disabled.
+Automatic diarization/redaction, full twenty-call benchmarking, long-call chunking, physical-device acceptance, deeper hosted concurrency and production-scale retention remain unverified. These are not invented minimum assignment requirements. Manual review can resolve uncertainty; the demo is still reviewer-assisted. The human enabled hosted privacy-attested customer uploads for testing; upload admission is verified, while new real-source accuracy remains pending.
 
 Historical closed phases/caps/artifacts/stopped locks stay immutable. Review-chat messaging stays stopped. This checklist is not completion evidence by itself; exact verification belongs in docs/evidence/progress.md.
