@@ -2,7 +2,7 @@
 
 ## Current verified state — 9 October 2026
 
-The dedicated app is hosted at https://pestlaunch-call-intelligence.vercel.app on the user's selected personal projects scope. The human chose Hobby specifically for this testing task; no paid upgrade or Setterlun change occurred. Production deployment identifier `dpl_FhYD9jm9NKsrYXMtU8cGza6FyEeT` contains application `2b7f9fa`; the backend scoring repair was validated on `37d6cb2`, followed by a history-label copy change. Current evidence controls acceptance claims.
+The dedicated app is hosted at https://pestlaunch-call-intelligence.vercel.app on the user's selected personal projects scope. The human chose Hobby specifically for this testing task; no paid upgrade or Setterlun change occurred. Production deployment identifier `dpl_HNRMNE94dfoLS7epTPdKcVYZq6eP` contains application `4002bbb`, including transcript admission and Retention evidence guards. Existing hosted General playback/results/access were rechecked after deployment; no new uploaded-call acceptance is inferred for these latest guards. Current evidence controls acceptance claims.
 
 Dedicated Supabase `qwrukdqtuhqkbrbtnekz` remains on Free. The exposed server key was revoked/replaced by the human and the replacement verified privately. Exact registered-path upload policy is applied. The SQL-provisioned project lacks migration history; this does not imply its schema is missing. Never blindly rerun initial migrations or backfill unverified history.
 
