@@ -826,8 +826,7 @@ export function CallDetail({ id }: { id: string }) {
                         </div>
                       ))}
                       <p className="fine">
-                        Original {call.mode === "sample" ? "sample" : "model"}{" "}
-                        assessment:{" "}
+                        First saved assessment:{" "}
                         {call.originalAnalysis
                           ? call.originalAnalysis.assessments.filter(
                               (x) => x.status === "passed",
