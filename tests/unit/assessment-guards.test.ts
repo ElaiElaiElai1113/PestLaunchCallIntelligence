@@ -21,6 +21,38 @@ const customer: Segment = {
   text: "Yes please",
   speaker: "customer",
 };
+it("does not turn a generic return visit into an inspection booking", () => {
+  const original = analysis();
+  const visit = {
+    ...employee,
+    text: "Would you like a return visit on Friday afternoon?",
+  };
+  original.outcomes.inspectionBooked = {
+    value: true,
+    evidence: {
+      segmentIds: [visit.id, customer.id],
+      quote: visit.text + " " + customer.text,
+    },
+  };
+  const result = guardAssessment(original, [visit, customer], {
+    transcriptComplete: true,
+  });
+  expect(result.outcomes.inspectionBooked.value).toBeNull();
+  expect(original.outcomes.inspectionBooked.value).toBe(true);
+  expect(result.reviewIssues).toContainEqual({
+    id: "outcome:inspectionBooked",
+    kind: "outcome",
+    target: "inspectionBooked",
+    message: "Inspection booking needs explicit source evidence.",
+  });
+  visit.text = "Would you like an inspection on Friday afternoon?";
+  original.outcomes.inspectionBooked.evidence.quote =
+    visit.text + " " + customer.text;
+  expect(
+    guardAssessment(original, [visit, customer], { transcriptComplete: true })
+      .outcomes.inspectionBooked.value,
+  ).toBe(true);
+});
 it("does not turn employee payment terms into a customer payment promise", () => {
   const terms = {
     ...employee,
@@ -46,7 +78,10 @@ it("does not turn employee payment terms into a customer payment promise", () =>
     message: "Payment commitment needs review.",
   });
   expect(original.followups[0].state).toBe("promised");
-  const capability = { ...customer, text: "I can pay, but I have not agreed yet." };
+  const capability = {
+    ...customer,
+    text: "I can pay, but I have not agreed yet.",
+  };
   original.followups[0].evidence.segmentIds.push(capability.id);
   original.followups[0].evidence.quote += " " + capability.text;
   expect(

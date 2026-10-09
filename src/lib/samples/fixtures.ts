@@ -174,7 +174,13 @@ export function sampleCall(key: string, id: string): CallRecord {
     ]),
   ) as Analysis["outcomes"];
   if (key === "inspection")
-    outcomes.inspectionBooked = { value: true, evidence: evidence(7) };
+    outcomes.inspectionBooked = {
+      value: true,
+      evidence: {
+        segmentIds: [segments[6].id, segments[7].id],
+        quote: `${segments[6].text} ${segments[7].text}`,
+      },
+    };
   if (key === "one-time") {
     outcomes.treatmentAccepted = { value: true, evidence: evidence(7) };
     outcomes.quoteProvided = { value: true, evidence: evidence(6) };

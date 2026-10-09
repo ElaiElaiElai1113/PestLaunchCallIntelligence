@@ -101,6 +101,19 @@ export function guardAssessment(
       issue(`followup:${index}`, "followup", String(index), message);
     }
   });
+  const inspection = effective.outcomes.inspectionBooked;
+  if (
+    inspection?.value === true &&
+    inspection.evidence.segmentIds.length > 0 &&
+    !inspection.evidence.segmentIds.some((id) =>
+      /\binspect(?:ion|ions|ing)?\b/i.test(lookup.get(id)?.text ?? ""),
+    )
+  ) {
+    inspection.value = null;
+    const message = "Inspection booking needs explicit source evidence.";
+    effective.reviewReasons.push(message);
+    issue("outcome:inspectionBooked", "outcome", "inspectionBooked", message);
+  }
   for (const [key, outcome] of Object.entries(effective.outcomes)) {
     if (outcome.value === null) continue;
     const { segmentIds, quote } = outcome.evidence;

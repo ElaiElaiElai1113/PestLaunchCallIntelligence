@@ -130,7 +130,7 @@ function requestFor(
       : " Scan every employee turn before marking a checkpoint missed. Interpret responsive I understand as acknowledgement per the manual. Evaluate consensus separately from closing; do not award both for a booking request alone. Suggested improvements describe communication skills; do not supply company incentives, fees, guarantees, or unstated appointment details.";
   if (stage === "extraction")
     request.messages[0].content +=
-      " Purpose: sales is purchasing/quoting new treatment or inspection; general is existing-service support, scheduling or billing; retention requires an explicit cancellation/quit intent or attempt to save a cancelling account. A return visit or existing customer alone is never retention.";
+      " Purpose: sales is purchasing/quoting new treatment or inspection; general is existing-service support, scheduling or billing; retention requires an explicit cancellation/quit intent or attempt to save a cancelling account. A return visit or existing customer alone is never retention. A generic return/service visit is not an inspection: inspectionBooked requires explicit inspection wording in its selected source evidence.";
   const bytes = new TextEncoder().encode(
     JSON.stringify({ messages: request.messages, schema }),
   ).byteLength;
