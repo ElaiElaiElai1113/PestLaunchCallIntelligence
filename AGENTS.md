@@ -2,6 +2,8 @@
 
 ## Scope and execution
 
+- Latest human direction (10 October): AI should assign Employee/Customer labels by default and reviewers correct exceptions. Preserve original ASR/proposals and source history; identify inferred labels as AI, keep source-quality/completeness truth and official-grade guards. Never overwrite human-reviewed labels. Source changes increment revision and invalidate old analyses. Current aggregate reservation cap was explicitly raised to24 on Free; continue the same ledger without resetting history. New uploads now require up to4 effects (audio, speaker assignment, extraction, scoring), potentially more for rubric groups; use actual request builders to reserve the whole maximum before dispatch. The human-uploaded CALL005 screenshot is also a requested current repair/test target. This supersedes draft-only label application, not verification truth.
+
 - Latest human direction (10 October local): use Gemini Free for this demo and use the downloaded real calls directly for live testing; no fictional live-provider tests in this phase. User accepts Free-tier data handling for the demo. Delete current hosted test records and replace with Downloads/CALL014 and CALL017; CALL013 remains excluded as an agent test source. Keep recordings/keys/content private and original local Downloads unchanged. Preserve historical stopped ledgers/caps/locks; new provider effects count against the existing aggregate12reservation phase. No paid billing/fallback, subagents, other projects or review-chat messages. Gemini selection supersedes Groq-only/ZDR provider prerequisites for these authorized demo effects, not source truth or official grade eligibility.
 
 - Latest human direction (9 October): remove application privacy features and leave recording choice to operator discretion. Remove upload privacy checkboxes, automatic identifier-based holds and global/per-record privacy vetoes. Preserve private storage/auth/RLS, Groq ZDR/no-training, source checksums/file validation, original evidence/history, uncertainty/role/quality review and Free-only costs. Recover Call014's source binding without altering its transcript or claiming verification/analysis. CALL013 is not an agent test target. Historical phase/cap/lock boundaries remain unchanged. This supersedes the prior application-privacy-hold directions below.
@@ -59,4 +61,5 @@ The following dated bullets preserve historical phase boundaries. Those phases r
 - Review → fix → review your owned revision, with at most three repair rounds for a persistent issue before reporting its concrete cause.
 - No completion claim from fixtures, screenshots, configured keys or a successful deploy alone. The deployed app must process a newly uploaded recording under an authorized reviewer account.
 - Do not call a simulated pipeline working AI. Missing credentials/privacy/cost/account selection are specific integration blockers; finish the independent application work first.
+
 
