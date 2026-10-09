@@ -114,18 +114,12 @@ export default function DataControls() {
             <ShieldCheck size={20} />
           </span>
           <div>
-            <strong>Real-call privacy gate</strong>
+            <strong>Private workspace</strong>
             <p>
-              {session.processingEnabled
-                ? "Enabled by the workspace administrator. Recordings still require private preflight."
-                : "Real recordings stay disabled until provider retention settings and private redaction are verified."}
+              Only invited workspace members can access recordings and results.
             </p>
           </div>
-          <span
-            className={`badge ${session.processingEnabled ? "green" : "neutral"}`}
-          >
-            {session.processingEnabled ? "Enabled" : "Held"}
-          </span>
+          <span className="badge green">Protected</span>
         </div>
       </section>
       <section className="panel settings-panel">

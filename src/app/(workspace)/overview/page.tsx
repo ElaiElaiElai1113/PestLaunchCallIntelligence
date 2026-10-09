@@ -117,7 +117,7 @@ export default function Overview() {
                       {call.analysis?.reviewReasons[0]
                         ?.replace("Checkpoint needs review: ", "Confirm ")
                         .replaceAll("_", " ") ||
-                        "Privacy needs a manual check."}
+                        "Recording source needs review."}
                     </p>
                   </div>
                   <ArrowRight size={16} />

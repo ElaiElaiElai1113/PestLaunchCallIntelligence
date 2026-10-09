@@ -17,8 +17,6 @@ export async function POST(
       body = issueReviewSchema.parse(await request.json());
     if (call.version !== body.version) throw new AppError("STALE_REVIEW", 409);
     if (activeProcessing(call)) throw new AppError("PROCESSING_ACTIVE", 409);
-    if (call.status === "privacy_review")
-      throw new AppError("PRIVACY_APPROVAL_REQUIRED", 400);
     if (!analysisCurrent(call)) throw new AppError("STALE_ANALYSIS", 409);
     let next;
     try {

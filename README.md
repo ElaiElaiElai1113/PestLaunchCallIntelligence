@@ -10,7 +10,7 @@ The saved fictional service call was uploaded through the deployed browser, tran
 
 Playback, evidence seeking, reload, source/manual review history, stale-review rejection, foreign-workspace denial and deletion of the owned failed fictional test case passed. Normal-size call repair adds indexed evidence and scoring groups that each see the complete dialogue; its live-provider/new-upload accuracy remains pending. Exact test totals and local versus hosted acceptance are recorded separately in [the evidence ledger](docs/evidence/progress.md).
 
-This is a reviewed-source demo, not completed client-task acceptance. The approved Drive CALL-001 excerpt was tested separately through the authenticated application; its incomplete source and unknown roles correctly withheld an official grade. Call14 exposed a request-size failure and an incorrect fictional upload label; it is correctly held as real while privacy preparation proceeds. The human subsequently enabled hosted customer-call testing with privacy-attested uploads. Existing per-record holds remain; Global Groq ZDR was reverified on Free. The accepted demo remains fictional. Do not submit the task as complete before representative supplied-call accuracy is verified.
+This is a reviewed-source demo, not completed client-task acceptance. The approved Drive CALL-001 excerpt was tested separately through the authenticated application; its incomplete source and unknown roles correctly withheld an official grade. The human removed privacy checkboxes and automatic/per-record privacy holds, leaving recording choice to operator discretion. Source checksum/file validation and independent transcript/role review remain. Private storage/login and Global Groq ZDR protect data; the app does not automatically redact or certify privacy. Call14's existing source identity is being recovered without changing its transcript. The accepted demo remains fictional. Do not submit the task as complete before representative supplied-call accuracy is verified.
 
 ## How to demonstrate it
 
@@ -34,7 +34,7 @@ Use [the Loom walkthrough](docs/demo-script.md) and [deployment runbook](docs/de
 
 ## Local setup
 
-Use Node 24, install dependencies with `npm ci`, and copy `.env.example` into ignored `.env.local`. Configure only the dedicated Supabase project, public publishable key, server-only secret, Groq key and exact `APP_ORIGIN`. Never expose server credentials through `NEXT_PUBLIC_` or logs. Keep `REAL_CALL_PROCESSING_ENABLED=false` for fictional testing. Set `GROQ_WORKFLOW_RETRIES=0` for bounded verification.
+Use Node 24, install dependencies with `npm ci`, and copy `.env.example` into ignored `.env.local`. Configure only the dedicated Supabase project, public publishable key, server-only secret, Groq key and exact `APP_ORIGIN`. Never expose server credentials through `NEXT_PUBLIC_` or logs. Recording admission no longer depends on the legacy `REAL_CALL_PROCESSING_ENABLED` variable. Set `GROQ_WORKFLOW_RETRIES=0` for bounded verification; normal local/CI harnesses override provider/backend keys empty.
 
 `npm run dev` serves the authenticated application on loopback. Invited users need a workspace membership. For local Supabase, use Docker/Supabase CLI and the checked-in migrations; `npm run db:seed` refuses cloud targets. Do not blindly rerun an initial schema against an already provisioned hosted project.
 

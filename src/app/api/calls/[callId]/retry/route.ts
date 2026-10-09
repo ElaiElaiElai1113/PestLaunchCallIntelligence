@@ -22,16 +22,8 @@ export async function POST(
     if (!process.env.GROQ_API_KEY) throw new AppError("AI_NOT_CONFIGURED", 503);
     const repo = new Repository(identity),
       call = await repo.get((await context.params).callId);
-    if (
-      call.sourceKind !== "synthetic" &&
-      process.env.REAL_CALL_PROCESSING_ENABLED !== "true"
-    )
-      throw new AppError("PRIVACY_APPROVAL_REQUIRED", 403);
     if (!retryAvailable(call)) throw new AppError("RETRY_UNAVAILABLE");
-    const input = providerInputAdmission(
-      call,
-      process.env.REAL_CALL_PROCESSING_ENABLED === "true",
-    );
+    const input = providerInputAdmission(call, true);
     if (!input.eligible)
       throw new AppError(input.blockedReason ?? "RETRY_UNAVAILABLE", 400);
     try {

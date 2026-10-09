@@ -16,43 +16,38 @@ export function activeProcessing(call: CallRecord) {
 }
 export function sourceReviewBlock(
   call: CallRecord,
-  realAllowed: boolean,
+  ...legacyPrivacyArguments: boolean[]
 ): string | null {
   if (activeProcessing(call)) return "PROCESSING_ACTIVE";
-  return preparedTranscriptBlock(call, realAllowed);
+  void legacyPrivacyArguments;
+  return preparedTranscriptBlock(call);
 }
 // Provider-input checks exclude run state; pending retry ownership is checked
 // separately and must not be treated as a request to review active source.
 export function preparedTranscriptBlock(
   call: CallRecord,
-  realAllowed: boolean,
+  ...legacyPrivacyArguments: boolean[]
 ): string | null {
-  if (
-    call.status === "privacy_review" ||
-    [
-      "UPLOAD_PENDING",
-      "PRIVACY_APPROVAL_REQUIRED",
-      "PRIVACY_REVIEW_REQUIRED",
-    ].includes(call.errorCode ?? "")
-  )
-    return "PRIVACY_APPROVAL_REQUIRED";
+  void legacyPrivacyArguments;
+  if (call.errorCode === "UPLOAD_PENDING") return "UPLOAD_PENDING";
   if (!call.segments.length) return "TRANSCRIPT_REQUIRED";
   if (call.mode === "sample") return null;
-  const preparation = call.sourcePreparation;
+  const preparation =
+    call.sourceBinding ??
+    (call.sourcePreparation
+      ? {
+          checksum: call.sourcePreparation.checksum,
+          boundBy: call.sourcePreparation.attestedBy,
+          at: call.sourcePreparation.at,
+        }
+      : undefined);
   if (
     !preparation ||
     !call.checksum ||
     preparation.checksum !== call.checksum ||
-    !preparation.attestedBy ||
+    !preparation.boundBy ||
     !preparation.at ||
     !call.sanitizedPath?.startsWith(`${call.workspaceId}/${call.id}.`)
-  )
-    return "SOURCE_PREPARATION_REQUIRED";
-  if (call.sourceKind !== "synthetic" && !realAllowed)
-    return "PRIVACY_APPROVAL_REQUIRED";
-  if (
-    preparation.kind !==
-    (call.sourceKind === "synthetic" ? "synthetic" : "privately_redacted")
   )
     return "SOURCE_PREPARATION_REQUIRED";
   return null;

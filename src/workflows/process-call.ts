@@ -7,7 +7,6 @@ import {
 import { systemRepository } from "@/lib/server/repository";
 import { adminClient } from "@/lib/supabase/server";
 import { GroqProvider } from "@/lib/groq/provider";
-import { privacyRisk } from "@/lib/privacy/preflight";
 import { computeScore } from "@/lib/scoring/engine";
 import { ownsProcessing } from "@/lib/domain/processing-attempt";
 import { claimProcessingAttempt } from "@/lib/jobs/processing-claim";
@@ -79,15 +78,9 @@ async function transcriptionStep(
   const loaded = await ownedCall(callId, attemptId, runId);
   if (!loaded) return false;
   const { repo, call } = loaded;
-  if (call.errorCode === "UPLOAD_PENDING" || call.status === "privacy_review")
-    return false;
+  if (call.errorCode === "UPLOAD_PENDING") return false;
   if (call.segments.length) return true;
   try {
-    if (
-      call.sourceKind !== "synthetic" &&
-      process.env.REAL_CALL_PROCESSING_ENABLED !== "true"
-    )
-      throw new Error("PRIVACY_APPROVAL_REQUIRED");
     if (!process.env.GROQ_API_KEY) throw new Error("AI_NOT_CONFIGURED");
     const previous = call.version;
     call.status = "transcribing";
@@ -115,14 +108,6 @@ async function transcriptionStep(
     call.transcriptReviewReasons = transcript.reviewReasons;
     const latest = await ownedCall(callId, attemptId, runId);
     if (!latest || latest.call.version !== call.version) return false;
-    if (privacyRisk(transcript.segments.map((x) => x.text).join(" "))) {
-      call.status = "privacy_review";
-      call.errorCode = "PRIVACY_REVIEW_REQUIRED";
-      finishAttempt(call, attemptId, runId);
-      call.version++;
-      await repo.put(call, previous + 1);
-      return false;
-    }
     const derivative = `${call.workspaceId}/${call.id}.${call.sourcePath!.split(".").at(-1)!}`;
     const { error: copyError } = await client.storage
       .from("call-sanitized")
@@ -181,11 +166,6 @@ async function analysisStep(
   }
   if (!call.segments.length) return { callId };
   try {
-    if (
-      call.sourceKind !== "synthetic" &&
-      process.env.REAL_CALL_PROCESSING_ENABLED !== "true"
-    )
-      throw new Error("PRIVACY_APPROVAL_REQUIRED");
     const sourceRevision = call.sourceRevision ?? 0;
     const context = assessmentContext(call);
     const inputHash = createHash("sha256")
@@ -213,9 +193,7 @@ async function analysisStep(
           !active ||
           active.call.version !== call.version ||
           (active.call.sourceRevision ?? 0) !== sourceRevision ||
-          active.call.status === "privacy_review" ||
-          (active.call.sourceKind !== "synthetic" &&
-            process.env.REAL_CALL_PROCESSING_ENABLED !== "true")
+          active.call.errorCode === "UPLOAD_PENDING"
         )
           throw new Error("PROCESSING_SUPERSEDED");
         const previous = call.version;
@@ -237,9 +215,7 @@ async function analysisStep(
           !active ||
           active.call.version !== call.version ||
           (active.call.sourceRevision ?? 0) !== sourceRevision ||
-          active.call.status === "privacy_review" ||
-          (active.call.sourceKind !== "synthetic" &&
-            process.env.REAL_CALL_PROCESSING_ENABLED !== "true")
+          active.call.errorCode === "UPLOAD_PENDING"
         )
           throw new Error("PROCESSING_SUPERSEDED");
       },

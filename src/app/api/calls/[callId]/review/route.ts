@@ -28,8 +28,6 @@ export async function POST(
     if (call.version !== decision.version)
       throw new AppError("STALE_REVIEW", 409);
     if (activeProcessing(call)) throw new AppError("PROCESSING_ACTIVE", 409);
-    if (call.status === "privacy_review")
-      throw new AppError("PRIVACY_APPROVAL_REQUIRED", 400);
     if (!call.analysis) throw new AppError("NO_ANALYSIS");
     if (!analysisCurrent(call)) throw new AppError("STALE_ANALYSIS", 409);
     const checkpoint = call.analysis.assessments.find(
@@ -113,10 +111,7 @@ export async function POST(
         call.mode === "live" &&
         (decision.status === "passed" || decision.status === "missed")
       ) {
-        const blocked = sourceReviewBlock(
-          call,
-          process.env.REAL_CALL_PROCESSING_ENABLED === "true",
-        );
+        const blocked = sourceReviewBlock(call, true);
         if (blocked) throw new AppError(blocked, 400);
       }
       guarded.reviewReasons = [

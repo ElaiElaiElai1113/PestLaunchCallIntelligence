@@ -156,12 +156,7 @@ export function CallDetail({ id }: { id: string }) {
     !current &&
     call.segments.length > 0 &&
     !activeProcessing(call) &&
-    call.status !== "privacy_review" &&
-    ![
-      "UPLOAD_PENDING",
-      "PRIVACY_APPROVAL_REQUIRED",
-      "PRIVACY_REVIEW_REQUIRED",
-    ].includes(call.errorCode ?? "");
+    call.errorCode !== "UPLOAD_PENDING";
   const retryControl =
     session.identity.role === "owner" &&
     retryAvailable(call) &&
@@ -292,7 +287,7 @@ export function CallDetail({ id }: { id: string }) {
         <div className="recording-description">
           <strong>
             {media
-              ? "Sanitized recording"
+              ? "Recording"
               : call.mode === "sample"
                 ? "Fictional transcript preview"
                 : "Recording status"}
@@ -302,9 +297,7 @@ export function CallDetail({ id }: { id: string }) {
               ? "Select any evidence timestamp to jump to it."
               : call.mode === "sample"
                 ? "Text-only fixture. No recorded customer audio."
-                : call.status === "privacy_review"
-                  ? "Playback is held for privacy review."
-                  : "Playback appears after processing and privacy checks."}
+                : "Playback appears after the recording source is ready."}
           </span>
         </div>
         {media && !sourceReview && (
@@ -355,9 +348,7 @@ export function CallDetail({ id }: { id: string }) {
           </div>
           <button
             className="button"
-            disabled={
-              activeProcessing(call) || call.status === "privacy_review"
-            }
+            disabled={activeProcessing(call)}
             onClick={() => {
               audio.current?.pause();
               setSourceReview(true);
@@ -475,11 +466,11 @@ export function CallDetail({ id }: { id: string }) {
                 : call.errorCode === "AI_NOT_CONFIGURED"
                   ? "Recording stored. AI is not configured."
                   : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
-                    ? "Recording held for privacy approval."
+                    ? "Recording source needs review."
                     : call.status === "failed"
                       ? "This recording needs another try"
                       : call.status === "privacy_review"
-                        ? "A private check is needed"
+                        ? "Recording source needs review"
                         : "Your recording is being processed"}
           </h2>
           <p>
@@ -490,9 +481,9 @@ export function CallDetail({ id }: { id: string }) {
                 : call.errorCode === "AI_NOT_CONFIGURED"
                   ? "The recording is stored privately. Add the server AI key later, then resume analysis. No transcript or result has been fabricated."
                   : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
-                    ? "The recording stays private and will not be sent to AI until privacy approval is enabled."
+                    ? "The transcript is preserved. Review its source before starting analysis."
                     : call.status === "privacy_review"
-                      ? "Re-upload a privately verified, redacted recording before analysis can continue. No transcript is published."
+                      ? "Review the recording source before starting analysis."
                       : call.errorCode === "UPLOAD_PENDING"
                         ? "The recording upload has not been finalized. Re-select the file to resume."
                         : "You can leave this screen. The result will stay in your call log."}

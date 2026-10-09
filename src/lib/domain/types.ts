@@ -114,6 +114,7 @@ export type CallRecord = {
     at: string;
     kind: "synthetic" | "privately_redacted";
   };
+  sourceBinding?: { checksum: string; boundBy: string; at: string };
   sourceReviews?: {
     id: string;
     sourceRevision: number;

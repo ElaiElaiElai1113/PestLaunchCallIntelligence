@@ -17,11 +17,6 @@ export async function POST(request: Request) {
     if (identity.mode !== "live")
       throw new AppError("BACKEND_NOT_CONFIGURED", 503);
     const input = uploadSchema.parse(await request.json());
-    if (
-      input.sourceKind === "real" &&
-      process.env.REAL_CALL_PROCESSING_ENABLED !== "true"
-    )
-      throw new AppError("PRIVACY_APPROVAL_REQUIRED", 403);
     const repo = new Repository(identity);
     const duplicate = (await repo.list()).find(
       (x) => x.checksum === input.checksum,
@@ -48,12 +43,10 @@ export async function POST(request: Request) {
       sourcePath: path,
       sanitizedPath: null,
       checksum: input.checksum,
-      sourcePreparation: {
+      sourceBinding: {
         checksum: input.checksum,
-        attestedBy: identity.userId,
+        boundBy: identity.userId,
         at: new Date().toISOString(),
-        kind:
-          input.sourceKind === "synthetic" ? "synthetic" : "privately_redacted",
       },
       errorCode: "UPLOAD_PENDING",
       segments: [],

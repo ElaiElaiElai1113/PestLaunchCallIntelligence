@@ -17,10 +17,7 @@ export async function POST(
       repo = new Repository(identity),
       call = await repo.get((await context.params).callId);
     const input = sourceReviewSchema.parse(await request.json());
-    const blocked = sourceReviewBlock(
-      call,
-      process.env.REAL_CALL_PROCESSING_ENABLED === "true",
-    );
+    const blocked = sourceReviewBlock(call);
     if (blocked)
       throw new AppError(blocked, blocked === "PROCESSING_ACTIVE" ? 409 : 400);
     let next;

@@ -279,14 +279,13 @@ it("a genuinely oversized source cannot dispatch before or after role review", a
   expect(state.model).not.toHaveBeenCalled();
   expect(state.call!.analysis).toBeNull();
 });
-it.each(["reviewer", "privacy", "preparation", "active"])(
+it.each(["reviewer", "preparation", "active"])(
   "first-analysis recovery preserves %s restriction",
   async (kind) => {
     state.call = recoveryCall();
     vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
     state.start.mockResolvedValue({ runId: "not-executed" });
     if (kind === "reviewer") state.identity.role = "reviewer";
-    if (kind === "privacy") state.call.status = "privacy_review";
     if (kind === "preparation") state.call.sanitizedPath = null;
     if (kind === "active") state.call.status = "analyzing";
     expect((await POST(request(state.call.version), context)).status).toBe(

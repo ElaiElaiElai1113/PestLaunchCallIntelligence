@@ -134,7 +134,7 @@ it.each(["flags", "duplicates", "stale"])(
     expect(state.put).not.toHaveBeenCalled();
   },
 );
-it.each(["active", "privacy", "legacy"])(
+it.each(["active", "legacy"])(
   "rejects %s source verification",
   async (kind) => {
     if (kind === "active")
@@ -143,7 +143,6 @@ it.each(["active", "privacy", "legacy"])(
         state: "running",
         runId: "fictional-run",
       };
-    if (kind === "privacy") state.call!.status = "privacy_review";
     if (kind === "legacy") delete state.call!.sourcePreparation;
     expect((await POST(request(), context)).status).toBe(
       kind === "active" ? 409 : 400,

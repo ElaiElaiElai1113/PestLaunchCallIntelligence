@@ -60,7 +60,7 @@ export const ERRORS: Record<string, string> = {
   SOURCE_VERIFICATION_REQUIRED:
     "Review the transcript completeness and quality before awarding this checkpoint.",
   SOURCE_PREPARATION_REQUIRED:
-    "Privately prepare and re-upload this recording before verifying its transcript.",
+    "The recording source could not be validated. Re-upload the recording before reviewing its transcript.",
   INVALID_SOURCE_ROLES:
     "Check the selected transcript segments and speaker roles.",
   INVALID_EVIDENCE: "Select an actual employee statement from this transcript.",
@@ -70,7 +70,7 @@ export const ERRORS: Record<string, string> = {
     "AI is not configured yet. Add the server API key when you are ready.",
   INVALID_REQUEST: "Check the required information and try again.",
   PRIVACY_APPROVAL_REQUIRED:
-    "Real recordings are held until privacy settings have been verified.",
+    "This older recording needs source review before analysis can continue.",
   EVIDENCE_REQUIRED: "A passed checkpoint needs transcript evidence.",
   CHRONOLOGY_REVIEW_REQUIRED:
     "Verify roadmap order against the current source, or choose Unknown while the order remains uncertain.",
@@ -270,7 +270,6 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [file, setFile] = useState<File | null>(null),
-    [sanitized, setSanitized] = useState(false),
     [sourceKind, setSourceKind] = useState(""),
     [rep, setRep] = useState(""),
     [direction, setDirection] = useState(""),
@@ -335,7 +334,6 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
           recordedAt: recordedAt ? new Date(recordedAt).toISOString() : null,
           rep: rep.trim() || null,
           direction: direction || null,
-          sanitized,
           sourceKind,
         }),
       });
@@ -368,10 +366,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
       setBusy(false);
     }
   }
-  const enabled =
-    session.backendConfigured &&
-    (sourceKind === "synthetic" ||
-      (sourceKind === "real" && session.processingEnabled));
+  const enabled = session.backendConfigured && Boolean(sourceKind);
   return (
     <dialog
       ref={dialog}
@@ -460,7 +455,6 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
               value={sourceKind}
               onChange={(e) => {
                 setSourceKind(e.target.value);
-                setSanitized(false);
                 setFile(null);
               }}
             >
@@ -484,7 +478,6 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
               disabled={!sourceKind || busy}
               onChange={(e) => {
                 setFile(e.target.files?.[0] || null);
-                setSanitized(false);
               }}
             />
           </label>
@@ -517,27 +510,15 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
               />
             </label>
           </div>
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={sanitized}
-              onChange={(e) => setSanitized(e.target.checked)}
-            />
-            {sourceKind === "synthetic"
-              ? "This recording contains made-up people and details, not an actual customer call."
-              : "I have privately checked and redacted sensitive information from this recording."}
-          </label>
           {(!enabled || !session.aiConfigured) && (
             <div className="notice">
               <AlertCircle size={17} />
               <p>
-                {sourceKind === "real" && !session.processingEnabled
-                  ? "You can select a file locally; nothing is uploaded yet. Actual client calls remain on hold until privacy preparation and approval are complete. Client-supplied test recordings are actual calls, not fictional examples."
-                  : !sourceKind
-                    ? "Choose whether this is a made-up conversation or an actual customer call."
-                    : !session.aiConfigured
-                      ? "You can upload a fictional recording privately. Analysis waits until the server AI key is added."
-                      : "Recording analysis is held until privacy settings are verified."}
+                {!sourceKind
+                  ? "Choose whether this is a made-up conversation or an actual customer call."
+                  : !session.aiConfigured
+                    ? "You can upload a fictional recording privately. Analysis waits until the server AI key is added."
+                    : "The recording service is unavailable. Try again later."}
               </p>
             </div>
           )}
@@ -548,7 +529,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
             <button
               className="button primary"
               onClick={upload}
-              disabled={!enabled || !file || !sanitized || busy}
+              disabled={!enabled || !file || busy}
             >
               {busy ? (
                 <LoaderCircle className="spin" size={17} />

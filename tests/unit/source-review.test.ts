@@ -99,7 +99,7 @@ it("legacy live source cannot be certified without prepared media/checksum attes
   const next = applySourceReview(call, input, actor);
   expect(next.originalSegmentsProvenance).toBe("legacy_snapshot");
 });
-it.each(["queued", "analyzing", "transcribing", "privacy_review"] as const)(
+it.each(["queued", "analyzing", "transcribing"] as const)(
   "source review is held during %s",
   (status) => {
     const c = sampleCall("service", "fictional-call");

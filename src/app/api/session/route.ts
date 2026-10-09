@@ -14,7 +14,7 @@ export async function GET() {
     return {
       identity,
       aiConfigured: Boolean(process.env.GROQ_API_KEY),
-      processingEnabled: process.env.REAL_CALL_PROCESSING_ENABLED === "true",
+      processingEnabled: true,
       backendConfigured: hasSupabase(),
     };
   });

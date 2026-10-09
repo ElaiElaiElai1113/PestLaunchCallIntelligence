@@ -49,11 +49,11 @@ export function StatusBadge({ call }: { call: CallRecord }) {
         : call.errorCode === "AI_NOT_CONFIGURED"
           ? "Awaiting AI"
           : call.errorCode === "PRIVACY_APPROVAL_REQUIRED"
-            ? "Privacy held"
+            ? "Needs review"
             : call.status === "needs_review"
               ? "Needs review"
               : call.status === "privacy_review"
-                ? "Privacy review"
+                ? "Needs review"
                 : call.status === "queued" &&
                     call.errorCode === "UPLOAD_PENDING"
                   ? "Awaiting upload"
@@ -242,7 +242,6 @@ export function CallLog({ review = false }: { review?: boolean }) {
               {[
                 "ready",
                 "needs_review",
-                "privacy_review",
                 "queued",
                 "transcribing",
                 "analyzing",

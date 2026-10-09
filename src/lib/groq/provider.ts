@@ -201,7 +201,7 @@ export class GroqProvider {
             this.config.waitForHeadroom ??
             ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
           )(waitMs);
-        // Ownership/privacy is rechecked after waiting, immediately before effects.
+        // Ownership/source is rechecked after waiting, immediately before effects.
         await this.config.beforeScoring?.();
         const scored = await client.chat.completions.create(next.request);
         if (

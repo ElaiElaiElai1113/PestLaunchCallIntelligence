@@ -18,6 +18,26 @@ const review = (call: ReturnType<typeof recoveryCall>, unknown = false) =>
     },
     { id: "review", userId: "fictional-reviewer", at: "2026-10-09T00:00:00Z" },
   );
+it("a legacy privacy marker no longer vetoes a source-bound operator recording", () => {
+  const call = recoveryCall();
+  call.sourceKind = "real";
+  call.status = "privacy_review";
+  call.errorCode = "PRIVACY_APPROVAL_REQUIRED";
+  delete call.sourcePreparation;
+  call.sourceBinding = {
+    checksum: call.checksum!,
+    boundBy: "fictional-owner",
+    at: "2026-10-09T00:00:00Z",
+  };
+  expect(analysisRecovery(call, false)).toMatchObject({
+    eligible: true,
+    budget: "admitted",
+  });
+  const before = structuredClone(call);
+  call.sourceBinding.checksum = "b".repeat(64);
+  expect(analysisRecovery(call, false).eligible).toBe(false);
+  expect(before.transcriptCompleteness).not.toBe("verified");
+});
 it("a failed first analysis remains owner-startable after source review without creating a result", () => {
   const call = recoveryCall(),
     next = review(call);
@@ -43,17 +63,13 @@ it("a stale budget error does not block an admissible reviewed source", () => {
     "ANALYSIS_BUDGET_EXCEEDED",
   );
 });
-it.each(["active", "privacy", "preparation", "current"])(
-  "keeps %s guards",
-  (kind) => {
-    const call = recoveryCall();
-    if (kind === "active") call.status = "analyzing";
-    if (kind === "privacy") call.status = "privacy_review";
-    if (kind === "preparation") call.sanitizedPath = null;
-    if (kind === "current") {
-      call.analysis = sampleCall("service", "fictional").analysis;
-      call.analysisSourceRevision = 0;
-    }
-    expect(analysisRecovery(call, false).eligible).toBe(false);
-  },
-);
+it.each(["active", "preparation", "current"])("keeps %s guards", (kind) => {
+  const call = recoveryCall();
+  if (kind === "active") call.status = "analyzing";
+  if (kind === "preparation") call.sanitizedPath = null;
+  if (kind === "current") {
+    call.analysis = sampleCall("service", "fictional").analysis;
+    call.analysisSourceRevision = 0;
+  }
+  expect(analysisRecovery(call, false).eligible).toBe(false);
+});

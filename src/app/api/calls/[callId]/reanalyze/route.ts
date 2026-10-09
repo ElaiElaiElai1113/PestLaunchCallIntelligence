@@ -26,18 +26,12 @@ export async function POST(
     if (call.version !== input.version) throw new AppError("STALE_REVIEW", 409);
     if (!process.env.GROQ_API_KEY) throw new AppError("AI_NOT_CONFIGURED", 503);
     if (call.mode !== "live") throw new AppError("BACKEND_NOT_CONFIGURED", 503);
-    const blocked = sourceReviewBlock(
-      call,
-      process.env.REAL_CALL_PROCESSING_ENABLED === "true",
-    );
+    const blocked = sourceReviewBlock(call);
     if (blocked)
       throw new AppError(blocked, blocked === "PROCESSING_ACTIVE" ? 409 : 400);
     if (analysisCurrent(call))
       throw new AppError("REANALYSIS_UNAVAILABLE", 400);
-    const recovery = analysisRecovery(
-      call,
-      process.env.REAL_CALL_PROCESSING_ENABLED === "true",
-    );
+    const recovery = analysisRecovery(call);
     if (!recovery.eligible)
       throw new AppError(
         recovery.blockedReason ?? "REANALYSIS_UNAVAILABLE",

@@ -54,14 +54,14 @@ const request = (body: unknown = input(), origin = "http://localhost") =>
     headers: { origin, "content-type": "application/json" },
     body: JSON.stringify(body),
   });
-it("refuses actual-customer metadata while processing is disabled before writing any row", async () => {
-  const response = await POST(request());
-  expect(response.status).toBe(403);
-  expect(await response.json()).toEqual({ error: "PRIVACY_APPROVAL_REQUIRED" });
-  expect(state.list).not.toHaveBeenCalled();
-  expect(state.put).not.toHaveBeenCalled();
+it("admits owner recordings without a privacy attestation or legacy switch", async () => {
+  const body: Partial<ReturnType<typeof input>> = input();
+  delete body.sanitized;
+  const response = await POST(request(body));
+  expect(response.status).toBe(200);
+  expect(state.put).toHaveBeenCalledTimes(1);
 });
-it("when explicitly enabled, owner upload binds preparation to exact checksum/workspace without starting AI", async () => {
+it("owner upload binds exact checksum/workspace without declaring privacy verification or starting AI", async () => {
   vi.stubEnv("REAL_CALL_PROCESSING_ENABLED", "true");
   const response = await POST(request());
   expect(response.status).toBe(200);
@@ -77,11 +77,11 @@ it("when explicitly enabled, owner upload binds preparation to exact checksum/wo
     analysis: null,
     score: null,
   });
-  expect(call.sourcePreparation).toMatchObject({
+  expect(call.sourceBinding).toMatchObject({
     checksum: input().checksum,
-    kind: "privately_redacted",
-    attestedBy: "fictional-owner",
+    boundBy: "fictional-owner",
   });
+  expect(call.sourcePreparation).toBeUndefined();
   expect(state.put).toHaveBeenCalledWith(call, null);
 });
 it("does not guess original metadata from upload time", async () => {
@@ -95,9 +95,9 @@ it("does not guess original metadata from upload time", async () => {
 it("fictional source admission remains available without enabling actual customer processing", async () => {
   const response = await POST(request({ ...input(), sourceKind: "synthetic" }));
   expect(response.status).toBe(200);
-  expect(
-    (state.put.mock.calls[0][0] as CallRecord).sourcePreparation?.kind,
-  ).toBe("synthetic");
+  expect((state.put.mock.calls[0][0] as CallRecord).sourceKind).toBe(
+    "synthetic",
+  );
 });
 it("a reviewer cannot create an upload even if customer processing is enabled", async () => {
   vi.stubEnv("REAL_CALL_PROCESSING_ENABLED", "true");
@@ -114,7 +114,6 @@ it("foreign-origin input is refused before upload creation", async () => {
   expect(state.put).not.toHaveBeenCalled();
 });
 it.each([
-  { sanitized: false },
   { bytes: 25_000_001 },
   { durationMs: 3_600_001 },
   { sourceKind: "" },

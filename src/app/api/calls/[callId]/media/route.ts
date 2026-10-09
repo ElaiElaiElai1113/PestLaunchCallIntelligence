@@ -14,11 +14,7 @@ export async function GET(
     if (call.mode === "sample")
       throw new AppError("SAMPLE_AUDIO_UNAVAILABLE", 404);
     const settledFailure =
-      call.status === "failed" &&
-      sourceReviewBlock(
-        call,
-        process.env.REAL_CALL_PROCESSING_ENABLED === "true",
-      ) === null;
+      call.status === "failed" && sourceReviewBlock(call) === null;
     if (
       !call.sanitizedPath ||
       (!settledFailure && !["ready", "needs_review"].includes(call.status))

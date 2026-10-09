@@ -38,11 +38,7 @@ export async function POST(request: Request) {
     if (createHash("sha256").update(bytes).digest("hex") !== call.checksum)
       throw new AppError("UPLOAD_CHECKSUM_MISMATCH");
     const expected = call.version;
-    const admission = processingDecision(
-      Boolean(process.env.GROQ_API_KEY),
-      process.env.REAL_CALL_PROCESSING_ENABLED === "true",
-      call.sourceKind === "synthetic",
-    );
+    const admission = processingDecision(Boolean(process.env.GROQ_API_KEY));
     if (admission === "run") {
       try {
         await dispatchRetry(repo, call, async (id, attemptId) => {
@@ -60,10 +56,7 @@ export async function POST(request: Request) {
       }
       return { callId };
     }
-    call.errorCode =
-      admission === "awaiting_ai"
-        ? "AI_NOT_CONFIGURED"
-        : "PRIVACY_APPROVAL_REQUIRED";
+    call.errorCode = "AI_NOT_CONFIGURED";
     call.version++;
     if (!(await repo.put(call, expected))) return { callId };
     return { callId, processing: admission };

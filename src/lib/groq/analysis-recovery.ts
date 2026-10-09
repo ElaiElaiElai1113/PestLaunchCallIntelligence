@@ -7,7 +7,7 @@ import {
 import { assessmentContext } from "../domain/assessment-guards";
 import { buildAnalysisRequest } from "./analysis-request";
 // Pure admission only: no provider/client is constructed and no source is changed.
-function transcriptAdmission(call: CallRecord, realAllowed: boolean) {
+function transcriptAdmission(call: CallRecord) {
   let budget: "admitted" | "exceeded" | "invalid" = "invalid";
   try {
     buildAnalysisRequest(call.segments, assessmentContext(call));
@@ -17,7 +17,7 @@ function transcriptAdmission(call: CallRecord, realAllowed: boolean) {
       budget = "exceeded";
   }
   const blockedReason =
-    preparedTranscriptBlock(call, realAllowed) ??
+    preparedTranscriptBlock(call) ??
     (budget === "exceeded"
       ? "ANALYSIS_BUDGET_EXCEEDED"
       : budget === "invalid"
@@ -25,8 +25,12 @@ function transcriptAdmission(call: CallRecord, realAllowed: boolean) {
         : null);
   return { eligible: blockedReason === null, budget, blockedReason };
 }
-export function analysisRecovery(call: CallRecord, realAllowed: boolean) {
-  const input = transcriptAdmission(call, realAllowed);
+export function analysisRecovery(
+  call: CallRecord,
+  ...legacyArguments: boolean[]
+) {
+  void legacyArguments;
+  const input = transcriptAdmission(call);
   const blockedReason = activeProcessing(call)
     ? "PROCESSING_ACTIVE"
     : analysisCurrent(call)
@@ -34,18 +38,17 @@ export function analysisRecovery(call: CallRecord, realAllowed: boolean) {
       : input.blockedReason;
   return { ...input, eligible: blockedReason === null, blockedReason };
 }
-export function providerInputAdmission(call: CallRecord, realAllowed: boolean) {
-  const held =
-    call.status === "privacy_review" ||
-    ["UPLOAD_PENDING", "PRIVACY_REVIEW_REQUIRED"].includes(
-      call.errorCode ?? "",
-    ) ||
-    (call.sourceKind !== "synthetic" && !realAllowed);
+export function providerInputAdmission(
+  call: CallRecord,
+  ...legacyArguments: boolean[]
+) {
+  void legacyArguments;
+  const held = call.errorCode === "UPLOAD_PENDING";
   if (held)
     return {
       eligible: false,
       budget: "not_required" as const,
-      blockedReason: "PRIVACY_APPROVAL_REQUIRED",
+      blockedReason: "UPLOAD_PENDING",
       restoreOnly: false,
     };
   if (analysisCurrent(call))
@@ -64,5 +67,5 @@ export function providerInputAdmission(call: CallRecord, realAllowed: boolean) {
       blockedReason: null,
       restoreOnly: false,
     };
-  return { ...transcriptAdmission(call, realAllowed), restoreOnly: false };
+  return { ...transcriptAdmission(call), restoreOnly: false };
 }

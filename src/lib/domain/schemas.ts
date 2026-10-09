@@ -139,6 +139,7 @@ export const uploadSchema = z.strictObject({
   recordedAt: z.iso.datetime().nullable(),
   rep: z.string().max(100).nullable(),
   direction: z.enum(["inbound", "outbound"]).nullable(),
-  sanitized: z.literal(true),
+  // Accepted for older clients; no privacy attestation is required or inferred.
+  sanitized: z.boolean().optional(),
   sourceKind: z.enum(["synthetic", "real"]),
 });

@@ -68,6 +68,52 @@ const rawOutput = (content: string) => ({
   model: "openai/gpt-oss-120b",
   content,
 });
+it("identifier-like fictional dialogue is preserved and does not trigger a privacy hold", async () => {
+  vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
+  vi.stubEnv("REAL_CALL_PROCESSING_ENABLED", "false");
+  state.call!.sourceKind = "real";
+  state.call!.segments = [];
+  state.call!.sourcePath = "sample-workspace/fictional-call.wav";
+  const segments = [
+    {
+      id: "s1",
+      text: "The fictional contact is example@example.invalid.",
+      speaker: "unknown" as const,
+      startMs: 0,
+      endMs: 1000,
+    },
+  ];
+  const upload = vi.fn().mockResolvedValue({ error: null });
+  state.admin.mockReturnValue({
+    storage: {
+      from: () => ({
+        download: async () => ({
+          data: new Blob(["RIFF0000WAVEfictional"]),
+          error: null,
+        }),
+        upload,
+      }),
+    },
+  });
+  state.transcribe.mockResolvedValue({
+    segments,
+    durationMs: 1000,
+    complete: false,
+    reviewReasons: ["Transcription completeness needs review."],
+  });
+  const raw = analysis();
+  state.analyze.mockResolvedValue({
+    original: raw,
+    effective: guardAssessment(raw, segments, { transcriptComplete: false }),
+  });
+  await processCall("fictional-call");
+  expect(state.transcribe).toHaveBeenCalledTimes(1);
+  expect(state.analyze).toHaveBeenCalledTimes(1);
+  expect(state.call!.segments).toEqual(segments);
+  expect(state.call!.status).not.toBe("privacy_review");
+  expect(state.call!.transcriptCompleteness).toBe("unverified");
+  expect(state.call!.score?.grade).toBeNull();
+});
 it.each(["deleted", "version", "source", "owner"])(
   "does not transmit scoring after %s during extraction",
   async (kind) => {
