@@ -152,6 +152,37 @@ it("reasoned roadmap verification resolves only its current chronology issue", a
     analysisGeneration: 0,
   });
 });
+it("accepts explicit current early-roadmap verification without a pre-existing issue", async () => {
+  state.call!.mode = "sample";
+  state.call!.status = "needs_review";
+  state.call!.transcriptCompleteness = "verified";
+  state.call!.transcriptReviewReasons = [];
+  state.call!.analysis!.reviewIssues = [];
+  const source = state.call!.segments[2];
+  const original = structuredClone(state.call!.originalAnalysis);
+  const response = await review(
+    new Request("http://localhost/api/calls/fictional-call/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version: state.call!.version,
+        checkpointId: "expectation_solve",
+        status: "passed",
+        chronologyVerified: true,
+        reason:
+          "Explicitly checked the current roadmap source before later solving.",
+        evidence: { segmentIds: [source.id], quote: source.text },
+      }),
+    }),
+    context,
+  );
+  expect(response.status).toBe(200);
+  expect(state.call!.decisions.at(-1)).toMatchObject({
+    chronologyVerified: true,
+    evidence: { segmentIds: [source.id], quote: source.text },
+  });
+  expect(state.call!.originalAnalysis).toEqual(original);
+});
 it("dispatch failure returns a safe 503 and leaves retryable persisted state", async () => {
   vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
   state.start.mockRejectedValue(new Error("fictional private workflow detail"));

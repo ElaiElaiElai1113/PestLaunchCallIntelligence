@@ -59,18 +59,7 @@ export async function POST(
       if (decision.chronologyVerified) {
         if (
           decision.checkpointId !== "expectation_solve" ||
-          decision.status !== "passed" ||
-          !(
-            call.analysis.reviewIssues?.some(
-              (x) => x.id === "chronology:expectation_solve",
-            ) ||
-            call.issueDecisions?.some(
-              (d) =>
-                d.issueId === "chronology:expectation_solve" &&
-                d.sourceRevision === (call.sourceRevision ?? 0) &&
-                d.analysisGeneration === (call.analysisGeneration ?? 0),
-            )
-          )
+          decision.status !== "passed"
         )
           throw new AppError("INVALID_ISSUE_RESOLUTION", 400);
         guarded.reviewIssues = guarded.reviewIssues?.filter(
