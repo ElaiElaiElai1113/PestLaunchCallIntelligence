@@ -21,6 +21,64 @@ const customer: Segment = {
   text: "Yes please",
   speaker: "customer",
 };
+it("does not turn employee payment terms into a customer payment promise", () => {
+  const terms = {
+    ...employee,
+    text: "Payment is due at the visit; none has been collected.",
+  };
+  const original = analysis();
+  original.followups = [
+    {
+      text: "Payment due at visit",
+      state: "promised",
+      dueText: "at the visit",
+      evidence: { segmentIds: [terms.id], quote: terms.text },
+    },
+  ];
+  const effective = guardAssessment(original, [terms, customer], {
+    transcriptComplete: true,
+  });
+  expect(effective.followups[0].state).toBe("unknown");
+  expect(effective.reviewIssues).toContainEqual({
+    id: "followup:0",
+    kind: "followup",
+    target: "0",
+    message: "Payment commitment needs review.",
+  });
+  expect(original.followups[0].state).toBe("promised");
+  const capability = { ...customer, text: "I can pay, but I have not agreed yet." };
+  original.followups[0].evidence.segmentIds.push(capability.id);
+  original.followups[0].evidence.quote += " " + capability.text;
+  expect(
+    guardAssessment(original, [terms, capability], { transcriptComplete: true })
+      .followups[0].state,
+  ).toBe("unknown");
+});
+it("preserves an explicit attributed customer payment promise", () => {
+  const terms = { ...employee, text: "Payment is due at the visit." };
+  const commitment = { ...customer, text: "I will pay at the visit." };
+  const original = analysis();
+  original.followups = [
+    {
+      text: "Payment due at visit",
+      state: "promised",
+      dueText: "at the visit",
+      evidence: {
+        segmentIds: [terms.id, commitment.id],
+        quote: terms.text + " " + commitment.text,
+      },
+    },
+  ];
+  expect(
+    guardAssessment(original, [terms, commitment], { transcriptComplete: true })
+      .followups[0].state,
+  ).toBe("promised");
+  commitment.speaker = "unknown";
+  expect(
+    guardAssessment(original, [terms, commitment], { transcriptComplete: true })
+      .followups[0].state,
+  ).toBe("unknown");
+});
 it("withholds unverified all-inclusive price assurances but preserves explicit source terms", () => {
   const original = analysis();
   original.coaching = [

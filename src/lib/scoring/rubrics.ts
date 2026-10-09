@@ -64,7 +64,7 @@ const common: Record<string, [string, string, string]> = {
   objection_restate: [
     "Restate the objection",
     "Solve",
-    "Confirm what is preventing a decision.",
+    "Restate the barrier after the objection in your own words; a faithful paraphrase counts, not only verbatim repetition.",
   ],
   objection_resolve: [
     "Resolve the objection",

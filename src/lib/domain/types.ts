@@ -28,7 +28,7 @@ export type Fact = { label: string; text: string; evidence: Evidence };
 export type Analysis = {
   reviewIssues?: {
     id: string;
-    kind: "outcome" | "coaching" | "chronology";
+    kind: "outcome" | "coaching" | "chronology" | "followup";
     target: string;
     message: string;
   }[];

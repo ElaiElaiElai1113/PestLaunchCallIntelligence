@@ -12,7 +12,7 @@ export const analysisSchema = z.strictObject({
     .array(
       z.strictObject({
         id: z.string().max(180),
-        kind: z.enum(["outcome", "coaching", "chronology"]),
+        kind: z.enum(["outcome", "coaching", "chronology", "followup"]),
         target: z.string().max(80),
         message: z.string().max(400),
       }),

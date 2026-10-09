@@ -66,7 +66,7 @@ export function guardAssessment(
   let coachingPolicyUnresolved = false;
   const issue = (
     id: string,
-    kind: "outcome" | "coaching" | "chronology",
+    kind: "outcome" | "coaching" | "chronology" | "followup",
     target: string,
     message: string,
   ) => {
@@ -74,6 +74,33 @@ export function guardAssessment(
     if (!effective.reviewIssues.some((x) => x.id === id))
       effective.reviewIssues.push({ id, kind, target, message });
   };
+  effective.followups.forEach((action, index) => {
+    // Payment terms establish an obligation, not the customer's commitment.
+    // Conservative trigger only: other promises (visits, refunds) stay distinct.
+    const paymentDue =
+      /\b(?:payment\b.{0,30}\bdue|due\b.{0,30}\bpayment)\b/i.test(
+        `${action.text} ${action.evidence.quote}`,
+      );
+    const customerPromise = action.evidence.segmentIds.some((id) => {
+      const source = lookup.get(id);
+      return (
+        source?.speaker === "customer" &&
+        /\b(?:i (?:will|agree to)|i['’]ll|we will|we['’]ll)\s+pay\b/i.test(
+          source.text,
+        )
+      );
+    });
+    if (
+      paymentDue &&
+      ["promised", "accepted"].includes(action.state) &&
+      !customerPromise
+    ) {
+      action.state = "unknown";
+      const message = "Payment commitment needs review.";
+      effective.reviewReasons.push(message);
+      issue(`followup:${index}`, "followup", String(index), message);
+    }
+  });
   for (const [key, outcome] of Object.entries(effective.outcomes)) {
     if (outcome.value === null) continue;
     const { segmentIds, quote } = outcome.evidence;

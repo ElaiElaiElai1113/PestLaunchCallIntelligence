@@ -7,12 +7,21 @@ import { DETAIL_LABELS, materializeRecap } from "./source-recap";
 
 export const STAGED_CONTRACT = "call_analysis_source_refs_v5" as const;
 export function legacyExtractionSchema(segments: Segment[]) {
-  return contractSchema(segments)
-    .omit({ assessments: true, noObjections: true })
-    .extend({
-      // Keep distinct promises rather than losing the visit among other actions.
-      followups: contractSchema(segments).shape.followups.max(8),
-    });
+  const contract = contractSchema(segments);
+  const action = contract.shape.followups.element;
+  return contract.omit({ assessments: true, noObjections: true }).extend({
+    // Keep distinct promises rather than losing the visit among other actions.
+    followups: z
+      .array(
+        z.strictObject({
+          evidence: action.shape.evidence,
+          dueText: action.shape.dueText,
+          text: action.shape.text,
+          state: action.shape.state,
+        }),
+      )
+      .max(8),
+  });
 }
 export function extractionSchema(segments: Segment[]) {
   const legacy = legacyExtractionSchema(segments);
@@ -25,7 +34,7 @@ export function extractionSchema(segments: Segment[]) {
   // requiring nonempty evidence for every supported boolean claim.
   const outcome = z.union([
     z.strictObject({
-      claimed: z.strictObject({ value: z.boolean(), evidence: nonempty }),
+      claimed: z.strictObject({ evidence: nonempty, value: z.boolean() }),
     }),
     z.strictObject({ unknown: empty }),
   ]);
@@ -64,9 +73,16 @@ export type Extraction = Omit<
   outcomes: z.infer<ReturnType<typeof legacyExtractionSchema>>["outcomes"];
 };
 export function scoringSchema(segments: Segment[], purpose: Purpose) {
-  const item = contractSchema(segments).shape.assessments.element.omit({
+  const originalItem = contractSchema(segments).shape.assessments.element.omit({
     id: true,
     coaching: true,
+  });
+  // Select source support and explain it before committing to a status.
+  // Same validated fields, reordered for left-to-right structured generation.
+  const item = z.strictObject({
+    evidence: originalItem.shape.evidence,
+    reason: originalItem.shape.reason,
+    status: originalItem.shape.status,
   });
   // Groq cannot disambiguate two checkpoint-object union branches with the
   // same status enum. Require source context for every attributed checkpoint,
@@ -94,12 +110,6 @@ export function scoringSchema(segments: Segment[], purpose: Purpose) {
           .nullable()
       : z.null();
   return z.strictObject({
-    noObjections: z.boolean(),
-    coaching: z.strictObject({
-      strength: coach,
-      improvement1: coach,
-      improvement2: coach,
-    }),
     checkpoints: z.strictObject(
       Object.fromEntries(
         (purpose === "unknown" ? [] : RUBRICS[purpose]).map((c) => [
@@ -108,6 +118,12 @@ export function scoringSchema(segments: Segment[], purpose: Purpose) {
         ]),
       ),
     ),
+    noObjections: z.boolean(),
+    coaching: z.strictObject({
+      strength: coach,
+      improvement1: coach,
+      improvement2: coach,
+    }),
   });
 }
 export function validateExtraction(value: unknown, segments: Segment[]) {

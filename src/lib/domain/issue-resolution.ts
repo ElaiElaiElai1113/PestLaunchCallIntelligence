@@ -26,6 +26,11 @@ export function resolveIssue(
     a.assessments.find((x) => x.id === issue.target)?.status !== "unknown"
   )
     throw new Error("INVALID_ISSUE_RESOLUTION");
+  if (
+    issue.kind === "followup" &&
+    a.followups[Number(issue.target)]?.state !== "unknown"
+  )
+    throw new Error("INVALID_ISSUE_RESOLUTION");
   a.reviewIssues = a.reviewIssues!.filter((x) => x.id !== issueId);
   const rawReasons =
     (call.latestModelAnalysis ?? call.originalAnalysis)?.reviewReasons ?? [];

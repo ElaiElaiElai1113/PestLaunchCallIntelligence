@@ -3,6 +3,7 @@ import Groq, { toFile } from "groq-sdk";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { buildAnalysisRequest, buildScoringRequest } from "./analysis-request";
+import { scoringHeadroomWait } from "./rate-headroom";
 import {
   STAGED_CONTRACT,
   resolveStaged,
@@ -14,17 +15,24 @@ export class GroqProvider {
       apiKey?: string;
       fetch?: typeof fetch;
       beforeScoring?: () => Promise<void>;
+      waitForHeadroom?: (ms: number) => Promise<void>;
       cachedExtraction?: ProviderOutput & { requestHash: string };
       saveExtraction?: (
         output: ProviderOutput & { requestHash: string },
       ) => Promise<void>;
     },
   ) {}
-  private client() {
+  private client(onResponse?: (response: Response) => void) {
     if (!this.config.apiKey?.trim()) throw new Error("AI_NOT_CONFIGURED");
     return new Groq({
       apiKey: this.config.apiKey,
-      fetch: this.config.fetch,
+      fetch: onResponse
+        ? async (input, init) => {
+            const response = await (this.config.fetch ?? fetch)(input, init);
+            onResponse(response);
+            return response;
+          }
+        : this.config.fetch,
       maxRetries: 0,
       timeout: 120000,
     });
@@ -98,7 +106,12 @@ export class GroqProvider {
     segments: Segment[],
     context: { transcriptComplete: boolean } = { transcriptComplete: false },
   ) {
-    const client = this.client();
+    let headers = new Headers(),
+      receivedAt = Date.now();
+    const client = this.client((response) => {
+      headers = response.headers;
+      receivedAt = Date.now();
+    });
     if (JSON.stringify(segments).length > 150000)
       throw new Error("TRANSCRIPT_TOO_LONG");
     const { request } = buildAnalysisRequest(segments, context);
@@ -136,6 +149,17 @@ export class GroqProvider {
     };
     if (extracted.purpose !== "unknown") {
       const next = buildScoringRequest(segments, context, extracted.purpose);
+      const waitMs = scoringHeadroomWait(
+        headers,
+        next.budget.estimatedTotalTokens,
+        Date.now() - receivedAt,
+      );
+      if (waitMs)
+        await (
+          this.config.waitForHeadroom ??
+          ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
+        )(waitMs);
+      // Ownership/privacy is rechecked after waiting, immediately before effects.
       await this.config.beforeScoring?.();
       const scored = await client.chat.completions.create(next.request);
       if (

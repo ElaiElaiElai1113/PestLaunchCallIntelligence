@@ -35,27 +35,43 @@ it("rejects an unevidenced boolean claim before any scoring request", async () =
 it("rechecks permission before a second provider transmission", async () => {
   const { extraction } = responses();
   let requests = 0;
+  const order: string[] = [];
   const provider = new GroqProvider({
     apiKey: "fictional-contract-token",
+    waitForHeadroom: async (ms) => {
+      expect(ms).toBeGreaterThan(60000);
+      order.push("quota-wait");
+    },
     beforeScoring: async () => {
+      order.push("permission");
       throw new Error("PROCESSING_SUPERSEDED");
     },
     fetch: async () => {
       requests++;
-      return Response.json({
-        choices: [
-          {
-            finish_reason: "stop",
-            message: { content: JSON.stringify(extraction) },
+      return Response.json(
+        {
+          choices: [
+            {
+              finish_reason: "stop",
+              message: { content: JSON.stringify(extraction) },
+            },
+          ],
+        },
+        {
+          headers: {
+            "x-ratelimit-limit-tokens": "8000",
+            "x-ratelimit-remaining-tokens": "1000",
+            "x-ratelimit-reset-tokens": "7.66s",
           },
-        ],
-      });
+        },
+      );
     },
   });
   await expect(
     provider.analyze(call().segments, { transcriptComplete: true }),
   ).rejects.toThrow("PROCESSING_SUPERSEDED");
   expect(requests).toBe(1);
+  expect(order).toEqual(["quota-wait", "permission"]);
 });
 function responses() {
   return stagedFromAnalysis(call().originalAnalysis!);

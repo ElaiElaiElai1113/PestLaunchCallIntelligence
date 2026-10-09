@@ -5,6 +5,46 @@ import {
   reviewedAssessmentContext,
 } from "@/lib/domain/assessment-guards";
 import { resolveIssue } from "@/lib/domain/issue-resolution";
+it("acknowledges an uncertain payment followup without restoring a promise", () => {
+  const call = sampleCall("one-time", "fictional-payment-review");
+  const raw = structuredClone(call.originalAnalysis!);
+  const source = call.segments.at(-1)!;
+  raw.followups = [
+    {
+      text: "Payment due at visit",
+      state: "promised",
+      dueText: "at the visit",
+      evidence: { segmentIds: [source.id], quote: source.text },
+    },
+  ];
+  call.latestModelAnalysis = raw;
+  call.analysis = guardAssessment(raw, call.segments, {
+    transcriptComplete: true,
+  });
+  const next = resolveIssue(
+    call,
+    "followup:0",
+    "Confirmed terms only; the source contains no payment promise.",
+    "fictional-reviewer",
+  );
+  expect(next.analysis!.followups[0].state).toBe("unknown");
+  expect(next.analysis!.reviewIssues?.some((x) => x.id === "followup:0")).toBe(
+    false,
+  );
+  expect(next.analysis!.reviewReasons).not.toContain(
+    "Payment commitment needs review.",
+  );
+  expect(next.latestModelAnalysis!.followups[0].state).toBe("promised");
+  call.analysis!.followups[0].state = "promised";
+  expect(() =>
+    resolveIssue(
+      call,
+      "followup:0",
+      "Cannot confirm a claim while it remains restored.",
+      "fictional-reviewer",
+    ),
+  ).toThrow("INVALID_ISSUE_RESOLUTION");
+});
 it("confirms one withheld outcome without restoring claims or clearing other safeguards", () => {
   const call = sampleCall("one-time", "fictional-issue");
   const raw = structuredClone(call.originalAnalysis!);

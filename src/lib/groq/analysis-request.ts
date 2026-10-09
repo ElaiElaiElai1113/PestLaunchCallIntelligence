@@ -128,6 +128,9 @@ function requestFor(
     stage === "extraction"
       ? " An explicitly agreed future visit has state accepted even when the employee also promises to arrange it. Payment due is state unknown unless the customer explicitly promises/accepts payment; treatment acceptance alone is not a payment promise. Preserve source relative windows; do not add AM/PM when unstated. Secondary intents describe observed topics, never an inferred absence such as no-payment-required."
       : " Scan every employee turn before marking a checkpoint missed. Interpret responsive I understand as acknowledgement per the manual. Evaluate consensus separately from closing; do not award both for a booking request alone. Suggested improvements describe communication skills; do not supply company incentives, fees, guarantees, or unstated appointment details.";
+  if (stage === "extraction")
+    request.messages[0].content +=
+      " Purpose: sales is purchasing/quoting new treatment or inspection; general is existing-service support, scheduling or billing; retention requires an explicit cancellation/quit intent or attempt to save a cancelling account. A return visit or existing customer alone is never retention.";
   const bytes = new TextEncoder().encode(
     JSON.stringify({ messages: request.messages, schema }),
   ).byteLength;
