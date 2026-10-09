@@ -36,7 +36,7 @@ it("budget admission is computed from the current reviewed roles, not a stale er
   call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
   let next = review(call, true),
     found = false;
-  for (let n = 100; n < 300; n++) {
+  for (let n = 1; n < 300; n++) {
     call.segments[0].text = "Fictional context. ".repeat(n);
     next = review(call, true);
     if (

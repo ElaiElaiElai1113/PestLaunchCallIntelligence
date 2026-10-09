@@ -9,7 +9,7 @@ const common: Record<string, [string, string, string]> = {
   validate: [
     "Acknowledge the concern",
     "Validate",
-    "Explicitly acknowledge the customer's stated concern; a greeting or how-can-I-help question alone is not validation.",
+    "Acknowledge the reported concern. Responsive affirmations such as I understand or that makes sense count; repeating the pest name is not required. A greeting alone does not count.",
   ],
   confidence: [
     "Establish confidence",
@@ -44,7 +44,7 @@ const common: Record<string, [string, string, string]> = {
   consensus: [
     "Check agreement",
     "Solve",
-    "Confirm the customer agrees with the proposed solution.",
+    "Check understanding of the presented service or invite questions before closing. A booking/permission-to-proceed question alone meets close, not this separate consensus checkpoint.",
   ],
   close: [
     "Ask for the next step",
@@ -54,7 +54,7 @@ const common: Record<string, [string, string, string]> = {
   pricing: [
     "Explain pricing",
     "Solve",
-    "Explain initial and ongoing costs and relevant conditions.",
+    "Explain applicable price and conditions. A one-time treatment requires its one-time price; do not require recurring fees for a declined recurring plan or invent missing fees.",
   ],
   objection_agree: [
     "Acknowledge the objection",

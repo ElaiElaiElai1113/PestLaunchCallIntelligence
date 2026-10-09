@@ -192,7 +192,7 @@ it("valid transcript pending-start retry preserves its ownership intent", async 
 it("retry admission uses the revised audited transcript while preserving its pending attempt", async () => {
   state.call = recoveryCall();
   state.call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
-  for (let n = 100; n < 300; n++) {
+  for (let n = 1; n < 300; n++) {
     state.call.segments[0].text = "Fictional context. ".repeat(n);
     const changed = structuredClone(state.call);
     changed.segments.forEach((s) => (s.speaker = "unknown"));
@@ -266,7 +266,7 @@ it("actual source-review transition leaves first analysis startable but never au
 it("same over-budget source cannot dispatch or mutate while a revised admissible source can", async () => {
   state.call = recoveryCall();
   state.call.errorCode = "ANALYSIS_BUDGET_EXCEEDED";
-  for (let n = 100; n < 300; n++) {
+  for (let n = 1; n < 300; n++) {
     state.call.segments[0].text = "Fictional context. ".repeat(n);
     const changed = structuredClone(state.call);
     changed.segments.forEach((s) => (s.speaker = "unknown"));
