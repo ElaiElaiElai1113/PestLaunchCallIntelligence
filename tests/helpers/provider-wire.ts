@@ -65,7 +65,18 @@ export function stagedFromAnalysis(analysis: Analysis) {
     purpose,
     secondaryIntents,
     title,
-    outcomes,
+    outcomes: Object.fromEntries(
+      Object.entries(outcomes).map(([key, outcome]) => [
+        key,
+        outcome.value === null
+          ? { unknown: outcome.evidence }
+          : { claimed: outcome },
+      ]),
+    ) as Record<
+      keyof typeof outcomes,
+      | { claimed: { value: boolean; evidence: { segmentIds: string[] } } }
+      | { unknown: { segmentIds: string[] } }
+    >,
     followups,
     complete,
     reviewReasons,

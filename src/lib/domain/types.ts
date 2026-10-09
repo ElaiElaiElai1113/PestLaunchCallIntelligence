@@ -74,7 +74,9 @@ export type ProviderOutput = {
   contract:
     | "call_analysis_refs_v1"
     | "call_analysis_staged_v2"
-    | "call_analysis_source_refs_v3";
+    | "call_analysis_source_refs_v3"
+    | "call_analysis_source_refs_v4"
+    | "call_analysis_source_refs_v5";
   model: string;
   content: string;
 };

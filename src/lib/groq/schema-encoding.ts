@@ -1,4 +1,4 @@
-// Equivalent schema encoding experiment; not enabled in application requests.
+// Preserve primitive enum constraints while making both stages explicit to Groq.
 export function inlinePrimitiveEnumReferences<T>(schema: T): T {
   const root = schema as { $defs?: Record<string, unknown> };
   function walk(value: unknown): unknown {

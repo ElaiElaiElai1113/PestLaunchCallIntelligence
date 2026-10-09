@@ -5,7 +5,7 @@ import { analysisSchema } from "../domain/schemas";
 import { contractSchema, resolveAnalysis } from "./analysis-contract";
 import { DETAIL_LABELS, materializeRecap } from "./source-recap";
 
-export const STAGED_CONTRACT = "call_analysis_source_refs_v3" as const;
+export const STAGED_CONTRACT = "call_analysis_source_refs_v5" as const;
 export function legacyExtractionSchema(segments: Segment[]) {
   return contractSchema(segments)
     .omit({ assessments: true, noObjections: true })
@@ -21,9 +21,13 @@ export function extractionSchema(segments: Segment[]) {
     segmentIds: z.array(z.enum(ids)).min(1).max(6),
   });
   const empty = z.strictObject({ segmentIds: z.array(z.enum(ids)).max(6) });
+  // Distinct required outer keys let Groq disambiguate the branches while
+  // requiring nonempty evidence for every supported boolean claim.
   const outcome = z.union([
-    z.strictObject({ value: z.boolean(), evidence: nonempty }),
-    z.strictObject({ value: z.null(), evidence: empty }),
+    z.strictObject({
+      claimed: z.strictObject({ value: z.boolean(), evidence: nonempty }),
+    }),
+    z.strictObject({ unknown: empty }),
   ]);
   return legacy.omit({ summary: true, facts: true, outcomes: true }).extend({
     recap: nonempty,
@@ -53,7 +57,12 @@ export function extractionSchema(segments: Segment[]) {
     ),
   });
 }
-export type Extraction = z.infer<ReturnType<typeof extractionSchema>>;
+export type Extraction = Omit<
+  z.infer<ReturnType<typeof extractionSchema>>,
+  "outcomes"
+> & {
+  outcomes: z.infer<ReturnType<typeof legacyExtractionSchema>>["outcomes"];
+};
 export function scoringSchema(segments: Segment[], purpose: Purpose) {
   const item = contractSchema(segments).shape.assessments.element.omit({
     id: true,
@@ -102,7 +111,18 @@ export function scoringSchema(segments: Segment[], purpose: Purpose) {
   });
 }
 export function validateExtraction(value: unknown, segments: Segment[]) {
-  const extracted = extractionSchema(segments).parse(value);
+  const wire = extractionSchema(segments).parse(value);
+  const extracted: Extraction = {
+    ...wire,
+    outcomes: Object.fromEntries(
+      Object.entries(wire.outcomes).map(([key, outcome]) => [
+        key,
+        "claimed" in outcome
+          ? outcome.claimed
+          : { value: null, evidence: outcome.unknown },
+      ]),
+    ) as Extraction["outcomes"],
+  };
   const materialized = legacyFields(extracted, segments);
   // Validate references/evidenced claims before spending another request.
   resolveAnalysis(

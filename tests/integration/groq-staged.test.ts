@@ -4,6 +4,34 @@ import { sampleCall } from "@/lib/samples/fixtures";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
 
 const call = () => sampleCall("one-time", "fictional-staged");
+it("rejects an unevidenced boolean claim before any scoring request", async () => {
+  const source = call();
+  const { extraction } = stagedFromAnalysis(source.originalAnalysis!);
+  extraction.outcomes.cancellationRequested = {
+    claimed: { value: false, evidence: { segmentIds: [] } },
+  };
+  let requests = 0;
+  const provider = new GroqProvider({
+    apiKey: "fictional-contract-token",
+    fetch: async () => {
+      requests++;
+      return Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: {
+              content: JSON.stringify(extraction),
+            },
+          },
+        ],
+      });
+    },
+  });
+  await expect(
+    provider.analyze(source.segments, { transcriptComplete: true }),
+  ).rejects.toThrow();
+  expect(requests).toBe(1);
+});
 it("rechecks permission before a second provider transmission", async () => {
   const { extraction } = responses();
   let requests = 0;
@@ -62,7 +90,7 @@ it("extracts details before scoring every purpose-specific checkpoint", async ()
   expect(result.original.assessments).toHaveLength(17);
   expect(result.original.followups).toEqual(source.originalAnalysis!.followups);
   expect(source.segments).toEqual(before);
-  expect(result.providerOutput.contract).toBe("call_analysis_source_refs_v3");
+  expect(result.providerOutput.contract).toBe("call_analysis_source_refs_v5");
   const raw = JSON.parse(result.providerOutput.content);
   expect(raw.extraction).toBe(JSON.stringify(extraction));
   expect(raw.scoring).toBe(JSON.stringify(scoring));

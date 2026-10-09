@@ -4,23 +4,26 @@ import { RUBRICS } from "@/lib/scoring/rubrics";
 import { scoringSchema, extractionSchema } from "@/lib/groq/staged-contract";
 import { buildScoringRequest } from "@/lib/groq/analysis-request";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
-it("requires source evidence for every v3 non-null outcome with disjoint null branches", () => {
+it("requires source evidence for every non-null outcome before scoring", () => {
   const call = sampleCall("one-time", "fictional-outcome-evidence");
   const raw = stagedFromAnalysis(call.originalAnalysis!).extraction;
   const schema = extractionSchema(call.segments);
   for (const value of [true, false]) {
     const changed = structuredClone(raw);
-    changed.outcomes.inspectionBooked = { value, evidence: { segmentIds: [] } };
+    changed.outcomes.inspectionBooked = {
+      claimed: { value, evidence: { segmentIds: [] } },
+    };
     expect(schema.safeParse(changed).success).toBe(false);
-    changed.outcomes.inspectionBooked.evidence.segmentIds = [
+    if (!("claimed" in changed.outcomes.inspectionBooked))
+      throw new Error("Invalid fixture");
+    changed.outcomes.inspectionBooked.claimed.evidence.segmentIds = [
       call.segments[0].id,
     ];
     expect(schema.safeParse(changed).success).toBe(true);
   }
   const missing = structuredClone(raw);
   missing.outcomes.inspectionBooked = {
-    value: null,
-    evidence: { segmentIds: [] },
+    unknown: { segmentIds: [] },
   };
   expect(schema.safeParse(missing).success).toBe(true);
 });
