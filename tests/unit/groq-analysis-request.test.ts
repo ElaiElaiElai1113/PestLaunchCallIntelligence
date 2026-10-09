@@ -89,8 +89,8 @@ it("builds a reference-only strict request inside the Free heuristic budget", ()
   );
   expect(built.request).toMatchObject({
     model: "openai/gpt-oss-120b",
-    max_completion_tokens: 1600,
-    reasoning_effort: "low",
+    max_completion_tokens: 2600,
+    reasoning_effort: "medium",
     include_reasoning: false,
     response_format: {
       type: "json_schema",

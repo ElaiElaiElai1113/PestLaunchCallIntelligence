@@ -9,17 +9,17 @@ const common: Record<string, [string, string, string]> = {
   validate: [
     "Acknowledge the concern",
     "Validate",
-    "Recognize the customer’s situation before proposing a solution.",
+    "Explicitly acknowledge the customer's stated concern; a greeting or how-can-I-help question alone is not validation.",
   ],
   confidence: [
     "Establish confidence",
     "Validate",
-    "Explain how you can help without making unsupported promises.",
+    "Explicitly reassure the customer that you can help with the concern. A greeting or an offer alone is not a confidence statement.",
   ],
   expectation_understand: [
     "Set the conversation up",
     "Validate",
-    "Set an expectation that you will first understand the concern.",
+    "Explicitly explain that you will first ask questions to understand the concern. Asking a question or greeting alone does not set this expectation.",
   ],
   investigate: [
     "Ask useful questions",
@@ -29,12 +29,12 @@ const common: Record<string, [string, string, string]> = {
   summary: [
     "Confirm your understanding",
     "Understand",
-    "Summarize the need and check that it is right.",
+    "Summarize the customer's need and check that your understanding is right; a summary without an explicit check does not meet both parts.",
   ],
   expectation_solve: [
     "Set a solution expectation",
     "Understand",
-    "Explain the next step toward resolving the need.",
+    "Before presenting the solution, explain the roadmap for presenting it and checking agreement. A later booking question is not this roadmap.",
   ],
   solution: [
     "Offer a relevant solution",
@@ -69,12 +69,12 @@ const common: Record<string, [string, string, string]> = {
   objection_resolve: [
     "Resolve the objection",
     "Solve",
-    "Address the stated barrier with a relevant response.",
+    "After the customer states the objection, address that barrier with a relevant response. An offer made before the objection cannot resolve it.",
   ],
   objection_reclose: [
     "Revisit the decision",
     "Solve",
-    "Ask for agreement after addressing the objection.",
+    "Ask to proceed after addressing the objection; cite the employee's post-objection request, not an earlier offer or customer answer.",
   ],
   conclusion: [
     "Recap the agreement",
