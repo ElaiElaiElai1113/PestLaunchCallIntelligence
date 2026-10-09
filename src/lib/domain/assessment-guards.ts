@@ -62,6 +62,12 @@ export function guardAssessment(
       .join(" ");
     return normalize(employeeText).includes(normalize(evidence.quote));
   };
+  const employeeSource = (evidence: Evidence) =>
+    evidence.segmentIds
+      .map((id) => lookup.get(id))
+      .filter((segment) => segment?.speaker === "employee")
+      .map((segment) => segment!.text)
+      .join(" ");
   let attributionUnresolved = false;
   let coachingPolicyUnresolved = false;
   const issue = (
@@ -101,6 +107,32 @@ export function guardAssessment(
       issue(`followup:${index}`, "followup", String(index), message);
     }
   });
+  const cancellation = effective.outcomes.cancellationAccepted;
+  const cancellationSource = cancellation
+    ? employeeSource(cancellation.evidence)
+    : "";
+  // Submitting a request for later confirmation is not accepting cancellation.
+  // This targets that specific ambiguity; it does not certify account closure.
+  if (
+    cancellation?.value === true &&
+    /\b(?:submit|send|forward|refer)\b.{0,60}\bcancellation request\b/i.test(
+      cancellationSource,
+    ) &&
+    !/\b(?:cancellation(?: request)? (?:is|has been) (?:accepted|approved)|(?:i|we) (?:have )?accepted (?:your|the) cancellation)\b/i.test(
+      cancellationSource,
+    )
+  ) {
+    cancellation.value = null;
+    const message =
+      "Cancellation acceptance needs confirmation beyond request submission.";
+    effective.reviewReasons.push(message);
+    issue(
+      "outcome:cancellationAccepted",
+      "outcome",
+      "cancellationAccepted",
+      message,
+    );
+  }
   const inspection = effective.outcomes.inspectionBooked;
   if (
     inspection?.value === true &&
@@ -131,6 +163,25 @@ export function guardAssessment(
     }
   }
   for (const item of effective.assessments) {
+    if (
+      effective.purpose === "retention" &&
+      item.id === "research" &&
+      item.status === "passed"
+    ) {
+      const source = employeeSource(item.evidence);
+      const accountContext =
+        /\b(?:account|service history|notes|records)\b/i.test(source);
+      const audibleReview =
+        /\b(?:i (?:have )?(?:checked|reviewed|read)|i(?:['’]m| am) (?:checking|reviewing|looking)|i (?:can )?see|(?:your|the) (?:account|service history|notes|records) (?:shows?|says?|indicates?))\b/i.test(
+          source,
+        );
+      if (!accountContext || !audibleReview) {
+        item.status = "unknown";
+        item.reason =
+          "Account research needs audible source evidence; questions and promises do not verify it.";
+        effective.reviewReasons.push("Account research needs review.");
+      }
+    }
     const unsupportedPass =
       item.status === "passed" && !employeeEvidence(item.evidence);
     const unsupportedMiss =

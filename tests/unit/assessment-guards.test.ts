@@ -21,6 +21,76 @@ const customer: Segment = {
   text: "Yes please",
   speaker: "customer",
 };
+it.each([
+  "Have you seen any ants since the last visit?",
+  "I will check your account notes next.",
+])("does not award account research for an inquiry or promise: %s", (text) => {
+  const source = { ...employee, text };
+  const original = analysis();
+  original.purpose = "retention";
+  original.assessments = [
+    {
+      id: "research",
+      status: "passed",
+      reason: "Reviewed the account",
+      evidence: { segmentIds: [source.id], quote: source.text },
+    },
+  ];
+  const effective = guardAssessment(original, [source, customer], {
+    transcriptComplete: true,
+  });
+  expect(effective.assessments[0].status).toBe("unknown");
+  expect(original.assessments[0].status).toBe("passed");
+});
+it("preserves audible account-research evidence", () => {
+  const source = {
+    ...employee,
+    text: "I checked your account notes and see the last service was a return visit.",
+  };
+  const original = analysis();
+  original.purpose = "retention";
+  original.assessments = [
+    {
+      id: "research",
+      status: "passed",
+      reason: "Explicit account review",
+      evidence: { segmentIds: [source.id], quote: source.text },
+    },
+  ];
+  expect(
+    guardAssessment(original, [source, customer], { transcriptComplete: true })
+      .assessments[0].status,
+  ).toBe("passed");
+});
+it("does not turn submission of a cancellation request into its acceptance", () => {
+  const source = {
+    ...employee,
+    text: "I will submit your cancellation request. Please wait for confirmation.",
+  };
+  const original = analysis();
+  original.outcomes.cancellationAccepted = {
+    value: true,
+    evidence: {
+      segmentIds: [source.id, customer.id],
+      quote: source.text + " " + customer.text,
+    },
+  };
+  const result = guardAssessment(original, [source, customer], {
+    transcriptComplete: true,
+  });
+  expect(result.outcomes.cancellationAccepted.value).toBeNull();
+  expect(original.outcomes.cancellationAccepted.value).toBe(true);
+  expect(
+    result.reviewIssues?.some((x) => x.id === "outcome:cancellationAccepted"),
+  ).toBe(true);
+  source.text += " Your cancellation request is approved.";
+  original.outcomes.cancellationAccepted.evidence.quote =
+    source.text + " " + customer.text;
+  expect(
+    guardAssessment(original, [source, customer], { transcriptComplete: true })
+      .outcomes.cancellationAccepted.value,
+  ).toBe(true);
+});
 it("does not turn a generic return visit into an inspection booking", () => {
   const original = analysis();
   const visit = {

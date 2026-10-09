@@ -80,7 +80,11 @@ export class GroqProvider {
     }));
     if (
       segments.some(
-        (x) => x.endMs < x.startMs || x.endMs > parsed.duration * 1000 + 1000,
+        (x, index) =>
+          !x.text ||
+          x.endMs <= x.startMs ||
+          x.endMs > parsed.duration * 1000 + 1000 ||
+          (index > 0 && x.startMs < segments[index - 1].startMs),
       )
     )
       throw new Error("INVALID_TRANSCRIPT");

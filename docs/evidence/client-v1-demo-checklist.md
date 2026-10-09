@@ -1,22 +1,29 @@
-# External client V1 acceptance — prepared, not executed
+# Assignment acceptance checklist
 
-Current phase: last verified private remote application revision `449869a`; latest local source-refs-v3 candidate `5c8d4c4` awaits final review. Base verification: 313 tests/37 files, lint/typecheck/build/privacy25, six actual browser journeys and eleven HTTP checks. Final repair: nineteen focused tests and an additional browser journey. Latest actual provider phase is closed at six of six; diagnostic structure passed, full semantic acceptance did not. Source-refs-v3 has not been dispatched. Hosted recording, actual grading/coaching acceptance, client access and Loom remain pending.
+Reconciled on 9 October against the original assignment and dated evidence. Checked items refer to recorded acceptance, not new executions in this documentation refresh.
 
-- [ ] Replace the previously exposed server key before hosted access. Keep secrets server-only; verify configuration without printing values.
-- [ ] Use the existing dedicated project `qwrukdqtuhqkbrbtnekz` in Projects (`tqzukvtntitbbjoatxet`), Sydney Free. No new organization/project selection is needed. Reconcile both prior SQL-Editor migrations, deliberately apply `20261008114517_bind_source_upload_to_registered_path.sql`, and verify actual RLS/private buckets/negative access. Do not blindly reapply the initial migration.
-- [ ] Provision authorized invited owner/reviewer memberships. Access to the account is not permission to send invitations or widen unrelated access. Verify anonymous/foreign-workspace denial and owner-only billable operations/deletion.
-- [ ] Confirm an authorized existing commercial Vercel team/project, its actual cost, environment/origin and Workflow support. Do not purchase/upgrade automatically or use personal Hobby for commercial submission.
-- [ ] Human configures Groq server key. Verify current speech/structured models, free quotas, account Zero Data Retention/no-training settings and feature-specific exceptions. No new paid API spend is authorized without a concrete total cap.
-- [ ] Privately prepare a new fictional **spoken conversation**, with known expected facts/checkpoints. Upload it through the deployed interface. Silence/container admission checks are not a transcription demonstration.
-- [ ] Under an authorized reviewer, verify genuine stages, transcript/source/audio alignment, purpose/secondary intents, separate outcomes/facts/follow-ups, appropriate fixed-denominator score/coaching, truthful uncertainty and preserved originals. If roles/completeness need review, audit them and have the owner re-analyze that revision. Verify model uncertainty can still withhold grade after source verification.
-- [ ] Verify reload/log/filter/back/next/previous, evidence seek, reasoned correction/history and stale-dialog recovery. Verify real prepared-media authorization, not text-only fixture playback.
-- [ ] Exercise actual quota/failure/retry, duplicate and old-run fencing, deletion during processing, interrupted/restarted worker behavior and disposable fictional source/derivative/transcript/analysis/review cleanup. Record deployed revision, IDs and safe timings only. Check actual logs, workflow state, cache links, backup/retention behavior; local mocks are not that evidence.
-- [ ] Real-call evaluation remains separate: verified private preparation and consent/retention, CALL-013's entire payment exchange privately redacted/reviewed before any provider upload/playback, protected test-only access and all-20-call manual accuracy review. Context notes are not transcripts or reference grades.
-- [x] Create/push and verify the private [source repository](https://github.com/ElaiElaiElai1113/PestLaunchCallIntelligence); audited tracked history, reviewed candidate `449869a` pushed, private visibility read back.
-- [ ] Verify intended client source access; no collaborator invitation has been sent. Push the latest patch only after independent acceptance.
-- [ ] Record a short fictional or verified sanitized Loom using `docs/demo-script.md`; verify playable app/source/video links and reviewer access. No Loom exists from this local implementation. Recruiter START, agreed deadline and submission/client messages remain human actions unless explicitly authorized.
-- [ ] After the full test ends, perform authorized customer/source/derivative/transcript/analysis/review/local-context/provider/backup cleanup and verify counts/time-only receipts plus retention limitations. Do not delete customer test material prematurely.
+## Recorded hosted demo acceptance
 
-Acceptance: an authorized reviewer can inspect the result of a **newly uploaded recording processed by the real provider on the deployed app**, with all seven minimum client capabilities, faithful rubrics, useful evidence/coaching, private access and honest uncertainty. R01/R10 remain pending until that occurs.
+- [x] Dedicated Supabase Free project, invite-only membership, private Storage, workspace RLS and exact registered upload-path restriction; backend negative-access regression recorded.
+- [x] Human confirmed exposed server key revoked/replaced; server credentials excluded from browser/source/deployment files.
+- [x] Dedicated personal Vercel test deployment selected by human; canonical HTTPS alias and actual Workflow demonstrated without upgrades or Setterlun changes.
+- [x] Actual Groq ASR/extraction/scoring on a newly uploaded fictional spoken example; Global ZDR/Free quota verification separately recorded.
+- [x] All seven capabilities demonstrated for the short known-source General case, including reviewed-source 12/12 Gold and three coaching items.
+- [x] Recording byte identity, playback, timestamp seek, reload and original/source/manual history verified.
+- [x] Anonymous/foreign-workspace denial, stale-review conflict/no mutation and failed-fictional-case deletion/storage absence/tombstone verified.
+- [x] Source pushed to private GitHub; README/setup/architecture/limitations and demo narration prepared.
 
-Final local gate: application 5c8d4c4 plus docs b611a5d accepted by independent review; 100 fresh focused tests pass with no remaining actionable finding. External acceptance boxes remain pending.
+## Required work still open
+
+- [ ] Representative supplied-recording purpose/outcome accuracy verified against sufficient prepared source context. Context notes are not reference transcripts/grades.
+- [ ] Employee grading/coaching accuracy verified on an attributable supplied call, with uncertainty/non-applicability faithfully handled. A grade must be justified, not flattering.
+- [ ] Fresh regression/build/privacy and hosted acceptance of further application repairs, tied to their deployed revision.
+- [ ] Intended client source delivery/access verified; no collaborator invitation or client message sent.
+- [ ] Playable short Loom recorded; app/source/video access verified.
+- [ ] End-of-test confidential-data deletion with copy inventory, non-content receipt and actual retention limits. Do not delete prematurely while the test is active.
+
+## Additional limits
+
+Automatic diarization/redaction, full twenty-call benchmarking, long-call chunking, physical-device acceptance, deeper hosted concurrency and production-scale retention remain unverified. These are not invented minimum assignment requirements. Manual review can resolve uncertainty; the demo is still reviewer-assisted and hosted customer uploads remain disabled.
+
+Historical closed phases/caps/artifacts/stopped locks stay immutable. Review-chat messaging stays stopped. This checklist is not completion evidence by itself; exact verification belongs in docs/evidence/progress.md.

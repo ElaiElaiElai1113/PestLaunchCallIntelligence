@@ -133,6 +133,31 @@ it("transcription rejects an impossible timestamp", async () => {
     provider.transcribe(Buffer.from("fictional audio"), "wav"),
   ).rejects.toThrow("INVALID_TRANSCRIPT");
 });
+it.each([
+  {
+    label: "blank speech",
+    segments: [{ start: 0, end: 1, text: "   " }],
+  },
+  {
+    label: "zero-length speech interval",
+    segments: [{ start: 1, end: 1, text: "Fictional speech" }],
+  },
+  {
+    label: "backwards segment order",
+    segments: [
+      { start: 2, end: 3, text: "Second fictional turn" },
+      { start: 0, end: 1, text: "First fictional turn" },
+    ],
+  },
+])("refuses $label before it becomes analysis evidence", async ({ segments }) => {
+  const provider = new GroqProvider({
+    apiKey: "fictional-contract-token",
+    fetch: async () => Response.json({ duration: 4, segments }),
+  });
+  await expect(
+    provider.transcribe(Buffer.from("fictional audio"), "wav"),
+  ).rejects.toThrow("INVALID_TRANSCRIPT");
+});
 it("missing AI key fails before any network request", async () => {
   let requests = 0;
   const provider = new GroqProvider({

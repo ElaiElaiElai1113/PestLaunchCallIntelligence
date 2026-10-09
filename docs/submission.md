@@ -1,15 +1,24 @@
-# Demonstration and release status
+# Client submission
 
-Latest local application revision: `5c8d4c4` (source-refs-v3 recap, scoped issue review and evidence-bound roadmap verification), accepted by independent local review, including documentation revision `b611a5d`. The base passed 313 tests across 37 files, lint/typecheck, production build/privacy guard, six isolated Chromium journeys and eleven isolated HTTP checks. The last repair passed nineteen focused tests and the additional browser reset/reverification journey. These are local fictional-data checks.
+The assignment requires seven capabilities: process recording, display transcript, classify purpose, extract outcomes/details, apply an appropriate PestLaunch grade when applicable, provide useful coaching and review results in a simple interface. Accuracy/reliability, UX, product judgment and engineering are the evaluation criteria. It does not explicitly require processing every supplied recording or production-scale acceptance.
 
-The latest actual provider phase is closed at six of six requests. Diagnostic output was structurally accepted, but full semantic accuracy was not accepted. The new source-refs-v3 contract has not been dispatched to the real provider. No hosted newly uploaded recording, playable Loom or client-ready acceptance is verified.
+## Prepared deliverables
 
-The private source repository exists at https://github.com/ElaiElaiElai1113/PestLaunchCallIntelligence. Last verified remote application revision is `449869a`; the latest application and documentation are accepted locally for private source delivery. No client collaborator or invitation has been added.
+- Hosted private test app: https://pestlaunch-call-intelligence.vercel.app/login. Invite-only access and a fresh fictional recording/reference are in the ignored private handoff kit.
+- Private source repository: https://github.com/ElaiElaiElai1113/PestLaunchCallIntelligence. Source archive prepared separately; intended client repository access not yet granted.
+- README covers architecture, setup, demonstrated behavior, limits and next steps.
+- docs/demo-script.md provides a 4–5 minute Loom walkthrough. A script is not a recorded playable Loom; recording remains outstanding.
 
-Two human handoffs remain pending: select the existing Setterlun Ventures Pro team for this separate commercial project, and replace/revoke the previously exposed dedicated Supabase server key, saving the replacement only in ignored `.env.local`. Do not paste credentials into chat. No new paid API usage, subscription purchase or upgrade is authorized.
+Recorded hosted acceptance used a new fictional recording, genuine ASR/extraction, audited source verification and hosted re-analysis. It produced General 12/12 Gold and evidence-linked coaching before manual checkpoint confirmation. Playback, evidence seek, reload, review history, stale-review rejection, anonymous/foreign-workspace denial and deletion of the owned failed fictional case were separately verified. Exact revisions and dated receipts are in docs/evidence/progress.md.
 
-Use `docs/deployment-runbook.md` for deployment and `docs/evidence/client-v1-demo-checklist.md` for external acceptance. Reconcile the dedicated Supabase project's existing SQL-applied schema before the pending exact-path migration. Invite-only access, private buckets/RLS, current ZDR/free quotas and hosted Workflow behavior require verification.
+## Remaining acceptance
 
-The local rehearsal is available through `npm run demo` on loopback port 3003. Use `docs/demo-script.md` for narration and explicitly describe the examples as curated fictional text without recorded audio or AI execution. Source snippets and withheld grades explain uncertainty; they do not establish source accuracy.
+Representative supplied-call accuracy has not been established by the fictional demo. The approved CALL-001 excerpt was partial/unattributed and its grade was withheld. Its privacy crop removed the cancellation-purpose question. The assignment-closure pass is preparing a corrected local derivative; new privacy facts cannot be inferred from the older derivative's verification.
 
-Submission requires a usable hosted app that processes a newly uploaded recording through the real provider under an authorized reviewer account, reviewed source access and a verified playable short Loom. Recruiter START, the agreed test clock and client messages remain human actions. Confidential test materials remain private, CALL-013 quarantined, and end-of-test deletion waits until the full test is complete.
+Hosted customer uploads remain disabled. Automatic speaker diarization/audio redaction are not implemented; reviewed-source scoring is the demonstrated path. Conservative transcript budgets can refuse long calls. Do not present these as completed automatic customer-call acceptance.
+
+## Delivery and cleanup
+
+Verify intended client app/source/video access before submission. Keep credential files out of the recording. The human selected personal Vercel Hobby for this test and requested no upgrades; this is not permission to buy resources or modify other projects.
+
+No recruiter START, client message or agreed deadline was sent/confirmed by the agent. The Google Doc says 72 hours from the agreed start; earlier invitation wording differs. After the full test ends, delete confidential copies created for it, verify a non-content receipt and record actual provider/backup retention limits. Cleanup remains pending while this acceptance run is active.
