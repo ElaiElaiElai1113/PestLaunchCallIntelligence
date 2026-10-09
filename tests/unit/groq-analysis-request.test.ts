@@ -2,6 +2,29 @@ import { it, expect } from "vitest";
 import { sampleCall } from "@/lib/samples/fixtures";
 import { RUBRICS } from "@/lib/scoring/rubrics";
 import { buildAnalysisRequest, rubricGuide } from "@/lib/groq/analysis-request";
+it("places detail and recap constraints directly inside the existing budget", () => {
+  const built = buildAnalysisRequest(
+    sampleCall("one-time", "inline-source").segments,
+    { transcriptComplete: true },
+  );
+  const format = built.request.response_format as unknown as {
+    json_schema: {
+      schema: {
+        properties: { facts: unknown; recap: unknown; followups: unknown };
+      };
+    };
+  };
+  const schema = JSON.stringify(format.json_schema.schema.properties);
+  for (const field of [
+    format.json_schema.schema.properties.facts,
+    format.json_schema.schema.properties.recap,
+    format.json_schema.schema.properties.followups,
+  ])
+    expect(JSON.stringify(field)).not.toContain('"$ref"');
+  expect(schema).toContain('"enum":["seg-1","seg-2"');
+  expect(built.budget.bytes).toBeLessThanOrEqual(12000);
+  expect(built.budget.estimatedTotalTokens).toBeLessThanOrEqual(8000);
+});
 it("presents extraction source-ID enums directly without weakening their constraints", () => {
   const source = sampleCall("one-time", "fictional-enum-encoding").segments;
   const format = buildAnalysisRequest(source, { transcriptComplete: true })
@@ -81,7 +104,6 @@ it("builds a reference-only strict request inside the Free heuristic budget", ()
   expect(built.budget.bytes).toBeLessThanOrEqual(12000);
   expect(built.budget.estimatedTotalTokens).toBeLessThan(8000);
   const serialized = JSON.stringify(built.request.response_format);
-  expect(serialized).toContain('"$defs"');
   expect(serialized).not.toContain('"quote"');
   expect(serialized).not.toContain(
     sampleCall("one-time", "fictional").segments[0].text,

@@ -1,7 +1,10 @@
 import { z } from "zod";
 import type { ChatCompletionCreateParamsNonStreaming } from "groq-sdk/resources/chat/completions";
 import type { Purpose, Segment } from "../domain/types";
-import { inlinePrimitiveEnumReferences } from "./schema-encoding";
+import {
+  inlinePrimitiveEnumReferences,
+  inlineExtractionReferences,
+} from "./schema-encoding";
 import { RUBRICS } from "../scoring/rubrics";
 import {
   STAGED_CONTRACT,
@@ -74,6 +77,7 @@ function requestFor(
   }
   explicitArrayTypes(schema);
   schema = inlinePrimitiveEnumReferences(schema);
+  if (stage === "extraction") schema = inlineExtractionReferences(schema);
   const presentedSegments =
     stage === "scoring" && segments.some((s) => s.speaker === "employee")
       ? segments.map((segment) => {

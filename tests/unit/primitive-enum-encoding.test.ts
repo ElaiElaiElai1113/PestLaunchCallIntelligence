@@ -1,9 +1,59 @@
 import { expect, it } from "vitest";
 import Ajv from "ajv";
-import { inlinePrimitiveEnumReferences } from "@/lib/groq/schema-encoding";
+import {
+  inlinePrimitiveEnumReferences,
+  inlineExtractionReferences,
+} from "@/lib/groq/schema-encoding";
+import { z } from "zod";
+import { extractionSchema } from "@/lib/groq/staged-contract";
 import { buildScoringRequest } from "@/lib/groq/analysis-request";
 import { sampleCall } from "@/lib/samples/fixtures";
 import { stagedFromAnalysis } from "../helpers/provider-wire";
+it("preserves extraction acceptance for invalid IDs, empty claims and oversized evidence", () => {
+  const call = sampleCall("one-time", "equivalent-extraction");
+  const original = z.toJSONSchema(extractionSchema(call.segments), {
+    reused: "ref",
+  });
+  delete original.$schema;
+  const snapshot = structuredClone(original);
+  const expanded = inlineExtractionReferences(
+    inlinePrimitiveEnumReferences(original),
+  );
+  const before = new Ajv({ allErrors: true }).compile(original);
+  const after = new Ajv({ allErrors: true }).compile(expanded);
+  const valid = stagedFromAnalysis(call.originalAnalysis!).extraction;
+  const variations = [valid];
+  const mutate = (fn: (x: typeof valid) => void) => {
+    const x = structuredClone(valid);
+    fn(x);
+    variations.push(x);
+  };
+  mutate((x) => (x.facts[0].evidence.segmentIds = ["invented-id"]));
+  mutate((x) => (x.recap.segmentIds = []));
+  mutate(
+    (x) =>
+      (x.outcomes.quoteProvided = {
+        claimed: { value: true, evidence: { segmentIds: [] } },
+      }),
+  );
+  mutate(
+    (x) =>
+      (x.outcomes.quoteProvided = {
+        claimed: { value: false, evidence: { segmentIds: ["invented-id"] } },
+      }),
+  );
+  mutate(
+    (x) =>
+      (x.facts[0].evidence.segmentIds = Array(7).fill(call.segments[0].id)),
+  );
+  mutate((x) => (x.facts = Array(7).fill(x.facts[0])));
+  for (const candidate of variations)
+    expect(after(candidate)).toBe(before(candidate));
+  expect(after(valid)).toBe(true);
+  for (const candidate of variations.slice(1))
+    expect(after(candidate)).toBe(false);
+  expect(original).toEqual(snapshot);
+});
 
 it.each(["employee", "unknown", "partial"])(
   "preserves %s schema acceptance and every original constraint",
