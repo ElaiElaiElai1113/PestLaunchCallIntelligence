@@ -42,6 +42,58 @@ async function fill(page: import("@playwright/test").Page) {
     .getByRole("checkbox", { name: /checked transcript accuracy/ })
     .check();
 }
+test("speaker suggestions change draft labels without verifying or saving source facts", async ({
+  page,
+}) => {
+  const call = fixture(),
+    before = structuredClone(call);
+  call.speakerProposals = {
+    sourceChecksum: call.checksum!,
+    sourceRevision: 0,
+    model: "gemini-3.5-flash-lite",
+    roles: call.segments.map((s) => ({
+      segmentId: s.id,
+      speaker: "employee",
+      confidence: 0.99,
+    })),
+  };
+  let posts = 0;
+  const unexpected = await mockApi(page, (path, method) => {
+    if (method !== "GET") {
+      posts++;
+      return { status: 400, json: { error: "Unexpected save" } };
+    }
+    if (path === "/api/session")
+      return { json: fictionalSession("owner", true) };
+    if (path === "/api/calls") return { json: { calls: [call] } };
+    if (path === `/api/calls/${call.id}`) return { json: { call } };
+    if (path === `/api/calls/${call.id}/media`)
+      return { status: 404, json: { error: "MEDIA_UNAVAILABLE" } };
+    return null;
+  });
+  await page.goto(`/calls/${call.id}`);
+  await page
+    .getByRole("button", { name: "Review transcript", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Use suggested labels in draft", exact: true })
+    .click();
+  await expect(
+    page.getByLabel(`Speaker ${call.segments[0].id}`, { exact: true }),
+  ).toHaveValue("employee");
+  await expect(
+    page.getByRole("checkbox", {
+      name: /checked the whole prepared recording/,
+    }),
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: /checked transcript accuracy/ }),
+  ).not.toBeChecked();
+  expect(posts).toBe(0);
+  expect(call.segments).toEqual(before.segments);
+  expect(call.score).toEqual(before.score);
+  expect(unexpected).toEqual([]);
+});
 test("mocked owner source review handles conflict, stale grade, re-analysis failure/history and success", async ({
   page,
 }) => {

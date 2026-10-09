@@ -82,6 +82,16 @@ export type ProviderOutput = {
   content: string;
 };
 export type CallRecord = {
+  speakerProposals?: {
+    sourceChecksum: string;
+    sourceRevision: number;
+    model: string;
+    roles: {
+      segmentId: string;
+      speaker: Segment["speaker"];
+      confidence: number;
+    }[];
+  };
   providerDispatches?: {
     stage: "transcription" | "analysis";
     model: string;

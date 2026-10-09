@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { CallRecord, Segment } from "@/lib/domain/types";
 import { api, errorText } from "./workspace-shell";
 import { activeProcessing } from "@/lib/domain/source-review";
+import { speakerSuggestions } from "@/lib/domain/speaker-proposals";
 const clock = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
 const rolesFor = (call: CallRecord) =>
@@ -114,6 +115,7 @@ export function TranscriptSourceReview({
       setBusy(false);
     }
   }
+  const suggestions = speakerSuggestions(reviewed);
   return (
     <dialog
       ref={dialog}
@@ -203,6 +205,23 @@ export function TranscriptSourceReview({
         </section>
       )}
       <form onSubmit={save}>
+        {suggestions && (
+          <div className="notice">
+            <p>
+              AI speaker suggestions are available. Listen and check each label;
+              unclear turns remain Unknown. Applying suggestions only changes
+              this draft.
+            </p>
+            <button
+              type="button"
+              className="button"
+              disabled={busy}
+              onClick={() => setRoles(suggestions)}
+            >
+              Use suggested labels in draft
+            </button>
+          </div>
+        )}
         <div className="source-role-list">
           {reviewed.segments.map((segment) => (
             <div className="source-role-row" key={segment.id}>
