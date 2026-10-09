@@ -183,6 +183,90 @@ it("accepts explicit current early-roadmap verification without a pre-existing i
   });
   expect(state.call!.originalAnalysis).toEqual(original);
 });
+it("explicit false cannot save a coarse roadmap using a prior verification", async () => {
+  state.call!.mode = "sample";
+  state.call!.status = "needs_review";
+  state.call!.transcriptCompleteness = "verified";
+  state.call!.transcriptReviewReasons = [];
+  const item = state.call!.analysis!.assessments.find(
+    (x) => x.id === "expectation_solve",
+  )!;
+  item.status = "passed";
+  state.call!.decisions.push({
+    id: "prior",
+    checkpointId: item.id,
+    status: "passed",
+    reason: "Previous explicit verification of this coarse source.",
+    userId: "fictional",
+    at: "2026-10-09T00:00:00Z",
+    previousVersion: 0,
+    sourceRevision: 0,
+    analysisGeneration: 0,
+    chronologyVerified: true,
+    evidence: structuredClone(item.evidence),
+  });
+  const before = structuredClone(state.call);
+  const result = await review(
+    new Request("http://localhost/api/calls/fictional-call/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version: state.call!.version,
+        checkpointId: item.id,
+        status: "passed",
+        chronologyVerified: false,
+        reason: "I no longer verify the roadmap order in this citation.",
+        evidence: item.evidence,
+      }),
+    }),
+    context,
+  );
+  expect(result.status).toBe(400);
+  expect(await result.json()).toEqual({ error: "CHRONOLOGY_REVIEW_REQUIRED" });
+  expect(state.call).toEqual(before);
+});
+it("omitted unchanged verification persists the effective attestation consistently", async () => {
+  state.call!.mode = "sample";
+  state.call!.status = "needs_review";
+  state.call!.transcriptCompleteness = "verified";
+  state.call!.transcriptReviewReasons = [];
+  const item = state.call!.analysis!.assessments.find(
+    (x) => x.id === "expectation_solve",
+  )!;
+  item.status = "passed";
+  state.call!.decisions.push({
+    id: "prior",
+    checkpointId: item.id,
+    status: "passed",
+    reason: "Verified this unchanged current source evidence.",
+    userId: "fictional",
+    at: "2026-10-09T00:00:00Z",
+    previousVersion: 0,
+    sourceRevision: 0,
+    analysisGeneration: 0,
+    chronologyVerified: true,
+    evidence: structuredClone(item.evidence),
+  });
+  const result = await review(
+    new Request("http://localhost/api/calls/fictional-call/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version: state.call!.version,
+        checkpointId: item.id,
+        status: "passed",
+        reason: "Retained the valid verification for this unchanged evidence.",
+        evidence: item.evidence,
+      }),
+    }),
+    context,
+  );
+  expect(result.status).toBe(200);
+  expect(state.call!.decisions.at(-1)?.chronologyVerified).toBe(true);
+  expect(
+    state.call!.analysis!.assessments.find((x) => x.id === item.id)?.status,
+  ).toBe("passed");
+});
 it("dispatch failure returns a safe 503 and leaves retryable persisted state", async () => {
   vi.stubEnv("GROQ_API_KEY", "fictional-contract-token");
   state.start.mockRejectedValue(new Error("fictional private workflow detail"));

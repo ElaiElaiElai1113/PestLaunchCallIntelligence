@@ -72,6 +72,8 @@ export const ERRORS: Record<string, string> = {
   PRIVACY_APPROVAL_REQUIRED:
     "Real recordings are held until privacy settings have been verified.",
   EVIDENCE_REQUIRED: "A passed checkpoint needs transcript evidence.",
+  CHRONOLOGY_REVIEW_REQUIRED:
+    "Verify roadmap order against the current source, or choose Unknown while the order remains uncertain.",
   SOURCE_EXCERPT_LIMIT:
     "The selected source excerpts exceed display limits. The full transcript is retained; review it and request a more focused analysis.",
   INVALID_ISSUE_RESOLUTION:

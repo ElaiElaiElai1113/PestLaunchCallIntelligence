@@ -1,6 +1,50 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdir } from "node:fs/promises";
+test("roadmap verification resets after evidence and status changes", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Open sample workspace" }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Good conversations start with listening.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const created = await page.request.post("/api/calls", {
+    headers: { Origin: "http://127.0.0.1:3002" },
+    data: { sample: "service" },
+  });
+  const call = (await created.json()).call;
+  try {
+    await page.goto(`/calls/${call.id}?tab=scorecard`);
+    const row = page.locator(".checkpoint").filter({
+      has: page.getByText("Set a solution expectation", { exact: true }),
+    });
+    await row.getByRole("button", { name: "Review Set a solution expectation", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Checkpoint decision").selectOption("passed");
+    const verify = dialog.getByRole("checkbox", {
+      name: /I checked the cited source/,
+    });
+    await verify.check();
+    await expect(verify).toBeChecked();
+    await dialog.locator(".evidence-choice input").first().check();
+    await expect(verify).not.toBeChecked();
+    await verify.check();
+    await dialog.getByLabel("Checkpoint decision").selectOption("unknown");
+    await dialog.getByLabel("Checkpoint decision").selectOption("passed");
+    await expect(verify).not.toBeChecked();
+    await verify.check();
+    await expect(verify).toBeChecked();
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  } finally {
+    await page.request.delete(`/api/calls/${call.id}`, {
+      headers: { Origin: "http://127.0.0.1:3002" },
+    });
+  }
+});
 test("source recap navigates exact evidence and preserves historical speaker labels", async ({
   page,
 }) => {

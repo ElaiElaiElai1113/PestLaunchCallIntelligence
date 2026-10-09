@@ -27,6 +27,7 @@ import { OUTCOME_LABELS } from "@/lib/samples/fixtures";
 import { analysisCurrent, activeProcessing } from "@/lib/domain/source-review";
 import { TranscriptSourceReview } from "./transcript-source-review";
 import { AnalysisIssueReview } from "./analysis-issue-review";
+import { reviewedAssessmentContext } from "@/lib/domain/assessment-guards";
 import {
   analysisRecovery,
   providerInputAdmission,
@@ -1071,7 +1072,11 @@ function ReviewDialog({
     [call, setReviewedCall] = useState(initialCall),
     [latest, setLatest] = useState<CallRecord | null>(null),
     [evidenceIds, setEvidenceIds] = useState(item.evidence.segmentIds);
-  const [chronologyVerified, setChronologyVerified] = useState(false);
+  const [chronologyVerified, setChronologyVerified] = useState(
+    item.id === "expectation_solve" &&
+      item.status === "passed" &&
+      reviewedAssessmentContext(initialCall).roadmapOrderReviewed,
+  );
   const selectedSegments = call.segments.filter((segment) =>
     evidenceIds.includes(segment.id),
   );
@@ -1101,7 +1106,10 @@ function ReviewDialog({
             checkpointId: item.id,
             status,
             reason,
-            chronologyVerified,
+            chronologyVerified:
+              item.id === "expectation_solve" && status === "passed"
+                ? chronologyVerified
+                : false,
             evidence: {
               segmentIds: selectedSegments.map((segment) => segment.id),
               quote: selectedQuote,
@@ -1177,13 +1185,14 @@ function ReviewDialog({
               <input
                 type="checkbox"
                 checked={evidenceIds.includes(segment.id)}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setChronologyVerified(false);
                   setEvidenceIds(
                     event.target.checked
                       ? [...evidenceIds, segment.id]
                       : evidenceIds.filter((id) => id !== segment.id),
-                  )
-                }
+                  );
+                }}
               />
               <span>
                 {time(segment.startMs)} · {purposeLabel(segment.speaker)} —{" "}
@@ -1197,7 +1206,10 @@ function ReviewDialog({
           <select
             disabled={busy}
             value={status}
-            onChange={(e) => setStatus(e.target.value as typeof status)}
+            onChange={(e) => {
+              setStatus(e.target.value as typeof status);
+              setChronologyVerified(false);
+            }}
           >
             <option value="passed">Passed</option>
             <option value="missed">Missed</option>

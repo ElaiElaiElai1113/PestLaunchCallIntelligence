@@ -47,14 +47,17 @@ export async function POST(
     call.analysis.reviewReasons = call.analysis.reviewReasons.filter(
       (x) => x !== `Checkpoint needs review: ${decision.checkpointId}`,
     );
+    const inherited = reviewedAssessmentContext(call).roadmapOrderReviewed;
+    const roadmapVerified =
+      decision.checkpointId === "expectation_solve"
+        ? decision.status === "passed"
+          ? (decision.chronologyVerified ?? inherited)
+          : false
+        : inherited;
     {
       const guarded = guardAssessment(call.analysis, call.segments, {
         ...reviewedAssessmentContext(call),
-        roadmapOrderReviewed:
-          decision.chronologyVerified &&
-          decision.checkpointId === "expectation_solve"
-            ? true
-            : reviewedAssessmentContext(call).roadmapOrderReviewed,
+        roadmapOrderReviewed: roadmapVerified,
       });
       if (decision.chronologyVerified) {
         if (
@@ -94,7 +97,13 @@ export async function POST(
         guarded.assessments.find((x) => x.id === decision.checkpointId)
           ?.status !== "passed"
       )
-        throw new AppError("ATTRIBUTION_REVIEW_REQUIRED", 400);
+        throw new AppError(
+          guarded.assessments.find((x) => x.id === decision.checkpointId)
+            ?.reason === "Pre-solution roadmap order needs review."
+            ? "CHRONOLOGY_REVIEW_REQUIRED"
+            : "ATTRIBUTION_REVIEW_REQUIRED",
+          400,
+        );
       if (
         (decision.status === "passed" || decision.status === "missed") &&
         !assessmentContext(call).transcriptComplete
@@ -133,7 +142,8 @@ export async function POST(
       previousVersion: call.version,
       sourceRevision: call.sourceRevision ?? 0,
       evidence: structuredClone(checkpoint.evidence),
-      chronologyVerified: decision.chronologyVerified ?? false,
+      chronologyVerified:
+        decision.checkpointId === "expectation_solve" ? roadmapVerified : false,
       analysisGeneration: call.analysisGeneration ?? 0,
     });
     call.version++;
