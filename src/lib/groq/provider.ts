@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { buildAnalysisRequest, buildScoringRequest } from "./analysis-request";
 import { scoringHeadroomWait } from "./rate-headroom";
+import { RUBRICS } from "../scoring/rubrics";
 import {
   STAGED_CONTRACT,
   resolveStaged,
@@ -141,13 +142,27 @@ export class GroqProvider {
         content,
         requestHash,
       });
+    const employeeEvidenceAvailable = segments.some(
+      (s) => s.speaker === "employee",
+    );
     let scoringContent: string | null = null;
     let scoring: unknown = {
       noObjections: false,
-      checkpoints: {},
+      checkpoints: Object.fromEntries(
+        (extracted.purpose === "unknown" ? [] : RUBRICS[extracted.purpose]).map(
+          (item) => [
+            item.id,
+            {
+              evidence: { segmentIds: [] },
+              reason: "Employee attribution needs review; assessment withheld.",
+              status: "unknown",
+            },
+          ],
+        ),
+      ),
       coaching: { strength: null, improvement1: null, improvement2: null },
     };
-    if (extracted.purpose !== "unknown") {
+    if (extracted.purpose !== "unknown" && employeeEvidenceAvailable) {
       const next = buildScoringRequest(segments, context, extracted.purpose);
       const waitMs = scoringHeadroomWait(
         headers,
@@ -179,6 +194,11 @@ export class GroqProvider {
         content: JSON.stringify({
           extraction: content,
           scoring: scoringContent,
+          scoringStatus: scoringContent
+            ? "returned"
+            : employeeEvidenceAvailable
+              ? "not_applicable"
+              : "withheld_unattributed",
         }),
       },
     };

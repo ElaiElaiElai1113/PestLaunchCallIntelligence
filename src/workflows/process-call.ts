@@ -17,6 +17,7 @@ import { assessmentContext } from "@/lib/domain/assessment-guards";
 import { createHash } from "node:crypto";
 import { STAGED_CONTRACT } from "@/lib/groq/staged-contract";
 import { providerRetryLimit } from "@/lib/groq/retry-limit";
+import { providerFailureCode } from "@/lib/groq/failure-code";
 const PROVIDER_RETRIES = 3;
 const provider = () => new GroqProvider({ apiKey: process.env.GROQ_API_KEY });
 const missing = (error: unknown) =>
@@ -325,7 +326,7 @@ async function safeFailure(
     ? "PROVIDER_TEMPORARILY_UNAVAILABLE"
     : error instanceof Error && codes.includes(error.message)
       ? error.message
-      : "ANALYSIS_FAILED";
+      : providerFailureCode(error);
   const loaded = await ownedCall(callId, attemptId, runId);
   if (
     !loaded ||
@@ -334,6 +335,12 @@ async function safeFailure(
     return;
   const { repo, call } = loaded,
     previous = call.version;
+  // Identifiers and bounded codes only; never log provider messages or content.
+  console.warn("pipeline_failure", {
+    callId,
+    errorCode: code,
+    providerStatus: typeof status === "number" ? status : null,
+  });
   call.status = "failed";
   call.errorCode = code;
   finishAttempt(call, attemptId, runId);

@@ -73,6 +73,37 @@ it("rechecks permission before a second provider transmission", async () => {
   expect(requests).toBe(1);
   expect(order).toEqual(["quota-wait", "permission"]);
 });
+it("does not transmit employee scoring for an unattributed transcript", async () => {
+  const unknown = call().segments.map((s) => ({
+    ...s,
+    speaker: "unknown" as const,
+  }));
+  const { extraction } = responses();
+  let requests = 0;
+  const provider = new GroqProvider({
+    apiKey: "fictional-contract-token",
+    fetch: async () => {
+      requests++;
+      if (requests > 1)
+        throw new Error("UNATTRIBUTED_SCORING_MUST_NOT_TRANSMIT");
+      return Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: { content: JSON.stringify(extraction) },
+          },
+        ],
+      });
+    },
+  });
+  const result = await provider.analyze(unknown, { transcriptComplete: false });
+  expect(requests).toBe(1);
+  expect(
+    result.effective.assessments.every((x) => x.status === "unknown"),
+  ).toBe(true);
+  expect(result.effective.coaching).toEqual([]);
+  expect(JSON.parse(result.providerOutput.content).scoring).toBeNull();
+});
 function responses() {
   return stagedFromAnalysis(call().originalAnalysis!);
 }
