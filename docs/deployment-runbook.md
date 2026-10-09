@@ -1,3 +1,9 @@
+## Current demo provider — 10 October
+
+Production f5e79a5 / dpl_BYNarEQBoKtdTyvHuGJVxwkTTiuZ on https://pestlaunch-call-intelligence.vercel.app . Set AI_PROVIDER=gemini, server-only GEMINI_API_KEY, TRANSCRIPTION_PROVIDER=groq and existing server-only GROQ_API_KEY. Text/role drafts are Gemini3.5FlashLite; audio is separate Free Whisper quota. No model fallback/retries. New uploaded calls reserve up to3initial effects (audio/draft/extraction), then separately admit reviewed scoring. Key account is XXAceNinjaXX, projectgen-lang-client-0412101581; do not use the other signed-in account to attest its quota. Current human-authorized aggregate cap24, sequence15reserved, original historical stops intact.
+
+RealCalls014/017 hosted processing/private playback/reload are verified. Suggested roles are draft aids; quality/completeness and official grades remain unresolved until factual review. No GeminiZDR or client-ready/all20 claim.
+
 # PestLaunch test-demo deployment runbook
 
 ## Current verified state — 9 October 2026

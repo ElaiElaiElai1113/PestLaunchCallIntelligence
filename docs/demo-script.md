@@ -1,3 +1,9 @@
+## Actual-call demo refresh — 10 October
+
+Use current hosted actualCall014 andCall017, not the deleted fictional record. Call014:5c504561-5cf3-41b8-af9b-32b0f8e4abc7; Call017:f073da68-4b0b-4955-ac6d-1244fceadbf1. Both transcribed/extracted onVercel; new uploads now also generate draft speaker labels. Source review is a factual check, not privacy consent. Never claim original unknown roles or draft labels are independently verified. Confirm labels/wording/complete capture only after listening; leave mixed/unclear turnsUnknown. After saved review, owner analysis must run again. Current official grade/coaching acceptance remains pending.
+
+Keep confidential customer words/audio/identity off exported screenshots or public Loom footage. The human can present a protected private demo under the existing scope, but no playable Loom has yet been produced.
+
 # Client test-demo Loom walkthrough
 
 The hosted reviewed-source flow is verified at https://pestlaunch-call-intelligence.vercel.app/login. Use the dedicated fictional demo account from the private handoff. Do not reveal the login file, service credentials, private customer files or signed media URLs in the recording. No Loom video has been recorded or sent by the agent.
