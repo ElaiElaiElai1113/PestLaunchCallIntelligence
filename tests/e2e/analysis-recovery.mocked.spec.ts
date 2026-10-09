@@ -4,6 +4,37 @@ import { analysisRecovery } from "../../src/lib/groq/analysis-recovery";
 import { applySourceReview } from "../../src/lib/domain/source-review";
 import { sourceReviewSchema } from "../../src/lib/domain/schemas";
 import { mockApi, fictionalSession, checkWidths } from "./mock-api";
+test("source-bound recovered operator recording can be analyzed without privacy controls", async ({
+  page,
+}) => {
+  const call = recoveryCall();
+  call.sourceKind = "real";
+  call.status = "needs_review";
+  call.errorCode = null;
+  delete call.sourcePreparation;
+  call.sourceBinding = {
+    checksum: call.checksum!,
+    boundBy: "fictional-owner",
+    at: "2026-10-09T00:00:00Z",
+  };
+  const unexpected = await mockApi(page, (path) => {
+    if (path === "/api/session")
+      return { json: fictionalSession("owner", true) };
+    if (path === "/api/calls") return { json: { calls: [call] } };
+    if (path === `/api/calls/${call.id}`) return { json: { call } };
+    if (path === `/api/calls/${call.id}/media`)
+      return { status: 404, json: { error: "MEDIA_UNAVAILABLE" } };
+    return null;
+  });
+  await page.goto(`/calls/${call.id}?tab=transcript`);
+  await expect(
+    page.getByRole("button", { name: "Analyze transcript", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByText(/privacy held|privacy approval|redacted recording/i),
+  ).toHaveCount(0);
+  expect(unexpected).toEqual([]);
+});
 for (const budget of [false, true]) {
   test(`first failed analysis can recover after ${budget ? "review of an admissible source with an old budget error" : "source verification"} without fake processing`, async ({
     page,

@@ -15,7 +15,7 @@ Recorded hosted acceptance used a new fictional recording, genuine ASR/extractio
 
 Representative supplied-call accuracy has not been established by the fictional demo. The approved CALL-001 excerpt was partial/unattributed and its grade was withheld. Its privacy crop removed the cancellation-purpose question. The assignment-closure pass is preparing a corrected local derivative; new privacy facts cannot be inferred from the older derivative's verification.
 
-The human enabled hosted customer uploads for privacy-attested testing; owner upload admission and UI activation are verified. This does not establish real-source AI accuracy. Existing unverified Call14 remains held. Automatic speaker diarization/audio redaction are not implemented; reviewed-source scoring is the demonstrated path. Conservative transcript budgets can refuse long calls. Do not present these as completed automatic customer-call acceptance.
+The human removed application privacy checkboxes/automatic holds and chose operator discretion for recordings. Owner upload admission without attestation and Call14 source-binding recovery/playback are verified. This does not establish real-source AI accuracy. Automatic speaker diarization/audio redaction are not implemented; reviewed-source scoring is the demonstrated path. Conservative transcript budgets can refuse long calls. Do not present these as completed automatic customer-call acceptance.
 
 ## Delivery and cleanup
 

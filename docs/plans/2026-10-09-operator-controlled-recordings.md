@@ -6,8 +6,8 @@ Remove checkbox/redaction attestations/identifier-triggered holds from upload an
 
 Recover only Call014 after checking its stored source/playback hashes. Preserve ASR/original/history, add truthful source binding, clear obsolete privacy error and settle needs_review. Do not invent transcript completeness/roles or auto-dispatch without whole-case quota headroom. Original Downloads file remains unchanged.
 
-- [ ] Red tests: no-checkbox upload, real upload without sanitized/legacy flag, identifier-bearing transcript processing, legacy hold recovery with source integrity.
-- [ ] Change schema/binding, admission/recovery/workflow/routes and product privacy copy; retain data protection/deletion controls.
-- [ ] Replace obsolete privacy-veto assertions with integrity/active/version coverage. Run targeted/full tests, UI journeys, lint/build.
-- [ ] Verify Free/ZDR, recover Call014 using hash checks/CAS, deploy same personal project, verify hosted admission/recovery without model effects.
-- [ ] Update current docs/automation/handoff; retain pending live accuracy and original stopped caps.
+- [x] Red tests: no-checkbox upload, real upload without sanitized/legacy flag, identifier-bearing transcript processing, legacy hold recovery with source integrity.
+- [x] Change schema/binding, admission/recovery/workflow/routes and product privacy copy; retain data protection/deletion controls.
+- [x] Replace obsolete privacy-veto assertions with integrity/active/version coverage. Run targeted/full tests, UI journeys, lint/build.
+- [x] Verify Free/ZDR, recover Call014 using hash checks/CAS, deploy same personal project, verify hosted admission/recovery without model effects.
+- [x] Update current docs/automation/handoff; retain pending live accuracy and original stopped caps.

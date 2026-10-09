@@ -13,8 +13,8 @@ The hosted reviewed-source flow is verified at https://pestlaunch-call-intellige
 
 ## Fresh-upload rehearsal
 
-Use the private kit's new-checksum fictional WAV. Choose Fictional test recording and confirm preparation. Leave unknown original time/direction blank. Initial roles are Unknown; the scorecard/coaching are withheld. Listen and compare with the reference, assign only clear roles, verify coverage/quality with a reason, then Re-analyze. Inspect the new result instead of assuming it repeats the saved grade.
+Use the private kit's new-checksum fictional WAV. Choose Made-up fictional conversation and select the file; no privacy checkbox is required. Leave unknown original time/direction blank. Initial roles are Unknown; the scorecard/coaching are withheld. Listen and compare with the reference, assign only clear roles, verify coverage/quality with a reason, then Re-analyze. Inspect the new result instead of assuming it repeats the saved grade.
 
 ## Accurate limits to state
 
-This demo is reviewer-assisted. Automatic speaker diarization/audio redaction and representative all-20-call accuracy are not verified. The approved Drive CALL-001 excerpt was tested in a separate isolated QA workspace, with grade withheld because it is partial/unattributed. Real-customer uploads remain disabled in the hosted demo. Long recordings can exceed the conservative Free analysis budget. Delete only owned disposable fictional cases during the walkthrough; confidential customer cleanup occurs after the full test.
+This demo is reviewer-assisted. Automatic speaker diarization/audio redaction and representative all-20-call accuracy are not verified. The approved Drive CALL-001 excerpt was tested in a separate isolated QA workspace, with grade withheld because it is partial/unattributed. Recording choice is at operator discretion; the app has no privacy checkbox or automatic privacy hold. Private login/storage and ZDR remain. Long recordings can exceed the conservative Free analysis budget. Delete only owned disposable fictional cases during the walkthrough; confidential customer cleanup occurs after the full test.
