@@ -271,10 +271,10 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [file, setFile] = useState<File | null>(null),
-    [sourceKind, setSourceKind] = useState(""),
     [rep, setRep] = useState(""),
     [direction, setDirection] = useState(""),
     [recordedAt, setRecordedAt] = useState("");
+  const sourceKind = "real";
   useEffect(() => {
     const current = dialog.current;
     current?.showModal();
@@ -452,20 +452,8 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
         <>
           <label>
             Recording type
-            <select
-              value={sourceKind}
-              onChange={(e) => {
-                setSourceKind(e.target.value);
-                setFile(null);
-              }}
-            >
-              <option value="" disabled>
-                Choose the recording type
-              </option>
-              <option value="synthetic">Made-up fictional conversation</option>
-              <option value="real">
-                Actual client/customer call — including test examples
-              </option>
+            <select value={sourceKind} disabled>
+              <option value="real">Call</option>
             </select>
           </label>
           <label className="file-drop">
@@ -515,11 +503,9 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
             <div className="notice">
               <AlertCircle size={17} />
               <p>
-                {!sourceKind
-                  ? "Choose whether this is a made-up conversation or an actual customer call."
-                  : !session.aiConfigured
-                    ? "You can upload a fictional recording privately. Analysis waits until the server AI key is added."
-                    : "The recording service is unavailable. Try again later."}
+                {!session.aiConfigured
+                  ? "You can upload a call privately. Analysis waits until the server AI key is added."
+                  : "The recording service is unavailable. Try again later."}
               </p>
             </div>
           )}

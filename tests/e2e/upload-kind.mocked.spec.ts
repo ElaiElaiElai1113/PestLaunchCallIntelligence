@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { mockApi, fictionalSession } from "./mock-api";
-test("upload requires an explicit source choice and distinguishes actual client calls from fiction", async ({
+test("upload defaults to the single Call option and allows immediate file selection", async ({
   page,
 }) => {
   const unexpected = await mockApi(page, (path) => {
@@ -13,10 +13,9 @@ test("upload requires an explicit source choice and distinguishes actual client 
   await page.getByRole("button", { name: "Add call", exact: true }).click();
   const dialog = page.getByRole("dialog");
   const type = dialog.getByLabel(/Recording type/);
-  await expect(type).toHaveValue("");
-  await expect(dialog.locator("input[type=file]")).toBeDisabled();
-  await type.selectOption("synthetic");
-  await type.selectOption("real");
+  await expect(type).toHaveValue("real");
+  await expect(type.locator("option")).toHaveCount(1);
+  await expect(type.locator("option")).toHaveText("Call");
   await expect(dialog.getByRole("checkbox")).toHaveCount(0);
   await expect(dialog.locator("input[type=file]")).toBeEnabled();
   await dialog.locator("input[type=file]").setInputFiles({
